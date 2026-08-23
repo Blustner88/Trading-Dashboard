@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Trading Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <div class="stats-strip" id="statsStrip">
+      <div class="stat"><span class="stat-label">Offen</span><span class="stat-value" id="statOpen">–</span></div>
+      <div class="stat"><span class="stat-label">Trades (30T)</span><span class="stat-value" id="statCount">–</span></div>
+      <div class="stat"><span class="stat-label">Win-Rate</span><span class="stat-value" id="statWinrate">–</span></div>
+      <div class="stat"><span class="stat-label">Ø R</span><span class="stat-value" id="statAvgR">–</span></div>
+    </div>
+    <button class="btn-primary" id="openAddTrade">+ Trade erfassen</button>
+  </header>
+
+  <!-- Filter bar -->
+  <div class="filterbar">
+    <div class="filter-group" id="filterPair">
+      <span class="filter-label">Pair</span>
+    </div>
+    <div class="filter-group" id="filterStatus">
+      <span class="filter-label">Status</span>
+    </div>
+    <input type="text" id="searchNotes" class="search-input" placeholder="Notizen durchsuchen…" />
+    <div class="filter-spacer"></div>
+    <button class="btn-ghost" id="importCsvBtn">CSV-Import (MT5)</button>
+  </div>
+
+  <!-- Trade list -->
+  <main class="tradelist" id="tradeList">
+    <div class="empty-state" id="emptyState">
+      <p class="empty-title">Noch keine Trades erfasst</p>
+      <p class="empty-sub">Leg deinen ersten Trade an — jede Zeile hier ist eine Entscheidung, die du später auswerten kannst.</p>
+    </div>
+  </main>
+
+</div>
+
+<!-- Add/Edit Trade Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Trade erfassen</h2>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+
+    <form id="tradeForm" class="trade-form">
+      <input type="hidden" id="tradeId" />
+
+      <div class="form-row">
+        <div class="field">
+          <label>Pair</label>
+          <select id="f_pair" required>
+            <option value="">— wählen —</option>
+            <option>GBPAUD</option>
+            <option>EURUSD</option>
+            <option>GBPUSD</option>
+            <option>USDJPY</option>
+            <option>USDCAD</option>
+            <option>EURAUD</option>
+            <option value="__other">Andere…</option>
+          </select>
+          <input type="text" id="f_pair_other" placeholder="z.B. NZDCHF" style="display:none; margin-top:6px;" />
+        </div>
+        <div class="field">
+          <label>Richtung</label>
+          <div class="segmented" id="f_direction">
+            <button type="button" class="seg-btn" data-value="long">Long</button>
+            <button type="button" class="seg-btn" data-value="short">Short</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>Entry-Datum/Zeit</label>
+          <input type="datetime-local" id="f_entry_date" required />
+        </div>
+        <div class="field">
+          <label>Session</label>
+          <select id="f_session">
+            <option value="">–</option>
+            <option>London</option>
+            <option>New York</option>
+            <option>Asia</option>
+            <option>Overlap</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Setup-Typ</label>
+        <input type="text" id="f_setup_type" placeholder="z.B. BITR-Sweep, Liquidity Grab, OB Retest" />
+      </div>
+
+      <div class="form-row three">
+        <div class="field">
+          <label>Entry-Preis</label>
+          <input type="number" step="0.00001" id="f_entry_price" required />
+        </div>
+        <div class="field">
+          <label>Stop Loss</label>
+          <input type="number" step="0.00001" id="f_stop_loss" required />
+        </div>
+        <div class="field">
+          <label>Risk %</label>
+          <input type="number" step="0.1" id="f_risk_percent" value="0.8" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>TP1</label>
+          <input type="number" step="0.00001" id="f_tp1" />
+        </div>
+        <div class="field">
+          <label>TP2</label>
+          <input type="number" step="0.00001" id="f_tp2" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Chart-Screenshot (Entry)</label>
+        <input type="file" id="f_chart_entry" accept="image/*" />
+        <div class="upload-preview" id="entryPreview"></div>
+      </div>
+
+      <div class="field">
+        <label>Notizen — warum rein?</label>
+        <textarea id="f_notes" rows="3" placeholder="Was hat den Entry ausgelöst? Confluence-Faktoren?"></textarea>
+      </div>
+
+      <hr class="form-divider" />
+
+      <div class="close-section" id="closeSection">
+        <p class="section-label">Trade schließen</p>
+        <div class="form-row">
+          <div class="field">
+            <label>Exit-Preis</label>
+            <input type="number" step="0.00001" id="f_exit_price" />
+          </div>
+          <div class="field">
+            <label>Exit-Datum/Zeit</label>
+            <input type="datetime-local" id="f_exit_date" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Chart-Screenshot (Exit)</label>
+          <input type="file" id="f_chart_exit" accept="image/*" />
+          <div class="upload-preview" id="exitPreview"></div>
+        </div>
+        <div class="field">
+          <label>Fehler-Tag (optional)</label>
+          <input type="text" id="f_mistake_tag" placeholder="z.B. zu früh raus, FOMO-Entry, SL zu eng" />
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="deleteTradeBtn" style="display:none;">Löschen</button>
+        <div class="modal-actions-right">
+          <button type="button" class="btn-ghost" id="cancelBtn">Abbrechen</button>
+          <button type="submit" class="btn-primary" id="saveBtn">Speichern</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
