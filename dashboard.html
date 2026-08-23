@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — Trading Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-date-fns/3.0.0/chartjs-adapter-date-fns.bundle.min.js"></script>
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <nav class="tabnav">
+      <a href="index.html" class="tab-link">Journal</a>
+      <a href="dashboard.html" class="tab-link active">Dashboard</a>
+    </nav>
+    <div class="filter-spacer"></div>
+    <div class="range-picker" id="rangePicker">
+      <button class="chip active" data-range="30">30T</button>
+      <button class="chip" data-range="90">90T</button>
+      <button class="chip" data-range="all">Alle</button>
+    </div>
+  </header>
+
+  <main class="dash-main">
+
+    <!-- KPI cards -->
+    <section class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card">
+        <span class="kpi-label">Total R</span>
+        <span class="kpi-value" id="kpiTotalR">–</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Win-Rate</span>
+        <span class="kpi-value" id="kpiWinrate">–</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Profit Factor</span>
+        <span class="kpi-value" id="kpiPF">–</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Ø R pro Trade</span>
+        <span class="kpi-value" id="kpiAvgR">–</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Bester Trade</span>
+        <span class="kpi-value pos" id="kpiBest">–</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Schlechtester Trade</span>
+        <span class="kpi-value neg" id="kpiWorst">–</span>
+      </div>
+    </section>
+
+    <!-- Equity curve -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3>Equity-Curve (kumulierte R)</h3>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="equityChart"></canvas>
+      </div>
+    </section>
+
+    <div class="panel-row">
+      <!-- Consistency check -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Disziplin-Check</h3>
+        </div>
+        <div class="consistency-list" id="consistencyList"></div>
+      </section>
+
+      <!-- Weekly R -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>R pro Woche</h3>
+        </div>
+        <div class="chart-wrap small">
+          <canvas id="weeklyChart"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <div class="panel-row">
+      <!-- Breakdown by pair -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Nach Pair</h3>
+        </div>
+        <table class="breakdown-table" id="pairTable">
+          <thead><tr><th>Pair</th><th>Trades</th><th>Win-Rate</th><th>Ø R</th><th>Total R</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <!-- Breakdown by setup -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Nach Setup</h3>
+        </div>
+        <table class="breakdown-table" id="setupTable">
+          <thead><tr><th>Setup</th><th>Trades</th><th>Win-Rate</th><th>Ø R</th><th>Total R</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+    </div>
+
+    <div class="panel-row">
+      <!-- Breakdown by session -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Nach Session</h3>
+        </div>
+        <table class="breakdown-table" id="sessionTable">
+          <thead><tr><th>Session</th><th>Trades</th><th>Win-Rate</th><th>Ø R</th><th>Total R</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </section>
+
+      <!-- Mistake tags -->
+      <section class="panel">
+        <div class="panel-header">
+          <h3>Häufigste Fehler</h3>
+        </div>
+        <div class="mistake-list" id="mistakeList"></div>
+      </section>
+    </div>
+
+  </main>
+</div>
+
+<script type="module" src="dashboard.js"></script>
+</body>
+</html>
