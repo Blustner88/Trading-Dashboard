@@ -70,6 +70,15 @@ $('csvFileInput').onchange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   const text = await file.text();
+
+  const mt5Result = tryParseMt5Report(text);
+  if (mt5Result) {
+    const targetAccountId = $('importAccountSelect').value;
+    if (!targetAccountId) { alert('Bitte ein Konto für den Import auswählen.'); return; }
+    await finalizeMt5Import(mt5Result, targetAccountId);
+    return;
+  }
+
   parseCsv(text);
   if (csvHeaders.length === 0) {
     alert('Konnte keine Spalten in der Datei erkennen.');
@@ -79,6 +88,110 @@ $('csvFileInput').onchange = async (e) => {
   renderPreviewTable();
   showStep('Mapping');
 };
+
+// ---------- MT5 "Bericht der Kontohistorie" Auto-Erkennung ----------
+function parseGermanNum(str) {
+  if (str === undefined || str === null) return null;
+  let s = str.trim();
+  if (s === '') return null;
+  s = s.replace(/^-\s+/, '-'); // "- 185,04" -> "-185,04"
+  s = s.replace(/\s+/g, '');   // Tausender-Leerzeichen entfernen: "24 275,83" -> "24275,83"
+  s = s.replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
+function parseMt5DateStr(str) {
+  if (!str) return null;
+  const m = str.trim().match(/^(\d{4})\.(\d{2})\.(\d{2})\s+(\d{2}):(\d{2}):(\d{2})/);
+  if (!m) return null;
+  const [, y, mo, d, h, mi, se] = m;
+  return new Date(`${y}-${mo}-${d}T${h}:${mi}:${se}`).toISOString();
+}
+
+function tryParseMt5Report(text) {
+  const lines = text.split(/\r\n|\n/);
+  if (!lines[0] || !lines[0].toLowerCase().includes('bericht der kontohistorie')) return null;
+
+  const posStart = lines.findIndex(l => l.trim().startsWith('Positionen'));
+  if (posStart === -1) return null;
+  const nextSection = lines.findIndex((l, i) => i > posStart + 1 && l.trim().startsWith('Orders'));
+  const dataLines = lines.slice(posStart + 2, nextSection === -1 ? undefined : nextSection).filter(l => l.trim().length > 0);
+
+  const rows = [];
+  dataLines.forEach(line => {
+    const cols = line.split(';');
+    if (cols.length < 13) return;
+    const [openTime, ticket, symbol, type, volume, openPrice, sl, tp, closeTime, closePrice, commission, swap, profit] = cols;
+    if (!openTime || !symbol) return;
+
+    const direction = type.trim().toLowerCase().includes('buy') ? 'long' : 'short';
+    const entryDate = parseMt5DateStr(openTime);
+    const entryPrice = parseGermanNum(openPrice);
+    if (!entryDate || entryPrice === null) return;
+
+    const stopLoss = parseGermanNum(sl);
+    const tp1 = parseGermanNum(tp);
+    const exitDate = parseMt5DateStr(closeTime);
+    const exitPrice = parseGermanNum(closePrice);
+    const profitAmount = parseGermanNum(profit);
+    const commissionAmount = parseGermanNum(commission) || 0;
+    const swapAmount = parseGermanNum(swap) || 0;
+    const netProfit = profitAmount !== null ? Math.round((profitAmount + commissionAmount + swapAmount) * 100) / 100 : null;
+    const volumeClean = parseFloat((volume || '').split('/')[0].trim()) || null;
+
+    let rMultiple = null;
+    if (stopLoss && exitPrice !== null) {
+      const riskDist = Math.abs(entryPrice - stopLoss);
+      if (riskDist > 0) {
+        const move = direction === 'long' ? (exitPrice - entryPrice) : (entryPrice - exitPrice);
+        rMultiple = Math.round((move / riskDist) * 100) / 100;
+      }
+    }
+
+    rows.push({
+      pair: symbol.trim().toUpperCase(),
+      direction,
+      entry_date: entryDate,
+      entry_price: entryPrice,
+      stop_loss: stopLoss,
+      tp1: tp1,
+      exit_date: exitDate,
+      exit_price: exitPrice,
+      profit_amount: netProfit,
+      r_multiple: rMultiple,
+      status: exitPrice !== null ? 'closed' : 'open',
+      source: 'mt5_import',
+      mt5_ticket_id: ticket.trim(),
+      notes: volumeClean ? `MT5 Volumen: ${volumeClean}` : null,
+    });
+  });
+
+  return rows.length > 0 ? rows : null;
+}
+
+async function finalizeMt5Import(rows, targetAccountId) {
+  const { data: existing } = await supabase.from('trades').select('mt5_ticket_id').not('mt5_ticket_id', 'is', null);
+  const existingTickets = new Set((existing || []).map(t => t.mt5_ticket_id));
+
+  let skippedDupe = 0;
+  let noSl = 0;
+  parsedTrades = [];
+
+  rows.forEach(r => {
+    if (existingTickets.has(r.mt5_ticket_id)) { skippedDupe++; return; }
+    if (!r.stop_loss) noSl++;
+    parsedTrades.push({ ...r, account_id: targetAccountId });
+  });
+
+  $('importSummary').innerHTML = `
+    <div class="summary-line"><span>Erkannt: MT5-Kontohistorie-Report</span><strong class="pos">${rows.length} Positionen</strong></div>
+    <div class="summary-line"><span>Zu importieren</span><strong class="pos">${parsedTrades.length}</strong></div>
+    <div class="summary-line"><span>Übersprungen (bereits importiert)</span><strong>${skippedDupe}</strong></div>
+    ${noSl > 0 ? `<div class="summary-line warn"><span>Ohne S/L (R-Multiple manuell nachtragen)</span><strong>${noSl}</strong></div>` : ''}
+  `;
+  showStep('Confirm');
+}
 
 // ---------- CSV Parsing ----------
 function parseCsv(text) {
