@@ -23,6 +23,7 @@
       <a href="index.html" class="tab-link active">Journal</a>
       <a href="dashboard.html" class="tab-link">Dashboard</a>
     </nav>
+    <div class="account-switcher" id="accountSwitcher"></div>
     <div class="stats-strip" id="statsStrip">
       <div class="stat"><span class="stat-label">Offen</span><span class="stat-value" id="statOpen">–</span></div>
       <div class="stat"><span class="stat-label">Trades (30T)</span><span class="stat-value" id="statCount">–</span></div>
@@ -65,6 +66,11 @@
 
     <form id="tradeForm" class="trade-form">
       <input type="hidden" id="tradeId" />
+
+      <div class="field">
+        <label>Account</label>
+        <select id="f_account" required></select>
+      </div>
 
       <div class="form-row">
         <div class="field">
@@ -164,6 +170,10 @@
           </div>
         </div>
         <div class="field">
+          <label>Profit/Loss ($)</label>
+          <input type="number" step="0.01" id="f_profit_amount" placeholder="echter $-Gewinn/Verlust laut Broker" />
+        </div>
+        <div class="field">
           <label>Chart-Screenshot (Exit)</label>
           <input type="file" id="f_chart_exit" accept="image/*" />
           <div class="upload-preview" id="exitPreview"></div>
@@ -197,6 +207,10 @@
 
     <!-- Step 1: Upload -->
     <div class="import-step" id="importStepUpload">
+      <div class="field" style="margin-bottom:14px;">
+        <label>Import-Ziel: welches Konto?</label>
+        <select id="importAccountSelect"></select>
+      </div>
       <p class="import-hint">
         Exportiere in MT5 die History (Toolbox → History → Rechtsklick → Bericht → Open XML), öffne die Datei in Excel/Sheets und speichere sie als CSV. Dann hier hochladen.
       </p>

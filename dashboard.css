@@ -77,6 +77,7 @@
 .mistake-count { font-family: var(--font-mono); font-size: 13px; color: var(--text-faint); background: var(--surface-2); padding: 2px 9px; border-radius: 100px; }
 
 .dash-empty { text-align: center; padding: 60px 20px; color: var(--text-faint); font-size: 14px; }
+.acc-dot-inline { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 7px; vertical-align: middle; }
 
 @media (max-width: 900px) {
   .kpi-grid { grid-template-columns: repeat(3, 1fr); }

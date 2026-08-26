@@ -1,8 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const SUPABASE_URL = 'https://rabbtdooayruveribarq.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_CsC9Ji0H9w_Xkbgoy1QtRg_RasuZtuX';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts, getAccountById } from './accounts.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -23,7 +19,9 @@ let equityChart = null;
 let weeklyChart = null;
 
 async function init() {
+  await initAccountSwitcher();
   bindRangePicker();
+  window.addEventListener('account-changed', render);
   await loadTrades();
 }
 
@@ -53,10 +51,13 @@ async function loadTrades() {
 }
 
 function getFilteredTrades() {
-  if (currentRange === 'all') return allTrades;
+  let base = allTrades;
+  const accId = getSelectedAccountId();
+  if (accId !== 'all') base = base.filter(t => t.account_id === accId);
+  if (currentRange === 'all') return base;
   const days = parseInt(currentRange, 10);
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-  return allTrades.filter(t => new Date(t.entry_date).getTime() >= cutoff);
+  return base.filter(t => new Date(t.entry_date).getTime() >= cutoff);
 }
 
 function render() {
@@ -71,6 +72,60 @@ function render() {
   renderBreakdown('setupTable', closed, t => t.setup_type || '—');
   renderBreakdown('sessionTable', closed, t => t.session || '—');
   renderMistakes(trades);
+  renderOverallBalance();
+}
+
+// ---------- Gesamtbilanz (nur bei "Alle Accounts") ----------
+function renderOverallBalance() {
+  const section = document.getElementById('overallBalanceSection');
+  const isAll = getSelectedAccountId() === 'all';
+  section.style.display = isAll ? 'block' : 'none';
+  if (!isAll) return;
+
+  const accounts = getAccounts();
+  const tbody = document.querySelector('#overallBalanceTable tbody');
+  tbody.innerHTML = '';
+
+  let grandStart = 0, grandProfit = 0, grandR = 0;
+
+  const rows = accounts.map(acc => {
+    const accTrades = allTrades.filter(t => t.account_id === acc.id);
+    const closed = accTrades.filter(t => t.status === 'closed' && t.r_multiple !== null && t.r_multiple !== undefined);
+    const totalR = closed.reduce((s, t) => s + Number(t.r_multiple), 0);
+    const totalProfit = accTrades.reduce((s, t) => s + (Number(t.profit_amount) || 0), 0);
+    const wins = closed.filter(t => t.r_multiple > 0).length;
+    const winrate = closed.length ? Math.round((wins / closed.length) * 100) : null;
+    const currentBalance = Number(acc.starting_balance) + totalProfit;
+
+    grandStart += Number(acc.starting_balance);
+    grandProfit += totalProfit;
+    grandR += totalR;
+
+    return { acc, totalR, totalProfit, winrate, currentBalance, count: closed.length };
+  });
+
+  if (rows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="font-family:var(--font-body); color:var(--text-faint); text-align:center; padding:20px 0;">Noch keine Konten angelegt</td></tr>`;
+  }
+
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="acc-dot-inline" style="background:${r.acc.color}"></span>${escapeHtml(r.acc.name)}</td>
+      <td>${r.count}</td>
+      <td>${r.winrate !== null ? r.winrate + '%' : '–'}</td>
+      <td class="${r.totalR >= 0 ? 'pos' : 'neg'}">${r.totalR >= 0 ? '+' : ''}${r.totalR.toFixed(2)}R</td>
+      <td class="${r.totalProfit >= 0 ? 'pos' : 'neg'}">${r.totalProfit >= 0 ? '+' : ''}${r.totalProfit.toFixed(2)} ${r.acc.currency}</td>
+      <td>${r.currentBalance.toFixed(2)} ${r.acc.currency}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('grandTotalR').textContent = `${grandR >= 0 ? '+' : ''}${grandR.toFixed(2)}R`;
+  document.getElementById('grandTotalR').className = `kpi-value ${grandR >= 0 ? 'pos' : 'neg'}`;
+  document.getElementById('grandTotalProfit').textContent = `${grandProfit >= 0 ? '+' : ''}${grandProfit.toFixed(2)}`;
+  document.getElementById('grandTotalProfit').className = `kpi-value ${grandProfit >= 0 ? 'pos' : 'neg'}`;
+  document.getElementById('grandTotalBalance').textContent = (grandStart + grandProfit).toFixed(2);
 }
 
 // ---------- KPIs ----------

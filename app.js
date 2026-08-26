@@ -1,8 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-
-const SUPABASE_URL = 'https://rabbtdooayruveribarq.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_CsC9Ji0H9w_Xkbgoy1QtRg_RasuZtuX';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts } from './accounts.js';
 
 const BUCKET = 'trade-screenshots';
 const PAIRS = ['GBPAUD', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'EURAUD'];
@@ -18,9 +14,20 @@ const $ = (id) => document.getElementById(id);
 
 // ---------- Init ----------
 async function init() {
+  await initAccountSwitcher();
+  populateAccountSelect();
   buildFilterChips();
   bindEvents();
+  window.addEventListener('account-changed', () => { populateAccountSelect(); loadTrades(); });
   await loadTrades();
+}
+
+function populateAccountSelect() {
+  const sel = $('f_account');
+  const accounts = getAccounts();
+  sel.innerHTML = accounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  const current = getSelectedAccountId();
+  if (current !== 'all' && accounts.find(a => a.id === current)) sel.value = current;
 }
 
 function buildFilterChips() {
@@ -63,7 +70,10 @@ function renderChips() {
 }
 
 function bindEvents() {
-  $('openAddTrade').onclick = () => openModal();
+  $('openAddTrade').onclick = () => {
+    if (getAccounts().length === 0) { showToast('Bitte zuerst ein Konto anlegen (oben rechts).'); return; }
+    openModal();
+  };
   $('modalClose').onclick = closeModal;
   $('cancelBtn').onclick = closeModal;
   $('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
@@ -118,6 +128,7 @@ function openModal(trade = null) {
   $('f_pair_other').style.display = 'none';
 
   if (trade) {
+    $('f_account').value = trade.account_id;
     const pairSelect = $('f_pair');
     const isKnown = PAIRS.includes(trade.pair);
     pairSelect.value = isKnown ? trade.pair : '__other';
@@ -137,10 +148,13 @@ function openModal(trade = null) {
     $('f_notes').value = trade.notes || '';
     $('f_exit_price').value = trade.exit_price ?? '';
     $('f_exit_date').value = trade.exit_date ? toLocalInput(trade.exit_date) : '';
+    $('f_profit_amount').value = trade.profit_amount ?? '';
     $('f_mistake_tag').value = trade.mistake_tag || '';
     if (trade.chart_entry_url) previewFromUrl(trade.chart_entry_url, 'entryPreview');
     if (trade.chart_exit_url) previewFromUrl(trade.chart_exit_url, 'exitPreview');
   } else {
+    const current = getSelectedAccountId();
+    if (current !== 'all') $('f_account').value = current;
     $('f_risk_percent').value = 0.8;
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
@@ -173,6 +187,8 @@ function toLocalInput(isoString) {
 async function handleSave(e) {
   e.preventDefault();
 
+  if (!$('f_account').value) return showToast('Bitte Account wählen.');
+
   let pair = $('f_pair').value;
   if (pair === '__other') pair = $('f_pair_other').value.trim().toUpperCase();
   if (!pair) return showToast('Bitte Pair angeben.');
@@ -195,6 +211,7 @@ async function handleSave(e) {
     const exitPrice = exitPriceRaw ? parseFloat(exitPriceRaw) : null;
 
     const payload = {
+      account_id: $('f_account').value,
       pair,
       direction: currentDirection,
       entry_date: new Date($('f_entry_date').value).toISOString(),
@@ -209,6 +226,7 @@ async function handleSave(e) {
       exit_price: exitPrice,
       exit_date: $('f_exit_date').value ? new Date($('f_exit_date').value).toISOString() : null,
       mistake_tag: $('f_mistake_tag').value || null,
+      profit_amount: $('f_profit_amount').value ? parseFloat($('f_profit_amount').value) : null,
       status: exitPrice ? 'closed' : 'open',
     };
 
@@ -270,10 +288,11 @@ async function uploadScreenshot(file) {
 
 // ---------- Load / Render ----------
 async function loadTrades() {
-  const { data, error } = await supabase
-    .from('trades')
-    .select('*')
-    .order('entry_date', { ascending: false });
+  let query = supabase.from('trades').select('*').order('entry_date', { ascending: false });
+  const accId = getSelectedAccountId();
+  if (accId !== 'all') query = query.eq('account_id', accId);
+
+  const { data, error } = await query;
 
   if (error) {
     showToast('Fehler beim Laden: ' + error.message);
@@ -347,6 +366,7 @@ function renderTradeCard(trade) {
     <div class="tc-pair-row">
       <span class="tc-pair">${trade.pair} · ${trade.direction === 'long' ? 'Long' : 'Short'}</span>
       <span class="tc-badge ${trade.status}">${statusLabel(trade.status)}</span>
+      ${getSelectedAccountId() === 'all' ? accountTagHtml(trade.account_id) : ''}
     </div>
     <div class="tc-meta"><span>${dateStr} · ${timeStr}</span>${trade.session ? `<span>${trade.session}</span>` : ''}</div>
     ${trade.setup_type ? `<div class="tc-setup">${escapeHtml(trade.setup_type)}</div>` : ''}
@@ -382,6 +402,12 @@ function renderTradeCard(trade) {
 
 function statusLabel(status) {
   return { open: 'Offen', closed: 'Geschlossen', cancelled: 'Storniert' }[status] || status;
+}
+
+function accountTagHtml(accountId) {
+  const acc = getAccounts().find(a => a.id === accountId);
+  if (!acc) return '';
+  return `<span class="tc-acc-tag" style="border-color:${acc.color}; color:${acc.color}">${escapeHtml(acc.name)}</span>`;
 }
 
 function escapeHtml(str) {

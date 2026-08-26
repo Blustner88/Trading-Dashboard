@@ -25,6 +25,7 @@
       <a href="index.html" class="tab-link">Journal</a>
       <a href="dashboard.html" class="tab-link active">Dashboard</a>
     </nav>
+    <div class="account-switcher" id="accountSwitcher"></div>
     <div class="filter-spacer"></div>
     <div class="range-picker" id="rangePicker">
       <button class="chip active" data-range="30">30T</button>
@@ -61,6 +62,31 @@
         <span class="kpi-label">Schlechtester Trade</span>
         <span class="kpi-value neg" id="kpiWorst">–</span>
       </div>
+    </section>
+
+    <!-- Gesamtbilanz über alle Accounts -->
+    <section class="panel" id="overallBalanceSection" style="display:none;">
+      <div class="panel-header">
+        <h3>Gesamtbilanz — alle Accounts</h3>
+      </div>
+      <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 16px;">
+        <div class="kpi-card">
+          <span class="kpi-label">Total R (alle Accounts)</span>
+          <span class="kpi-value" id="grandTotalR">–</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Total Profit ($)</span>
+          <span class="kpi-value" id="grandTotalProfit">–</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Kombinierter Kontostand</span>
+          <span class="kpi-value" id="grandTotalBalance">–</span>
+        </div>
+      </div>
+      <table class="breakdown-table" id="overallBalanceTable">
+        <thead><tr><th>Konto</th><th>Trades</th><th>Win-Rate</th><th>Total R</th><th>Profit</th><th>Kontostand</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </section>
 
     <!-- Equity curve -->

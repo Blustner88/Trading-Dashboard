@@ -1,9 +1,5 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { supabase, getSelectedAccountId, getAccounts } from './accounts.js';
 import { loadTrades } from './app.js';
-
-const SUPABASE_URL = 'https://rabbtdooayruveribarq.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_CsC9Ji0H9w_Xkbgoy1QtRg_RasuZtuX';
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const $ = (id) => document.getElementById(id);
 
@@ -18,7 +14,7 @@ const FIELDS = [
   { key: 'tp1', label: 'T/P', required: false },
   { key: 'exit_date', label: 'Close Time', required: false },
   { key: 'exit_price', label: 'Close Price', required: false },
-  { key: 'profit', label: 'Profit', required: false, hint: 'nur informativ, nicht gespeichert' },
+  { key: 'profit', label: 'Profit ($)', required: false, hint: 'wird als profit_amount gespeichert' },
 ];
 
 let csvHeaders = [];
@@ -29,7 +25,20 @@ let existingTickets = new Set();
 
 window.addEventListener('open-csv-import', () => {
   resetWizard();
+  populateImportAccountSelect();
 });
+
+function populateImportAccountSelect() {
+  const sel = $('importAccountSelect');
+  const accounts = getAccounts();
+  if (accounts.length === 0) {
+    sel.innerHTML = '<option value="">— erst ein Konto anlegen —</option>';
+    return;
+  }
+  sel.innerHTML = accounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  const current = getSelectedAccountId();
+  if (current !== 'all' && accounts.find(a => a.id === current)) sel.value = current;
+}
 
 function resetWizard() {
   showStep('Upload');
@@ -193,6 +202,12 @@ function renderPreviewTable() {
 async function analyzeAndGoToConfirm() {
   mapping = getMapping();
 
+  const targetAccountId = $('importAccountSelect').value;
+  if (!targetAccountId) {
+    alert('Bitte ein Konto für den Import auswählen.');
+    return;
+  }
+
   const missingRequired = FIELDS.filter(f => f.required && (mapping[f.key] === null || mapping[f.key] === undefined));
   if (missingRequired.length > 0) {
     alert('Bitte Pflichtfelder zuordnen: ' + missingRequired.map(f => f.label).join(', '));
@@ -225,6 +240,7 @@ async function analyzeAndGoToConfirm() {
     const tp1 = mapping.tp1 !== null ? parseNum(row[mapping.tp1]) : null;
     const exitDate = mapping.exit_date !== null ? parseMt5Date(row[mapping.exit_date]) : null;
     const exitPrice = mapping.exit_price !== null ? parseNum(row[mapping.exit_price]) : null;
+    const profitAmount = mapping.profit !== null ? parseNum(row[mapping.profit]) : null;
 
     let rMultiple = null;
     if (stopLoss && exitPrice !== null) {
@@ -237,6 +253,7 @@ async function analyzeAndGoToConfirm() {
     if (!stopLoss) noSl++;
 
     parsedTrades.push({
+      account_id: targetAccountId,
       pair: pairRaw.toUpperCase(),
       direction,
       entry_date: entryDate,
@@ -246,6 +263,7 @@ async function analyzeAndGoToConfirm() {
       exit_date: exitDate,
       exit_price: exitPrice,
       r_multiple: rMultiple,
+      profit_amount: profitAmount,
       status: exitPrice !== null ? 'closed' : 'open',
       source: 'mt5_import',
       mt5_ticket_id: ticket || null,
