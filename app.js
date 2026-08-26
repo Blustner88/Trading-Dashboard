@@ -142,6 +142,7 @@ function openModal(trade = null) {
     $('f_setup_type').value = trade.setup_type || '';
     $('f_entry_price').value = trade.entry_price;
     $('f_stop_loss').value = trade.stop_loss;
+    $('f_trailed_sl').value = trade.trailed_stop_loss ?? '';
     $('f_risk_percent').value = trade.risk_percent ?? 0.8;
     $('f_tp1').value = trade.tp1 ?? '';
     $('f_tp2').value = trade.tp2 ?? '';
@@ -219,6 +220,7 @@ async function handleSave(e) {
       setup_type: $('f_setup_type').value || null,
       entry_price: entryPrice,
       stop_loss: stopLoss,
+      trailed_stop_loss: $('f_trailed_sl').value ? parseFloat($('f_trailed_sl').value) : null,
       tp1: $('f_tp1').value ? parseFloat($('f_tp1').value) : null,
       tp2: $('f_tp2').value ? parseFloat($('f_tp2').value) : null,
       risk_percent: $('f_risk_percent').value ? parseFloat($('f_risk_percent').value) : 0.8,
@@ -377,7 +379,7 @@ function renderTradeCard(trade) {
   prices.className = 'tc-prices';
   prices.innerHTML = `
     <div><span class="lbl">E</span>${trade.entry_price}</div>
-    <div><span class="lbl">SL</span>${trade.stop_loss}</div>
+    <div><span class="lbl">SL</span>${trade.stop_loss}${trade.trailed_stop_loss ? ` → ${trade.trailed_stop_loss}` : ''}</div>
     ${trade.exit_price ? `<div><span class="lbl">X</span>${trade.exit_price}</div>` : ''}
   `;
   card.appendChild(prices);

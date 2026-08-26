@@ -124,13 +124,18 @@
           <input type="number" step="0.00001" id="f_entry_price" required />
         </div>
         <div class="field">
-          <label>Stop Loss</label>
+          <label>Stop Loss (initial — für R-Berechnung)</label>
           <input type="number" step="0.00001" id="f_stop_loss" required />
         </div>
         <div class="field">
           <label>Risk %</label>
           <input type="number" step="0.1" id="f_risk_percent" value="0.8" />
         </div>
+      </div>
+
+      <div class="field">
+        <label>Nachgezogener SL (aktuell, nur zur Info — beeinflusst R-Berechnung nicht)</label>
+        <input type="number" step="0.00001" id="f_trailed_sl" placeholder="z.B. auf Breakeven nachgezogen" />
       </div>
 
       <div class="form-row">

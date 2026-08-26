@@ -2,21 +2,8 @@ import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts, getAc
 
 const $ = (id) => document.getElementById(id);
 
-const COLORS = {
-  indigo: '#6366f1',
-  indigoBright: '#818cf8',
-  profit: '#22c55e',
-  loss: '#f43f5e',
-  amber: '#f59e0b',
-  grid: '#1d212b',
-  textMuted: '#8b92a5',
-  textFaint: '#565d70',
-};
-
 let allTrades = [];
 let currentRange = '30';
-let equityChart = null;
-let weeklyChart = null;
 
 async function init() {
   await initAccountSwitcher();
@@ -156,60 +143,70 @@ function renderKPIs(closed) {
   $('kpiWorst').textContent = `${worst.toFixed(2)}R`;
 }
 
-// ---------- Equity curve ----------
+// ---------- Equity curve (pure SVG, no external library) ----------
 function renderEquityCurve(closed) {
+  const wrap = $('equityChartWrap');
   const sorted = [...closed].sort((a, b) => new Date(a.entry_date) - new Date(b.entry_date));
-  let cum = 0;
-  const points = sorted.map(t => {
-    cum += Number(t.r_multiple);
-    return { x: new Date(t.entry_date), y: Math.round(cum * 100) / 100 };
-  });
 
-  const ctx = document.getElementById('equityChart');
-  if (equityChart) equityChart.destroy();
-
-  if (points.length === 0) {
+  if (sorted.length === 0) {
+    wrap.innerHTML = `<div class="dash-empty">Noch keine geschlossenen Trades im Zeitraum</div>`;
     return;
   }
 
-  const lineColor = points[points.length - 1].y >= 0 ? COLORS.profit : COLORS.loss;
-
-  equityChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      datasets: [{
-        data: points,
-        borderColor: lineColor,
-        backgroundColor: lineColor + '22',
-        fill: true,
-        tension: 0.25,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        borderWidth: 2,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: {
-          type: 'time',
-          time: { unit: 'day' },
-          grid: { color: COLORS.grid },
-          ticks: { color: COLORS.textFaint, font: { family: 'JetBrains Mono', size: 10 } },
-        },
-        y: {
-          grid: { color: COLORS.grid },
-          ticks: { color: COLORS.textFaint, font: { family: 'JetBrains Mono', size: 10 }, callback: (v) => `${v}R` },
-        }
-      }
-    }
+  let cum = 0;
+  const points = sorted.map(t => {
+    cum += Number(t.r_multiple);
+    return { date: new Date(t.entry_date), y: Math.round(cum * 100) / 100 };
   });
+
+  const W = 900, H = 260, padL = 46, padR = 16, padT = 16, padB = 28;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+
+  const yMin = Math.min(0, ...points.map(p => p.y));
+  const yMax = Math.max(0, ...points.map(p => p.y));
+  const yRange = (yMax - yMin) || 1;
+  const yPad = yRange * 0.1;
+  const yLo = yMin - yPad, yHi = yMax + yPad;
+
+  const xFor = (i) => padL + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
+  const yFor = (v) => padT + innerH - ((v - yLo) / (yHi - yLo)) * innerH;
+
+  const lineColor = points[points.length - 1].y >= 0 ? '#22c55e' : '#f43f5e';
+  const zeroY = yFor(0);
+
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xFor(i).toFixed(1)} ${yFor(p.y).toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L ${xFor(points.length - 1).toFixed(1)} ${zeroY.toFixed(1)} L ${xFor(0).toFixed(1)} ${zeroY.toFixed(1)} Z`;
+
+  // Gridlines (5 horizontal)
+  const gridLines = [];
+  for (let i = 0; i <= 4; i++) {
+    const v = yLo + (yHi - yLo) * (i / 4);
+    const y = yFor(v);
+    gridLines.push(`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#1d212b" stroke-width="1" />`);
+    gridLines.push(`<text x="${padL - 8}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="10" font-family="JetBrains Mono, monospace" fill="#565d70">${v.toFixed(1)}R</text>`);
+  }
+
+  // X-axis labels (first, middle, last date)
+  const xLabelIdxs = points.length > 1 ? [0, Math.floor((points.length - 1) / 2), points.length - 1] : [0];
+  const xLabels = [...new Set(xLabelIdxs)].map(i => {
+    const label = points[i].date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+    return `<text x="${xFor(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="10" font-family="JetBrains Mono, monospace" fill="#565d70">${label}</text>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible;">
+      ${gridLines.join('')}
+      <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W - padR}" y2="${zeroY.toFixed(1)}" stroke="#262b38" stroke-width="1" stroke-dasharray="3,3" />
+      <path d="${areaPath}" fill="${lineColor}" fill-opacity="0.12" stroke="none" />
+      <path d="${linePath}" fill="none" stroke="${lineColor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+      ${xLabels}
+    </svg>
+  `;
 }
 
-// ---------- Weekly R chart ----------
+// ---------- Weekly R (pure SVG bar chart) ----------
 function renderWeeklyChart(closed) {
+  const wrap = $('weeklyChartWrap');
   const weekMap = {};
   closed.forEach(t => {
     const d = new Date(t.entry_date);
@@ -219,32 +216,45 @@ function renderWeeklyChart(closed) {
   const labels = Object.keys(weekMap).sort();
   const values = labels.map(l => Math.round(weekMap[l] * 100) / 100);
 
-  const ctx = document.getElementById('weeklyChart');
-  if (weeklyChart) weeklyChart.destroy();
+  if (labels.length === 0) {
+    wrap.innerHTML = `<div class="dash-empty">Keine Daten im Zeitraum</div>`;
+    return;
+  }
 
-  if (labels.length === 0) return;
+  const W = 700, H = 200, padL = 40, padR = 12, padT = 10, padB = 20;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
 
-  weeklyChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        data: values,
-        backgroundColor: values.map(v => v >= 0 ? COLORS.profit : COLORS.loss),
-        borderRadius: 4,
-        maxBarThickness: 28,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: COLORS.textFaint, font: { size: 10 } } },
-        y: { grid: { color: COLORS.grid }, ticks: { color: COLORS.textFaint, font: { family: 'JetBrains Mono', size: 10 }, callback: (v) => `${v}R` } },
-      }
-    }
-  });
+  const yMin = Math.min(0, ...values);
+  const yMax = Math.max(0, ...values);
+  const yRange = (yMax - yMin) || 1;
+  const yPad = yRange * 0.15;
+  const yLo = yMin - yPad, yHi = yMax + yPad;
+  const yFor = (v) => padT + innerH - ((v - yLo) / (yHi - yLo)) * innerH;
+  const zeroY = yFor(0);
+
+  const barSlot = innerW / values.length;
+  const barWidth = Math.min(barSlot * 0.6, 32);
+
+  const bars = values.map((v, i) => {
+    const x = padL + i * barSlot + (barSlot - barWidth) / 2;
+    const y = v >= 0 ? yFor(v) : zeroY;
+    const h = Math.abs(yFor(v) - zeroY);
+    const color = v >= 0 ? '#22c55e' : '#f43f5e';
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${Math.max(h, 1).toFixed(1)}" fill="${color}" rx="2" />`;
+  }).join('');
+
+  const xLabels = labels.map((l, i) => {
+    const x = padL + i * barSlot + barSlot / 2;
+    return `<text x="${x.toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="9.5" font-family="Inter, sans-serif" fill="#565d70">${l}</text>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible;">
+      <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W - padR}" y2="${zeroY.toFixed(1)}" stroke="#262b38" stroke-width="1" />
+      ${bars}
+      ${xLabels}
+    </svg>
+  `;
 }
 
 function isoWeekKey(date) {
