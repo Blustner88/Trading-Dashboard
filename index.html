@@ -187,6 +187,53 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- CSV Import Modal -->
+<div class="modal-overlay" id="importOverlay">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h2>CSV-Import (MT5)</h2>
+      <button class="modal-close" id="importModalClose">✕</button>
+    </div>
+
+    <!-- Step 1: Upload -->
+    <div class="import-step" id="importStepUpload">
+      <p class="import-hint">
+        Exportiere in MT5 die History (Toolbox → History → Rechtsklick → Bericht → Open XML), öffne die Datei in Excel/Sheets und speichere sie als CSV. Dann hier hochladen.
+      </p>
+      <input type="file" id="csvFileInput" accept=".csv,.txt" />
+      <div class="import-actions">
+        <button class="btn-ghost" id="importCancelStep1">Abbrechen</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Column mapping -->
+    <div class="import-step" id="importStepMapping" style="display:none;">
+      <p class="import-hint">Ordne die Spalten deiner CSV den Journal-Feldern zu. Felder ohne passende Spalte einfach auf "— ignorieren —" lassen.</p>
+      <div class="mapping-grid" id="mappingGrid"></div>
+      <div class="import-preview-wrap">
+        <p class="section-label">Vorschau (erste 3 Zeilen)</p>
+        <div class="table-scroll"><table class="preview-table" id="previewTable"></table></div>
+      </div>
+      <div class="import-actions">
+        <button class="btn-ghost" id="importBackStep2">Zurück</button>
+        <button class="btn-primary" id="importAnalyzeBtn">Weiter</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Confirm -->
+    <div class="import-step" id="importStepConfirm" style="display:none;">
+      <div class="import-summary" id="importSummary"></div>
+      <div class="import-actions">
+        <button class="btn-ghost" id="importBackStep3">Zurück</button>
+        <button class="btn-primary" id="importConfirmBtn">Trades importieren</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="csv-import.js"></script>
+
+
 <script type="module" src="app.js"></script>
 </body>
 </html>

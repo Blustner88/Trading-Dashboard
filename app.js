@@ -89,7 +89,8 @@ function bindEvents() {
   $('searchNotes').oninput = (e) => { activeFilters.search = e.target.value.toLowerCase(); renderTrades(); };
 
   $('importCsvBtn').onclick = () => {
-    showToast('CSV-Import (MT5) ist vorbereitet — Tabelle unterstützt es bereits, UI folgt in v2.');
+    document.getElementById('importOverlay').classList.add('visible');
+    window.dispatchEvent(new Event('open-csv-import'));
   };
 }
 
@@ -397,3 +398,5 @@ function showToast(msg) {
 }
 
 init();
+
+export { loadTrades };
