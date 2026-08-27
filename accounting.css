@@ -1,0 +1,32 @@
+.disclaimer-banner {
+  background: rgba(245,158,11,0.08);
+  border: 1px solid rgba(245,158,11,0.25);
+  color: #e5c07b;
+  font-size: 12.5px;
+  line-height: 1.5;
+  padding: 12px 16px;
+  border-radius: 10px;
+}
+
+.period-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.period-controls select {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+}
+.period-chips { display: flex; gap: 6px; }
+
+.kpi-value.neutral { color: var(--text); }
+
+.btn-primary.sm { padding: 7px 14px; font-size: 12.5px; }
+
+.expense-row-actions { display: flex; gap: 6px; }
+.icon-btn {
+  background: none; border: none; color: var(--text-faint);
+  cursor: pointer; font-size: 13px; padding: 2px 6px;
+}
+.icon-btn:hover { color: var(--indigo-bright); }
