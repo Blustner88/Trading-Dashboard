@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Planung — Trading Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="planning.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <nav class="tabnav">
+      <a href="index.html" class="tab-link">Journal</a>
+      <a href="dashboard.html" class="tab-link">Dashboard</a>
+      <a href="planning.html" class="tab-link active">Planung</a>
+    </nav>
+    <div class="filter-spacer"></div>
+    <div class="date-nav">
+      <button class="btn-ghost sm" id="prevDayBtn">←</button>
+      <input type="date" id="planDate" />
+      <button class="btn-ghost sm" id="nextDayBtn">→</button>
+      <button class="btn-ghost sm" id="todayBtn">Heute</button>
+    </div>
+  </header>
+
+  <main class="dash-main">
+
+    <!-- Prompt-Vorlage -->
+    <section class="panel prompt-panel">
+      <div class="panel-header">
+        <h3>So holst du dir die Daten für heute</h3>
+        <button class="btn-ghost sm" id="copyPromptBtn">Prompt kopieren</button>
+      </div>
+      <p class="prompt-text" id="promptText">Führe den ForexFundamentals-Check für heute für GBPAUD, EURUSD, GBPUSD, USDJPY, USDCAD, EURAUD durch: Risk-Sentiment, relevante Kalender-Events, Currency-Scores/Bias je Pair, COT-Positionierung und Confluence-Faktoren. Fasse es kompakt zusammen.</p>
+    </section>
+
+    <!-- Marktumfeld -->
+    <section class="panel">
+      <div class="panel-header"><h3>Marktumfeld</h3></div>
+      <div class="field">
+        <label>Risk-Sentiment</label>
+        <div class="segmented" id="riskSegmented">
+          <button type="button" class="seg-btn" data-value="risk_on">Risk-On</button>
+          <button type="button" class="seg-btn" data-value="neutral">Neutral</button>
+          <button type="button" class="seg-btn" data-value="risk_off">Risk-Off</button>
+        </div>
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label>Notizen zum Risk-Sentiment</label>
+        <textarea id="riskNotes" rows="2" placeholder="z.B. DXY-Trend, Aktienmärkte, Safe-Haven-Flows…"></textarea>
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label>Kalender-Highlights heute</label>
+        <textarea id="calendarNotes" rows="3" placeholder="Relevante News-Events, Uhrzeiten, erwartete Volatilität…"></textarea>
+      </div>
+    </section>
+
+    <!-- Pair-Bias-Tabelle -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3>Pair-Bias & Watchlist</h3>
+        <button class="btn-ghost sm" id="addPairRowBtn">+ Pair</button>
+      </div>
+      <div class="pair-rows" id="pairRows"></div>
+    </section>
+
+    <!-- Allgemeine Notizen -->
+    <section class="panel">
+      <div class="panel-header"><h3>Allgemeine Notizen zum Tag</h3></div>
+      <textarea id="generalNotes" rows="3" placeholder="Sonstiges — Gemütszustand, Fokus-Level, Dinge zu beachten…"></textarea>
+    </section>
+
+    <div class="save-bar">
+      <span class="save-status" id="saveStatus"></span>
+      <button class="btn-primary" id="savePlanBtn">Plan speichern</button>
+    </div>
+
+  </main>
+</div>
+
+<script type="module" src="planning.js"></script>
+</body>
+</html>
