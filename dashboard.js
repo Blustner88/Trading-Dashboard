@@ -4,6 +4,7 @@ const $ = (id) => document.getElementById(id);
 
 let allTrades = [];
 let allPayouts = [];
+let allExpenses = [];
 let currentRange = '30';
 
 async function init() {
@@ -39,6 +40,9 @@ async function loadTrades() {
   const { data: payouts } = await supabase.from('payouts').select('*');
   allPayouts = payouts || [];
 
+  const { data: expenses } = await supabase.from('business_expenses').select('*');
+  allExpenses = expenses || [];
+
   render();
 }
 
@@ -65,6 +69,152 @@ function render() {
   renderBreakdown('sessionTable', closed, t => t.session || '—');
   renderMistakes(trades);
   renderOverallBalance();
+  renderTaxWidget();
+  renderDrawdownTracker();
+  renderChallengeProgress();
+}
+
+// ---------- Steuerjahr Mini-Widget ----------
+function renderTaxWidget() {
+  const year = new Date().getFullYear();
+  $('taxYearLabel').textContent = year;
+  const start = new Date(year, 0, 1), end = new Date(year + 1, 0, 1);
+
+  const income = allPayouts
+    .filter(p => { const d = new Date(p.payout_date + 'T00:00:00'); return d >= start && d < end; })
+    .reduce((s, p) => s + Number(p.amount_eur), 0);
+  const expenses = allExpenses
+    .filter(e => { const d = new Date(e.expense_date + 'T00:00:00'); return d >= start && d < end; })
+    .reduce((s, e) => s + Number(e.amount), 0);
+  const result = income - expenses;
+
+  $('taxIncome').textContent = `+${income.toFixed(2)} €`;
+  $('taxExpenses').textContent = `-${expenses.toFixed(2)} €`;
+  $('taxResult').textContent = `${result >= 0 ? '+' : ''}${result.toFixed(2)} €`;
+  $('taxResult').className = `kpi-value ${result >= 0 ? 'pos' : 'neg'}`;
+}
+
+// ---------- Drawdown-Tracker (Propfirm-Limits) ----------
+function getRelevantAccounts() {
+  const accId = getSelectedAccountId();
+  const accounts = getAccounts();
+  return accId === 'all' ? accounts : accounts.filter(a => a.id === accId);
+}
+
+function renderDrawdownTracker() {
+  const section = $('drawdownSection');
+  const container = $('drawdownCards');
+  const accounts = getRelevantAccounts().filter(a => a.daily_loss_limit_pct || a.max_drawdown_pct);
+
+  if (accounts.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  container.innerHTML = '';
+
+  accounts.forEach(acc => {
+    const accTrades = allTrades
+      .filter(t => t.account_id === acc.id && t.status === 'closed')
+      .sort((a, b) => new Date(a.entry_date) - new Date(b.entry_date));
+
+    // Equity curve to find peak balance
+    let running = Number(acc.starting_balance);
+    let peak = running;
+    accTrades.forEach(t => {
+      running += Number(t.profit_amount) || 0;
+      if (running > peak) peak = running;
+    });
+    const currentEquity = running;
+    const drawdownFromPeak = peak - currentEquity;
+    const drawdownPct = peak > 0 ? (drawdownFromPeak / Number(acc.starting_balance)) * 100 : 0;
+
+    // Today's P/L
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayPL = accTrades
+      .filter(t => t.entry_date.slice(0, 10) === todayStr)
+      .reduce((s, t) => s + (Number(t.profit_amount) || 0), 0);
+    const todayLossPct = todayPL < 0 ? (Math.abs(todayPL) / Number(acc.starting_balance)) * 100 : 0;
+
+    const card = document.createElement('div');
+    card.className = 'risk-card';
+
+    let metricsHtml = '';
+
+    if (acc.daily_loss_limit_pct) {
+      const usedPct = Math.min((todayLossPct / acc.daily_loss_limit_pct) * 100, 100);
+      const level = usedPct >= 90 ? 'danger' : usedPct >= 60 ? 'warn' : 'ok';
+      metricsHtml += `
+        <div class="risk-metric">
+          <div class="risk-metric-top"><span>Daily Loss heute</span><span class="val">${todayLossPct.toFixed(2)}% / ${acc.daily_loss_limit_pct}%</span></div>
+          <div class="risk-bar"><div class="risk-bar-fill ${level}" style="width:${usedPct}%"></div></div>
+        </div>
+      `;
+    }
+
+    if (acc.max_drawdown_pct) {
+      const usedPct = Math.min((drawdownPct / acc.max_drawdown_pct) * 100, 100);
+      const level = usedPct >= 90 ? 'danger' : usedPct >= 60 ? 'warn' : 'ok';
+      metricsHtml += `
+        <div class="risk-metric">
+          <div class="risk-metric-top"><span>Max Drawdown (vom Peak)</span><span class="val">${drawdownPct.toFixed(2)}% / ${acc.max_drawdown_pct}%</span></div>
+          <div class="risk-bar"><div class="risk-bar-fill ${level}" style="width:${usedPct}%"></div></div>
+        </div>
+      `;
+    }
+
+    const overallLevel = Math.max(
+      acc.daily_loss_limit_pct ? todayLossPct / acc.daily_loss_limit_pct : 0,
+      acc.max_drawdown_pct ? drawdownPct / acc.max_drawdown_pct : 0
+    );
+    const statusClass = overallLevel >= 0.9 ? 'danger' : overallLevel >= 0.6 ? 'warn' : 'ok';
+    const statusLabel = overallLevel >= 0.9 ? 'Kritisch' : overallLevel >= 0.6 ? 'Beobachten' : 'OK';
+
+    card.innerHTML = `
+      <div class="risk-card-header">
+        <div class="risk-card-title"><span class="acc-dot-inline" style="background:${acc.color}"></span>${escapeHtml(acc.name)}</div>
+        <span class="risk-card-status ${statusClass}">${statusLabel}</span>
+      </div>
+      ${metricsHtml}
+    `;
+    container.appendChild(card);
+  });
+}
+
+// ---------- Challenge-Fortschritt ----------
+function renderChallengeProgress() {
+  const section = $('challengeSection');
+  const container = $('challengeCards');
+  const accounts = getRelevantAccounts().filter(a =>
+    (a.account_type === 'challenge' || a.account_type === 'verification') && a.profit_target_pct
+  );
+
+  if (accounts.length === 0) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  container.innerHTML = '';
+
+  accounts.forEach(acc => {
+    const accTrades = allTrades.filter(t => t.account_id === acc.id && t.status === 'closed');
+    const totalProfit = accTrades.reduce((s, t) => s + (Number(t.profit_amount) || 0), 0);
+    const target = Number(acc.starting_balance) * (acc.profit_target_pct / 100);
+    const progressPct = target > 0 ? Math.max(0, Math.min((totalProfit / target) * 100, 100)) : 0;
+
+    const card = document.createElement('div');
+    card.className = 'risk-card';
+    card.innerHTML = `
+      <div class="risk-card-header">
+        <div class="risk-card-title"><span class="acc-dot-inline" style="background:${acc.color}"></span>${escapeHtml(acc.name)}</div>
+        <span class="risk-card-status ${progressPct >= 100 ? 'ok' : 'warn'}">${accountTypeLabelLocal(acc.account_type)}</span>
+      </div>
+      <div class="challenge-progress-label">
+        <span>${totalProfit.toFixed(2)} ${acc.currency} von ${target.toFixed(2)} ${acc.currency} Ziel</span>
+        <span style="font-family:var(--font-mono); font-weight:600;">${progressPct.toFixed(0)}%</span>
+      </div>
+      <div class="challenge-bar"><div class="challenge-bar-fill" style="width:${progressPct}%"></div></div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function accountTypeLabelLocal(type) {
+  return { challenge: 'Challenge', verification: 'Verification' }[type] || type;
 }
 
 // ---------- Gesamtbilanz (nur bei "Alle Accounts") ----------

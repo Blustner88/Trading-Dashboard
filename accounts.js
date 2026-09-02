@@ -141,6 +141,13 @@ function buildManagerModal() {
           </div>
           <div class="field"><label>Farbe</label><input type="color" id="acc_color" value="#6366f1" style="padding:2px; height:38px;" /></div>
         </div>
+        <hr class="form-divider" />
+        <p class="section-label">Propfirm-Regeln (optional, für Drawdown-Tracker & Challenge-Fortschritt)</p>
+        <div class="form-row three">
+          <div class="field"><label>Daily Loss Limit (%)</label><input type="number" step="0.1" id="acc_daily_loss" placeholder="z.B. 5" /></div>
+          <div class="field"><label>Max Drawdown (%)</label><input type="number" step="0.1" id="acc_max_dd" placeholder="z.B. 10" /></div>
+          <div class="field"><label>Profit Target (%)</label><input type="number" step="0.1" id="acc_profit_target" placeholder="z.B. 8" /></div>
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn-ghost" id="accDeleteBtn" style="display:none;">Löschen</button>
           <div class="modal-actions-right">
@@ -204,6 +211,9 @@ function showAccForm(account, hide = false) {
   document.getElementById('acc_currency').value = account ? account.currency : 'USD';
   document.getElementById('acc_status').value = account ? account.status : 'active';
   document.getElementById('acc_color').value = account ? account.color : '#6366f1';
+  document.getElementById('acc_daily_loss').value = account && account.daily_loss_limit_pct !== null ? account.daily_loss_limit_pct : '';
+  document.getElementById('acc_max_dd').value = account && account.max_drawdown_pct !== null ? account.max_drawdown_pct : '';
+  document.getElementById('acc_profit_target').value = account && account.profit_target_pct !== null ? account.profit_target_pct : '';
   document.getElementById('accDeleteBtn').style.display = account ? 'block' : 'none';
 }
 
@@ -218,6 +228,9 @@ async function handleAccSave(e) {
     currency: document.getElementById('acc_currency').value.trim() || 'USD',
     status: document.getElementById('acc_status').value,
     color: document.getElementById('acc_color').value,
+    daily_loss_limit_pct: document.getElementById('acc_daily_loss').value ? parseFloat(document.getElementById('acc_daily_loss').value) : null,
+    max_drawdown_pct: document.getElementById('acc_max_dd').value ? parseFloat(document.getElementById('acc_max_dd').value) : null,
+    profit_target_pct: document.getElementById('acc_profit_target').value ? parseFloat(document.getElementById('acc_profit_target').value) : null,
   };
 
   if (id) {

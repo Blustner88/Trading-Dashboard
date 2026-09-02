@@ -36,6 +36,31 @@
 
   <main class="dash-main">
 
+    <!-- Steuerjahr Mini-Widget -->
+    <section class="panel tax-widget">
+      <div class="panel-header">
+        <h3>Steuerjahr <span id="taxYearLabel"></span></h3>
+        <a href="accounting.html" class="btn-ghost sm">→ Zur Buchhaltung</a>
+      </div>
+      <div class="tax-widget-row">
+        <div class="tax-mini"><span class="kpi-label">Einnahmen (Payouts)</span><span class="kpi-value pos" id="taxIncome">–</span></div>
+        <div class="tax-mini"><span class="kpi-label">Ausgaben</span><span class="kpi-value neg" id="taxExpenses">–</span></div>
+        <div class="tax-mini"><span class="kpi-label">Ergebnis</span><span class="kpi-value" id="taxResult">–</span></div>
+      </div>
+    </section>
+
+    <!-- Propfirm Drawdown-Tracker -->
+    <section class="panel" id="drawdownSection" style="display:none;">
+      <div class="panel-header"><h3>Drawdown-Tracker (Propfirm-Limits)</h3></div>
+      <div class="risk-cards" id="drawdownCards"></div>
+    </section>
+
+    <!-- Challenge-Fortschritt -->
+    <section class="panel" id="challengeSection" style="display:none;">
+      <div class="panel-header"><h3>Challenge-Fortschritt</h3></div>
+      <div class="risk-cards" id="challengeCards"></div>
+    </section>
+
     <!-- KPI cards -->
     <section class="kpi-grid" id="kpiGrid">
       <div class="kpi-card">
