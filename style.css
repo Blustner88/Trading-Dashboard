@@ -30,9 +30,10 @@ body {
   color: var(--text);
   font-family: var(--font-body);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
-.app { max-width: 1180px; margin: 0 auto; padding: 0 24px 64px; }
+.app { max-width: 1180px; margin: 0 auto; padding: 0 24px 64px; overflow-x: hidden; }
 
 /* Topbar */
 .topbar {

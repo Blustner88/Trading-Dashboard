@@ -79,6 +79,17 @@
 .dash-empty { text-align: center; padding: 60px 20px; color: var(--text-faint); font-size: 14px; }
 .acc-dot-inline { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 7px; vertical-align: middle; }
 
+.kpi-grid-4, .kpi-grid-3 { grid-template-columns: repeat(4, 1fr); }
+.kpi-grid-3 { grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 720px) {
+  .kpi-grid-4, .kpi-grid-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 420px) {
+  .kpi-grid-4, .kpi-grid-3 { grid-template-columns: 1fr; }
+}
+
+.tax-widget-row { flex-wrap: wrap; row-gap: 12px; }
+
 .tax-widget { background: linear-gradient(135deg, rgba(99,102,241,0.06), var(--surface)); }
 .tax-widget-row { display: flex; gap: 24px; }
 .tax-mini { display: flex; flex-direction: column; gap: 4px; }

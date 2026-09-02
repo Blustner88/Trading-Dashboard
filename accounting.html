@@ -22,8 +22,8 @@
       <span class="brand-text">Trading Journal</span>
     </div>
     <nav class="tabnav">
-      <a href="index.html" class="tab-link">Journal</a>
       <a href="dashboard.html" class="tab-link">Dashboard</a>
+      <a href="index.html" class="tab-link">Journal</a>
       <a href="planning.html" class="tab-link">Planung</a>
       <a href="accounting.html" class="tab-link active">Steuer</a>
     </nav>
@@ -59,17 +59,19 @@
         <h3>Propfirm-Payouts (Krypto)</h3>
         <button class="btn-primary sm" id="addPayoutBtn">+ Payout erfassen</button>
       </div>
-      <table class="breakdown-table" id="payoutTable">
+      <div class="table-scroll">
+<table class="breakdown-table" id="payoutTable">
         <thead><tr><th>Datum</th><th>Account</th><th>Betrag Krypto</th><th>Kurs</th><th>EUR-Wert</th><th>Status</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
+      </div>
     </section>
 
     <!-- Ergebnis -->
     <section class="panel">
       <div class="panel-header"><h3>Ergebnisrechnung</h3></div>
       <p class="import-hint" style="margin-bottom:14px;">Einnahmen = Summe der Payouts (EUR-Gegenwert bei Zufluss) im Zeitraum — nicht der reine Buchgewinn im Propfirm-Account.</p>
-      <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+      <div class="kpi-grid kpi-grid-3">
         <div class="kpi-card">
           <span class="kpi-label">Einnahmen (Payouts, EUR)</span>
           <span class="kpi-value pos" id="sumIncome">–</span>
@@ -90,19 +92,23 @@
       <section class="panel">
         <div class="panel-header"><h3>Buchgewinn nach Account (Referenz)</h3></div>
         <p class="import-hint" style="margin-bottom:10px;">Trading-Ergebnis auf der Plattform — noch nicht ausgezahlt, daher nicht Teil der Ergebnisrechnung.</p>
-        <table class="breakdown-table" id="incomeTable">
+        <div class="table-scroll">
+<table class="breakdown-table" id="incomeTable">
           <thead><tr><th>Account</th><th>Typ</th><th>Trading-Ergebnis</th></tr></thead>
           <tbody></tbody>
         </table>
+      </div>
       </section>
 
       <!-- Expenses breakdown -->
       <section class="panel">
         <div class="panel-header"><h3>Ausgaben nach Kategorie</h3></div>
-        <table class="breakdown-table" id="expenseCategoryTable">
+        <div class="table-scroll">
+<table class="breakdown-table" id="expenseCategoryTable">
           <thead><tr><th>Kategorie</th><th>Summe</th></tr></thead>
           <tbody></tbody>
         </table>
+      </div>
       </section>
     </div>
 
@@ -115,10 +121,12 @@
           <button class="btn-primary sm" id="addExpenseBtn">+ Ausgabe</button>
         </div>
       </div>
-      <table class="breakdown-table" id="expenseListTable">
+      <div class="table-scroll">
+<table class="breakdown-table" id="expenseListTable">
         <thead><tr><th>Datum</th><th>Kategorie</th><th>Beschreibung</th><th>Betrag</th><th></th></tr></thead>
         <tbody></tbody>
       </table>
+      </div>
     </section>
 
   </main>
