@@ -3,6 +3,7 @@ import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts, getAc
 const $ = (id) => document.getElementById(id);
 
 let allTrades = [];
+let allPayouts = [];
 let currentRange = '30';
 
 async function init() {
@@ -34,6 +35,10 @@ async function loadTrades() {
     return;
   }
   allTrades = data || [];
+
+  const { data: payouts } = await supabase.from('payouts').select('*');
+  allPayouts = payouts || [];
+
   render();
 }
 
@@ -73,13 +78,14 @@ function renderOverallBalance() {
   const tbody = document.querySelector('#overallBalanceTable tbody');
   tbody.innerHTML = '';
 
-  let grandStart = 0, grandProfit = 0, grandR = 0;
+  let grandStart = 0, grandProfit = 0, grandR = 0, grandPayouts = 0;
 
   const rows = accounts.map(acc => {
     const accTrades = allTrades.filter(t => t.account_id === acc.id);
     const closed = accTrades.filter(t => t.status === 'closed' && t.r_multiple !== null && t.r_multiple !== undefined);
     const totalR = closed.reduce((s, t) => s + Number(t.r_multiple), 0);
     const totalProfit = accTrades.reduce((s, t) => s + (Number(t.profit_amount) || 0), 0);
+    const totalPayouts = allPayouts.filter(p => p.account_id === acc.id).reduce((s, p) => s + Number(p.amount_eur), 0);
     const wins = closed.filter(t => t.r_multiple > 0).length;
     const winrate = closed.length ? Math.round((wins / closed.length) * 100) : null;
     const currentBalance = Number(acc.starting_balance) + totalProfit;
@@ -87,12 +93,13 @@ function renderOverallBalance() {
     grandStart += Number(acc.starting_balance);
     grandProfit += totalProfit;
     grandR += totalR;
+    grandPayouts += totalPayouts;
 
-    return { acc, totalR, totalProfit, winrate, currentBalance, count: closed.length };
+    return { acc, totalR, totalProfit, totalPayouts, winrate, currentBalance, count: closed.length };
   });
 
   if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="font-family:var(--font-body); color:var(--text-faint); text-align:center; padding:20px 0;">Noch keine Konten angelegt</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="font-family:var(--font-body); color:var(--text-faint); text-align:center; padding:20px 0;">Noch keine Konten angelegt</td></tr>`;
   }
 
   rows.forEach(r => {
@@ -103,6 +110,7 @@ function renderOverallBalance() {
       <td>${r.winrate !== null ? r.winrate + '%' : '–'}</td>
       <td class="${r.totalR >= 0 ? 'pos' : 'neg'}">${r.totalR >= 0 ? '+' : ''}${r.totalR.toFixed(2)}R</td>
       <td class="${r.totalProfit >= 0 ? 'pos' : 'neg'}">${r.totalProfit >= 0 ? '+' : ''}${r.totalProfit.toFixed(2)} ${r.acc.currency}</td>
+      <td class="pos">${r.totalPayouts.toFixed(2)} €</td>
       <td>${r.currentBalance.toFixed(2)} ${r.acc.currency}</td>
     `;
     tbody.appendChild(tr);
@@ -112,6 +120,7 @@ function renderOverallBalance() {
   document.getElementById('grandTotalR').className = `kpi-value ${grandR >= 0 ? 'pos' : 'neg'}`;
   document.getElementById('grandTotalProfit').textContent = `${grandProfit >= 0 ? '+' : ''}${grandProfit.toFixed(2)}`;
   document.getElementById('grandTotalProfit').className = `kpi-value ${grandProfit >= 0 ? 'pos' : 'neg'}`;
+  document.getElementById('grandTotalPayouts').textContent = `${grandPayouts.toFixed(2)} €`;
   document.getElementById('grandTotalBalance').textContent = (grandStart + grandProfit).toFixed(2);
 }
 

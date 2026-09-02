@@ -13,6 +13,7 @@ const CATEGORY_LABELS = {
 
 let allTrades = [];
 let allExpenses = [];
+let allPayouts = [];
 let currentYear = new Date().getFullYear();
 let currentPeriod = 'year'; // year | q1..q4 | month
 let currentMonth = new Date().getMonth() + 1;
@@ -64,11 +65,30 @@ function bindEvents() {
 
   $('exportCsvBtn').onclick = exportCsv;
 
+  $('addPayoutBtn').onclick = () => openPayoutModal();
+  $('payoutModalClose').onclick = closePayoutModal;
+  $('po_cancelBtn').onclick = closePayoutModal;
+  $('payoutOverlay').onclick = (e) => { if (e.target.id === 'payoutOverlay') closePayoutModal(); };
+  $('payoutForm').onsubmit = handlePayoutSave;
+  $('po_deleteBtn').onclick = handlePayoutDelete;
+  $('po_receipt').onchange = (e) => previewFileInto(e.target.files[0], 'poReceiptPreview');
+  $('po_crypto_amount').oninput = updatePayoutEurPreview;
+  $('po_rate').oninput = updatePayoutEurPreview;
+
   window.addEventListener('account-changed', loadData);
 }
 
+function updatePayoutEurPreview() {
+  const amt = parseFloat($('po_crypto_amount').value) || 0;
+  const rate = parseFloat($('po_rate').value) || 0;
+  $('po_eur_computed').value = (amt * rate).toFixed(2) + ' €';
+}
+
 function previewFile(file) {
-  const target = $('expReceiptPreview');
+  previewFileInto(file, 'expReceiptPreview');
+}
+function previewFileInto(file, targetId) {
+  const target = $(targetId);
   target.innerHTML = '';
   if (!file || !file.type.startsWith('image/')) return;
   const img = document.createElement('img');
@@ -83,7 +103,16 @@ async function loadData() {
   const { data: expenses } = await supabase.from('business_expenses').select('*').order('expense_date', { ascending: false });
   allExpenses = expenses || [];
 
+  const { data: payouts } = await supabase.from('payouts').select('*').order('payout_date', { ascending: false });
+  allPayouts = payouts || [];
+
+  populatePayoutAccountSelect();
   render();
+}
+
+function populatePayoutAccountSelect() {
+  const sel = $('po_account');
+  sel.innerHTML = getAccounts().map(a => `<option value="${a.id}">${a.name}</option>`).join('');
 }
 
 function getPeriodRange() {
@@ -111,25 +140,66 @@ function render() {
     const d = new Date(e.expense_date + 'T00:00:00');
     return d >= start && d < end;
   });
+  const periodPayouts = allPayouts.filter(p => {
+    const d = new Date(p.payout_date + 'T00:00:00');
+    return d >= start && d < end;
+  });
 
-  renderIncome(periodTrades);
+  renderPayouts(periodPayouts);
+  renderBookProfit(periodTrades);
   renderExpenseCategories(periodExpenses);
   renderExpenseList(periodExpenses);
-  renderResult(periodTrades, periodExpenses);
+  renderResult(periodPayouts, periodExpenses);
 }
 
-function renderIncome(periodTrades) {
+function renderPayouts(periodPayouts) {
+  const tbody = document.querySelector('#payoutTable tbody');
+  tbody.innerHTML = '';
+
+  if (periodPayouts.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="font-family:var(--font-body); color:var(--text-faint); text-align:center; padding:16px 0;">Keine Payouts im Zeitraum</td></tr>`;
+    return;
+  }
+
+  const accounts = getAccounts();
+  periodPayouts.forEach(p => {
+    const acc = accounts.find(a => a.id === p.account_id);
+    const dateStr = new Date(p.payout_date + 'T00:00:00').toLocaleDateString('de-DE');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${dateStr}</td>
+      <td>${acc ? escapeHtml(acc.name) : '—'}</td>
+      <td>${Number(p.crypto_amount)} ${escapeHtml(p.crypto_currency)}</td>
+      <td>${Number(p.eur_rate).toFixed(4)}</td>
+      <td class="pos">${Number(p.amount_eur).toFixed(2)} €</td>
+      <td>${payoutStatusLabel(p.status)}</td>
+      <td class="expense-row-actions">
+        <button class="icon-btn" data-action="edit-payout" data-id="${p.id}">✎</button>
+        ${p.receipt_url ? `<a class="icon-btn" href="${p.receipt_url}" target="_blank" rel="noopener">📎</a>` : ''}
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('[data-action="edit-payout"]').forEach(btn => {
+    btn.onclick = () => openPayoutModal(allPayouts.find(p => p.id === btn.dataset.id));
+  });
+}
+
+function payoutStatusLabel(s) {
+  return { received: 'Erhalten', converted_to_eur: 'In EUR', pending: 'Ausstehend' }[s] || s;
+}
+
+function renderBookProfit(periodTrades) {
   const accounts = getAccounts();
   const tbody = document.querySelector('#incomeTable tbody');
   tbody.innerHTML = '';
 
-  let grandTotal = 0;
   const rows = accounts.map(acc => {
     const accTrades = periodTrades.filter(t => t.account_id === acc.id);
     const sum = accTrades.reduce((s, t) => s + (Number(t.profit_amount) || 0), 0);
-    grandTotal += sum;
     return { acc, sum };
-  }).filter(r => r.sum !== 0 || getAccounts().length <= 6);
+  });
 
   if (rows.length === 0) {
     tbody.innerHTML = `<tr><td colspan="3" style="font-family:var(--font-body); color:var(--text-faint); text-align:center; padding:16px 0;">Keine Konten</td></tr>`;
@@ -144,9 +214,6 @@ function renderIncome(periodTrades) {
     `;
     tbody.appendChild(tr);
   });
-
-  $('sumIncome').textContent = `${grandTotal >= 0 ? '+' : ''}${grandTotal.toFixed(2)} €`;
-  return grandTotal;
 }
 
 function accountTypeLabel(type) {
@@ -205,11 +272,12 @@ function renderExpenseList(periodExpenses) {
   });
 }
 
-function renderResult(periodTrades, periodExpenses) {
-  const income = periodTrades.reduce((s, t) => s + (Number(t.profit_amount) || 0), 0);
+function renderResult(periodPayouts, periodExpenses) {
+  const income = periodPayouts.reduce((s, p) => s + Number(p.amount_eur), 0);
   const expenses = periodExpenses.reduce((s, e) => s + Number(e.amount), 0);
   const result = income - expenses;
 
+  $('sumIncome').textContent = `+${income.toFixed(2)} €`;
   $('sumExpenses').textContent = `-${expenses.toFixed(2)} €`;
   $('sumResult').textContent = `${result >= 0 ? '+' : ''}${result.toFixed(2)} €`;
   $('sumResult').className = `kpi-value ${result >= 0 ? 'pos' : 'neg'}`;
@@ -291,19 +359,109 @@ async function handleExpenseDelete() {
   await loadData();
 }
 
+// ---------- Payout modal ----------
+function openPayoutModal(payout = null) {
+  $('payoutForm').reset();
+  $('poReceiptPreview').innerHTML = '';
+  $('po_id').value = payout ? payout.id : '';
+  $('payoutModalTitle').textContent = payout ? 'Payout bearbeiten' : 'Payout erfassen';
+  $('po_deleteBtn').style.display = payout ? 'block' : 'none';
+
+  if (payout) {
+    $('po_account').value = payout.account_id;
+    $('po_date').value = payout.payout_date;
+    $('po_currency').value = payout.crypto_currency;
+    $('po_crypto_amount').value = payout.crypto_amount;
+    $('po_rate').value = payout.eur_rate;
+    $('po_destination').value = payout.destination || '';
+    $('po_status').value = payout.status;
+    $('po_notes').value = payout.notes || '';
+    updatePayoutEurPreview();
+    if (payout.receipt_url) {
+      const img = document.createElement('img');
+      img.src = payout.receipt_url;
+      $('poReceiptPreview').appendChild(img);
+    }
+  } else {
+    $('po_currency').value = 'USDT';
+    $('po_status').value = 'received';
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    $('po_date').value = d.toISOString().slice(0, 10);
+    $('po_eur_computed').value = '0.00 €';
+  }
+
+  $('payoutOverlay').classList.add('visible');
+}
+
+function closePayoutModal() {
+  $('payoutOverlay').classList.remove('visible');
+}
+
+async function handlePayoutSave(e) {
+  e.preventDefault();
+  const id = $('po_id').value;
+
+  let receiptUrl = null;
+  const file = $('po_receipt').files[0];
+  if (file) {
+    const ext = file.name.split('.').pop();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('business-receipts').upload(path, file);
+    if (!upErr) {
+      const { data } = supabase.storage.from('business-receipts').getPublicUrl(path);
+      receiptUrl = data.publicUrl;
+    }
+  }
+
+  const cryptoAmount = parseFloat($('po_crypto_amount').value);
+  const rate = parseFloat($('po_rate').value);
+
+  const payload = {
+    account_id: $('po_account').value,
+    payout_date: $('po_date').value,
+    crypto_currency: $('po_currency').value.trim().toUpperCase(),
+    crypto_amount: cryptoAmount,
+    eur_rate: rate,
+    amount_eur: Math.round(cryptoAmount * rate * 100) / 100,
+    destination: $('po_destination').value || null,
+    status: $('po_status').value,
+    notes: $('po_notes').value || null,
+  };
+  if (receiptUrl) payload.receipt_url = receiptUrl;
+
+  if (id) {
+    await supabase.from('payouts').update(payload).eq('id', id);
+  } else {
+    await supabase.from('payouts').insert(payload);
+  }
+
+  closePayoutModal();
+  await loadData();
+}
+
+async function handlePayoutDelete() {
+  const id = $('po_id').value;
+  if (!id) return;
+  if (!confirm('Diesen Payout wirklich löschen?')) return;
+  await supabase.from('payouts').delete().eq('id', id);
+  closePayoutModal();
+  await loadData();
+}
+
 // ---------- CSV export ----------
 function exportCsv() {
   const { start, end } = getPeriodRange();
-  const periodTrades = allTrades.filter(t => { const d = new Date(t.entry_date); return d >= start && d < end; });
+  const periodPayouts = allPayouts.filter(p => { const d = new Date(p.payout_date + 'T00:00:00'); return d >= start && d < end; });
   const periodExpenses = allExpenses.filter(e => { const d = new Date(e.expense_date + 'T00:00:00'); return d >= start && d < end; });
   const accounts = getAccounts();
 
   const lines = [];
   lines.push('Typ;Datum;Kategorie/Account;Beschreibung;Betrag(EUR)');
 
-  periodTrades.forEach(t => {
-    const acc = accounts.find(a => a.id === t.account_id);
-    lines.push(`Einnahme;${t.entry_date.slice(0,10)};${acc ? acc.name : '—'};Trading-Ergebnis;${(Number(t.profit_amount)||0).toFixed(2)}`);
+  periodPayouts.forEach(p => {
+    const acc = accounts.find(a => a.id === p.account_id);
+    lines.push(`Einnahme (Payout);${p.payout_date};${acc ? acc.name : '—'};${p.crypto_amount} ${p.crypto_currency} @ ${p.eur_rate};${Number(p.amount_eur).toFixed(2)}`);
   });
   periodExpenses.forEach(e => {
     lines.push(`Ausgabe;${e.expense_date};${CATEGORY_LABELS[e.category] || e.category};${e.description.replace(/;/g, ',')};-${Number(e.amount).toFixed(2)}`);

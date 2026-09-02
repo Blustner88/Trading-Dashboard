@@ -69,14 +69,18 @@
       <div class="panel-header">
         <h3>Gesamtbilanz — alle Accounts</h3>
       </div>
-      <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 16px;">
+      <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 16px;">
         <div class="kpi-card">
           <span class="kpi-label">Total R (alle Accounts)</span>
           <span class="kpi-value" id="grandTotalR">–</span>
         </div>
         <div class="kpi-card">
-          <span class="kpi-label">Total Profit ($)</span>
+          <span class="kpi-label">Total Buchgewinn ($)</span>
           <span class="kpi-value" id="grandTotalProfit">–</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Ausgezahlt gesamt (€)</span>
+          <span class="kpi-value" id="grandTotalPayouts">–</span>
         </div>
         <div class="kpi-card">
           <span class="kpi-label">Kombinierter Kontostand</span>
@@ -84,7 +88,7 @@
         </div>
       </div>
       <table class="breakdown-table" id="overallBalanceTable">
-        <thead><tr><th>Konto</th><th>Trades</th><th>Win-Rate</th><th>Total R</th><th>Profit</th><th>Kontostand</th></tr></thead>
+        <thead><tr><th>Konto</th><th>Trades</th><th>Win-Rate</th><th>Total R</th><th>Buchgewinn</th><th>Ausgezahlt (€)</th><th>Kontostand</th></tr></thead>
         <tbody></tbody>
       </table>
     </section>
