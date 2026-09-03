@@ -23,6 +23,7 @@
 .kpi-value.neutral { color: var(--text); }
 
 .btn-primary.sm { padding: 7px 14px; font-size: 12.5px; }
+.year-end-panel { background: linear-gradient(135deg, rgba(99,102,241,0.06), var(--surface)); }
 
 .expense-row-actions { display: flex; gap: 6px; }
 .icon-btn {

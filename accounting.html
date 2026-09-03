@@ -11,10 +11,11 @@
 <link rel="stylesheet" href="dashboard.css" />
 <link rel="stylesheet" href="planning.css" />
 <link rel="stylesheet" href="accounting.css" />
+<link rel="stylesheet" href="invoices.css" />
 </head>
 <body>
 
-<div class="app">
+<div class="app no-print">
 
   <header class="topbar">
     <div class="brand">
@@ -52,6 +53,15 @@
         </div>
         <select id="monthSelect" style="display:none;"></select>
       </div>
+    </section>
+
+    <!-- Jahresabschluss-Export -->
+    <section class="panel year-end-panel">
+      <div class="panel-header">
+        <h3>Jahresabschluss</h3>
+      </div>
+      <p class="import-hint" style="margin-bottom:12px;">Bündelt alle Payouts, Betriebsausgaben und ausgestellten Rechnungen des gewählten Jahres zu einem Bericht — zum Ausdrucken/Speichern für deinen Steuerberater.</p>
+      <button class="btn-primary" id="generateYearEndBtn">Jahresabschluss <span id="yearEndYearLabel"></span> erstellen</button>
     </section>
 
     <!-- Payouts -->
@@ -260,6 +270,13 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Year-end report print area -->
+<div id="yearEndPrintArea" class="invoice-print-area"></div>
+<div class="print-controls no-print" id="yearEndPrintControls" style="display:none;">
+  <button class="btn-ghost sm" id="closeYearEndBtn">Schließen</button>
+  <button class="btn-primary sm" id="doYearEndPrintBtn">Als PDF drucken/speichern</button>
+</div>
 
 <script type="module" src="accounting.js"></script>
 </body>

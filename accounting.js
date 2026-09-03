@@ -14,6 +14,7 @@ const CATEGORY_LABELS = {
 let allTrades = [];
 let allExpenses = [];
 let allPayouts = [];
+let allInvoices = [];
 let currentYear = new Date().getFullYear();
 let currentPeriod = 'year'; // year | q1..q4 | month
 let currentMonth = new Date().getMonth() + 1;
@@ -33,7 +34,13 @@ function buildYearSelect() {
   for (let y = nowYear; y >= nowYear - 5; y--) years.push(y);
   sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
   sel.value = currentYear;
-  sel.onchange = () => { currentYear = parseInt(sel.value, 10); render(); };
+  sel.onchange = () => { currentYear = parseInt(sel.value, 10); render(); updateYearEndLabel(); };
+  updateYearEndLabel();
+}
+
+function updateYearEndLabel() {
+  const el = $('yearEndYearLabel');
+  if (el) el.textContent = currentYear;
 }
 
 function buildMonthSelect() {
@@ -64,6 +71,9 @@ function bindEvents() {
   $('exp_receipt').onchange = (e) => previewFile(e.target.files[0]);
 
   $('exportCsvBtn').onclick = exportCsv;
+  $('generateYearEndBtn').onclick = generateYearEndReport;
+  $('closeYearEndBtn').onclick = closeYearEndReport;
+  $('doYearEndPrintBtn').onclick = () => window.print();
 
   $('addPayoutBtn').onclick = () => openPayoutModal();
   $('payoutModalClose').onclick = closePayoutModal;
@@ -105,6 +115,9 @@ async function loadData() {
 
   const { data: payouts } = await supabase.from('payouts').select('*').order('payout_date', { ascending: false });
   allPayouts = payouts || [];
+
+  const { data: invoicesData } = await supabase.from('invoices').select('*, clients(name)').order('invoice_date');
+  allInvoices = invoicesData || [];
 
   populatePayoutAccountSelect();
   render();
@@ -489,6 +502,113 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+// ---------- Jahresabschluss-Exportpaket ----------
+function generateYearEndReport() {
+  const start = new Date(currentYear, 0, 1), end = new Date(currentYear + 1, 0, 1);
+  const yearPayouts = allPayouts.filter(p => { const d = new Date(p.payout_date + 'T00:00:00'); return d >= start && d < end; });
+  const yearExpenses = allExpenses.filter(e => { const d = new Date(e.expense_date + 'T00:00:00'); return d >= start && d < end; });
+  const yearInvoices = allInvoices.filter(i => { const d = new Date(i.invoice_date + 'T00:00:00'); return d >= start && d < end; });
+
+  const totalIncome = yearPayouts.reduce((s, p) => s + Number(p.amount_eur), 0);
+  const totalExpenses = yearExpenses.reduce((s, e) => s + Number(e.amount), 0);
+  const result = totalIncome - totalExpenses;
+
+  // Monthly breakdown
+  const monthNames = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  const monthlyRows = monthNames.map((name, idx) => {
+    const mIncome = yearPayouts.filter(p => new Date(p.payout_date + 'T00:00:00').getMonth() === idx).reduce((s, p) => s + Number(p.amount_eur), 0);
+    const mExpenses = yearExpenses.filter(e => new Date(e.expense_date + 'T00:00:00').getMonth() === idx).reduce((s, e) => s + Number(e.amount), 0);
+    return { name, mIncome, mExpenses, mResult: mIncome - mExpenses };
+  });
+
+  const accounts = getLiveAccounts();
+
+  const payoutRows = yearPayouts.map(p => {
+    const acc = accounts.find(a => a.id === p.account_id) || getAccounts().find(a => a.id === p.account_id);
+    const linkedInvoice = allInvoices.find(i => i.payout_id === p.id);
+    return `<tr>
+      <td>${new Date(p.payout_date + 'T00:00:00').toLocaleDateString('de-DE')}</td>
+      <td>${acc ? escapeHtml(acc.name) : '—'}</td>
+      <td>${p.crypto_amount} ${escapeHtml(p.crypto_currency)}</td>
+      <td>${Number(p.eur_rate).toFixed(4)}</td>
+      <td>${Number(p.amount_eur).toFixed(2)} €</td>
+      <td>${linkedInvoice ? escapeHtml(linkedInvoice.invoice_number) : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  const expenseRows = yearExpenses.map(e => `<tr>
+    <td>${new Date(e.expense_date + 'T00:00:00').toLocaleDateString('de-DE')}</td>
+    <td>${CATEGORY_LABELS[e.category] || e.category}</td>
+    <td>${escapeHtml(e.description)}</td>
+    <td>${Number(e.amount).toFixed(2)} €</td>
+  </tr>`).join('');
+
+  const invoiceRows = yearInvoices.map(i => `<tr>
+    <td>${escapeHtml(i.invoice_number)}</td>
+    <td>${new Date(i.invoice_date + 'T00:00:00').toLocaleDateString('de-DE')}</td>
+    <td>${escapeHtml(i.clients ? i.clients.name : '—')}</td>
+    <td>${(Number(i.unit_price) * Number(i.quantity)).toFixed(2)} ${escapeHtml(i.currency)}</td>
+  </tr>`).join('');
+
+  const monthlyTableRows = monthlyRows.map(m => `<tr>
+    <td>${m.name}</td>
+    <td>${m.mIncome.toFixed(2)} €</td>
+    <td>${m.mExpenses.toFixed(2)} €</td>
+    <td>${m.mResult >= 0 ? '+' : ''}${m.mResult.toFixed(2)} €</td>
+  </tr>`).join('');
+
+  $('yearEndPrintArea').innerHTML = `
+    <div class="invoice-page">
+      <div class="invoice-title" style="margin-top:0;">Jahresübersicht ${currentYear}</div>
+      <p style="font-size:9pt; color:#555;">Erstellt für Prime Atlas Capital am ${new Date().toLocaleDateString('de-DE')} — Zusammenfassung von Payouts, Betriebsausgaben und ausgestellten Rechnungen.</p>
+
+      <div class="invoice-totals" style="margin-top:20px;">
+        <div class="invoice-totals-row"><span>Einnahmen (Payouts, EUR-Zufluss)</span><span>${totalIncome.toFixed(2)} €</span></div>
+        <div class="invoice-totals-row"><span>Betriebsausgaben</span><span>-${totalExpenses.toFixed(2)} €</span></div>
+        <div class="invoice-totals-row grand"><span>Ergebnis</span><span>${result >= 0 ? '+' : ''}${result.toFixed(2)} €</span></div>
+      </div>
+
+      <p style="font-weight:700; margin-top:30px; margin-bottom:8px;">Monatsübersicht</p>
+      <table class="invoice-table">
+        <thead><tr><th>Monat</th><th>Einnahmen</th><th>Ausgaben</th><th>Ergebnis</th></tr></thead>
+        <tbody>${monthlyTableRows}</tbody>
+      </table>
+
+      <p style="font-weight:700; margin-top:30px; margin-bottom:8px;">Payouts (${yearPayouts.length})</p>
+      <table class="invoice-table">
+        <thead><tr><th>Datum</th><th>Account</th><th>Betrag Krypto</th><th>Kurs</th><th>EUR-Wert</th><th>Rechnung</th></tr></thead>
+        <tbody>${payoutRows || '<tr><td colspan="6">Keine Payouts</td></tr>'}</tbody>
+      </table>
+
+      <p style="font-weight:700; margin-top:30px; margin-bottom:8px;">Betriebsausgaben (${yearExpenses.length})</p>
+      <table class="invoice-table">
+        <thead><tr><th>Datum</th><th>Kategorie</th><th>Beschreibung</th><th>Betrag</th></tr></thead>
+        <tbody>${expenseRows || '<tr><td colspan="4">Keine Ausgaben</td></tr>'}</tbody>
+      </table>
+
+      <p style="font-weight:700; margin-top:30px; margin-bottom:8px;">Ausgestellte Rechnungen (${yearInvoices.length})</p>
+      <table class="invoice-table">
+        <thead><tr><th>Nr.</th><th>Datum</th><th>Kunde</th><th>Betrag</th></tr></thead>
+        <tbody>${invoiceRows || '<tr><td colspan="4">Keine Rechnungen</td></tr>'}</tbody>
+      </table>
+
+      <div class="invoice-legal" style="margin-top:30px;">
+        Diese Übersicht dient der Vorbereitung der Steuererklärung und ersetzt keine steuerliche Beratung. Bei Propfirm-Funded-Accounts wurde als Einnahme der EUR-Gegenwert der tatsächlichen Payouts zum Zeitpunkt des Zuflusses angesetzt, nicht der reine Buchgewinn auf der Handelsplattform.
+      </div>
+    </div>
+  `;
+
+  document.querySelector('.app').style.display = 'none';
+  $('yearEndPrintArea').style.display = 'block';
+  $('yearEndPrintControls').style.display = 'flex';
+}
+
+function closeYearEndReport() {
+  document.querySelector('.app').style.display = 'block';
+  $('yearEndPrintArea').style.display = 'none';
+  $('yearEndPrintControls').style.display = 'none';
 }
 
 init();
