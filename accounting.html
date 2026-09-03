@@ -123,6 +123,21 @@
       </section>
     </div>
 
+    <!-- Wiederkehrende Ausgaben -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3>Wiederkehrende Ausgaben</h3>
+        <button class="btn-primary sm" id="addRecurringBtn">+ Vorlage</button>
+      </div>
+      <p class="import-hint" style="margin-bottom:12px;">Einmal anlegen (z.B. TradingView-Abo) — wird beim Öffnen dieser Seite automatisch als monatliche Ausgabe eingetragen, auch rückwirkend.</p>
+      <div class="table-scroll">
+        <table class="breakdown-table" id="recurringTable">
+          <thead><tr><th>Beschreibung</th><th>Kategorie</th><th>Betrag</th><th>Rhythmus</th><th>Status</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- Expenses list -->
     <section class="panel">
       <div class="panel-header">
@@ -262,6 +277,73 @@
         <button type="button" class="btn-ghost" id="po_deleteBtn" style="display:none;">Löschen</button>
         <div class="modal-actions-right">
           <button type="button" class="btn-ghost" id="po_cancelBtn">Abbrechen</button>
+          <button type="submit" class="btn-primary">Speichern</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Recurring Expense Modal -->
+<div class="modal-overlay" id="recurringOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="recurringModalTitle">Wiederkehrende Ausgabe</h2>
+      <button class="modal-close" id="recurringModalClose">✕</button>
+    </div>
+    <form id="recurringForm" class="trade-form">
+      <input type="hidden" id="rec_id" />
+      <div class="field">
+        <label>Beschreibung</label>
+        <input type="text" id="rec_description" required placeholder="z.B. TradingView Abo" />
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Kategorie</label>
+          <select id="rec_category">
+            <option value="propfirm_fees">Propfirm-Gebühren</option>
+            <option value="software_tools" selected>Software/Tools</option>
+            <option value="hardware">Hardware</option>
+            <option value="education">Fortbildung</option>
+            <option value="office_home">Büro/Home-Office</option>
+            <option value="other">Sonstiges</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Betrag (€)</label>
+          <input type="number" step="0.01" id="rec_amount" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Rhythmus</label>
+          <select id="rec_frequency">
+            <option value="monthly">Monatlich</option>
+            <option value="yearly">Jährlich</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Tag im Monat</label>
+          <input type="number" min="1" max="28" id="rec_day" value="1" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Beginn</label>
+          <input type="date" id="rec_start" required />
+        </div>
+        <div class="field">
+          <label>Ende (optional)</label>
+          <input type="date" id="rec_end" />
+        </div>
+      </div>
+      <div class="field">
+        <label><input type="checkbox" id="rec_active" checked style="width:auto; margin-right:8px;" />Aktiv (wird weiter automatisch eingetragen)</label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="rec_deleteBtn" style="display:none;">Löschen</button>
+        <div class="modal-actions-right">
+          <button type="button" class="btn-ghost" id="rec_cancelBtn">Abbrechen</button>
           <button type="submit" class="btn-primary">Speichern</button>
         </div>
       </div>

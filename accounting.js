@@ -15,6 +15,7 @@ let allTrades = [];
 let allExpenses = [];
 let allPayouts = [];
 let allInvoices = [];
+let allRecurring = [];
 let currentYear = new Date().getFullYear();
 let currentPeriod = 'year'; // year | q1..q4 | month
 let currentMonth = new Date().getMonth() + 1;
@@ -75,6 +76,13 @@ function bindEvents() {
   $('closeYearEndBtn').onclick = closeYearEndReport;
   $('doYearEndPrintBtn').onclick = () => window.print();
 
+  $('addRecurringBtn').onclick = () => openRecurringModal();
+  $('recurringModalClose').onclick = closeRecurringModal;
+  $('rec_cancelBtn').onclick = closeRecurringModal;
+  $('recurringOverlay').onclick = (e) => { if (e.target.id === 'recurringOverlay') closeRecurringModal(); };
+  $('recurringForm').onsubmit = saveRecurring;
+  $('rec_deleteBtn').onclick = deleteRecurring;
+
   $('addPayoutBtn').onclick = () => openPayoutModal();
   $('payoutModalClose').onclick = closePayoutModal;
   $('po_cancelBtn').onclick = closePayoutModal;
@@ -110,6 +118,10 @@ async function loadData() {
   const { data: trades } = await supabase.from('trades').select('account_id, entry_date, status, profit_amount').eq('status', 'closed');
   allTrades = trades || [];
 
+  const { data: recurring } = await supabase.from('recurring_expenses').select('*');
+  allRecurring = recurring || [];
+  await generateDueRecurringExpenses();
+
   const { data: expenses } = await supabase.from('business_expenses').select('*').order('expense_date', { ascending: false });
   allExpenses = expenses || [];
 
@@ -120,7 +132,158 @@ async function loadData() {
   allInvoices = invoicesData || [];
 
   populatePayoutAccountSelect();
+  renderRecurringTable();
   render();
+}
+
+// ---------- Recurring expenses: auto-generation ----------
+function safeDayInMonth(year, monthIndex, day) {
+  const lastDay = new Date(year, monthIndex + 1, 0).getDate();
+  return new Date(year, monthIndex, Math.min(day, lastDay));
+}
+
+async function generateDueRecurringExpenses() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const newRows = [];
+  const updates = [];
+
+  for (const rec of allRecurring) {
+    if (!rec.active) continue;
+    const start = new Date(rec.start_date + 'T00:00:00');
+    const end = rec.end_date ? new Date(rec.end_date + 'T00:00:00') : null;
+
+    let cursor;
+    if (rec.last_generated_date) {
+      const last = new Date(rec.last_generated_date + 'T00:00:00');
+      cursor = rec.frequency === 'yearly'
+        ? new Date(last.getFullYear() + 1, last.getMonth(), 1)
+        : new Date(last.getFullYear(), last.getMonth() + 1, 1);
+    } else {
+      cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    }
+
+    let lastGenerated = rec.last_generated_date;
+
+    while (true) {
+      const dueDate = safeDayInMonth(cursor.getFullYear(), cursor.getMonth(), rec.day_of_month);
+      if (dueDate < start) {
+        cursor = rec.frequency === 'yearly' ? new Date(cursor.getFullYear() + 1, cursor.getMonth(), 1) : new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+        continue;
+      }
+      if (dueDate > today) break;
+      if (end && dueDate > end) break;
+
+      newRows.push({
+        expense_date: dueDate.toISOString().slice(0, 10),
+        category: rec.category,
+        description: rec.description,
+        amount: rec.amount,
+        recurring_expense_id: rec.id,
+      });
+      lastGenerated = dueDate.toISOString().slice(0, 10);
+
+      cursor = rec.frequency === 'yearly' ? new Date(cursor.getFullYear() + 1, cursor.getMonth(), 1) : new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    }
+
+    if (lastGenerated !== rec.last_generated_date) {
+      updates.push({ id: rec.id, last_generated_date: lastGenerated });
+    }
+  }
+
+  if (newRows.length > 0) {
+    await supabase.from('business_expenses').insert(newRows);
+  }
+  for (const u of updates) {
+    await supabase.from('recurring_expenses').update({ last_generated_date: u.last_generated_date }).eq('id', u.id);
+    const rec = allRecurring.find(r => r.id === u.id);
+    if (rec) rec.last_generated_date = u.last_generated_date;
+  }
+}
+
+function renderRecurringTable() {
+  const tbody = document.querySelector('#recurringTable tbody');
+  tbody.innerHTML = '';
+  if (allRecurring.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="font-family:var(--font-body); color:var(--text-faint); text-align:center; padding:16px 0;">Noch keine Vorlagen</td></tr>`;
+    return;
+  }
+  allRecurring.forEach(rec => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${escapeHtml(rec.description)}</td>
+      <td>${CATEGORY_LABELS[rec.category] || rec.category}</td>
+      <td class="neg">${Number(rec.amount).toFixed(2)} €</td>
+      <td>${rec.frequency === 'monthly' ? 'Monatlich' : 'Jährlich'} (Tag ${rec.day_of_month})</td>
+      <td>${rec.active ? '<span style="color:var(--profit);">Aktiv</span>' : '<span style="color:var(--text-faint);">Pausiert</span>'}</td>
+      <td class="expense-row-actions"><button class="icon-btn" data-id="${rec.id}">✎</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('[data-id]').forEach(btn => {
+    btn.onclick = () => openRecurringModal(allRecurring.find(r => r.id === btn.dataset.id));
+  });
+}
+
+function openRecurringModal(rec = null) {
+  $('recurringForm').reset();
+  $('rec_id').value = rec ? rec.id : '';
+  $('recurringModalTitle').textContent = rec ? 'Vorlage bearbeiten' : 'Wiederkehrende Ausgabe';
+  $('rec_deleteBtn').style.display = rec ? 'block' : 'none';
+
+  if (rec) {
+    $('rec_description').value = rec.description;
+    $('rec_category').value = rec.category;
+    $('rec_amount').value = rec.amount;
+    $('rec_frequency').value = rec.frequency;
+    $('rec_day').value = rec.day_of_month;
+    $('rec_start').value = rec.start_date;
+    $('rec_end').value = rec.end_date || '';
+    $('rec_active').checked = rec.active;
+  } else {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    $('rec_start').value = d.toISOString().slice(0, 10);
+    $('rec_day').value = new Date().getDate() > 28 ? 28 : new Date().getDate();
+    $('rec_active').checked = true;
+  }
+  $('recurringOverlay').classList.add('visible');
+}
+
+function closeRecurringModal() {
+  $('recurringOverlay').classList.remove('visible');
+}
+
+async function saveRecurring(e) {
+  e.preventDefault();
+  const id = $('rec_id').value;
+  const payload = {
+    description: $('rec_description').value.trim(),
+    category: $('rec_category').value,
+    amount: parseFloat($('rec_amount').value),
+    frequency: $('rec_frequency').value,
+    day_of_month: parseInt($('rec_day').value, 10),
+    start_date: $('rec_start').value,
+    end_date: $('rec_end').value || null,
+    active: $('rec_active').checked,
+  };
+
+  if (id) {
+    await supabase.from('recurring_expenses').update(payload).eq('id', id);
+  } else {
+    await supabase.from('recurring_expenses').insert(payload);
+  }
+  closeRecurringModal();
+  await loadData();
+}
+
+async function deleteRecurring() {
+  const id = $('rec_id').value;
+  if (!id) return;
+  if (!confirm('Vorlage löschen? Bereits erzeugte Ausgaben bleiben erhalten, es werden nur keine neuen mehr generiert.')) return;
+  await supabase.from('recurring_expenses').delete().eq('id', id);
+  closeRecurringModal();
+  await loadData();
 }
 
 function isLiveAccount(acc) {
@@ -278,7 +441,7 @@ function renderExpenseList(periodExpenses) {
     tr.innerHTML = `
       <td>${dateStr}</td>
       <td>${CATEGORY_LABELS[e.category] || e.category}</td>
-      <td>${escapeHtml(e.description)}</td>
+      <td>${escapeHtml(e.description)}${e.recurring_expense_id ? ' <span title="Automatisch generiert" style="color:var(--text-faint);">🔁</span>' : ''}</td>
       <td class="neg">${Number(e.amount).toFixed(2)} €</td>
       <td class="expense-row-actions">
         <button class="icon-btn" data-action="edit" data-id="${e.id}">✎</button>
