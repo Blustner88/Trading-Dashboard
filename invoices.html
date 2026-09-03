@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rechnungen — Trading Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="accounting.css" />
+<link rel="stylesheet" href="invoices.css" />
+</head>
+<body>
+
+<div class="app no-print">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <nav class="tabnav">
+      <a href="dashboard.html" class="tab-link">Dashboard</a>
+      <a href="index.html" class="tab-link">Journal</a>
+      <a href="planning.html" class="tab-link">Planung</a>
+      <a href="accounting.html" class="tab-link">Steuer</a>
+      <a href="invoices.html" class="tab-link active">Rechnungen</a>
+    </nav>
+  </header>
+
+  <main class="dash-main">
+
+    <!-- Firmeneinstellungen -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3>Firmendaten</h3>
+        <button class="btn-ghost sm" id="toggleSettingsBtn">Bearbeiten</button>
+      </div>
+      <div id="settingsView" class="settings-view"></div>
+      <form id="settingsForm" class="trade-form" style="display:none;">
+        <div class="form-row">
+          <div class="field"><label>Firmenname</label><input type="text" id="cs_name" required /></div>
+          <div class="field"><label>Inhaber</label><input type="text" id="cs_owner" required /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Straße/Hausnummer</label><input type="text" id="cs_addr1" required /></div>
+          <div class="field"><label>PLZ/Ort/Land</label><input type="text" id="cs_addr2" required placeholder="71254 Ditzingen, Deutschland" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Telefon</label><input type="text" id="cs_phone" /></div>
+          <div class="field"><label>E-Mail</label><input type="email" id="cs_email" /></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Steuernummer</label><input type="text" id="cs_tax" required /></div>
+          <div class="field"><label>IBAN</label><input type="text" id="cs_iban" /></div>
+        </div>
+        <div class="field"><label>Bank</label><input type="text" id="cs_bank" /></div>
+        <div class="modal-actions">
+          <div></div>
+          <div class="modal-actions-right">
+            <button type="button" class="btn-ghost" id="cancelSettingsBtn">Abbrechen</button>
+            <button type="submit" class="btn-primary">Speichern</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- Kunden -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3>Kunden (Propfirms)</h3>
+        <button class="btn-primary sm" id="addClientBtn">+ Kunde</button>
+      </div>
+      <div class="table-scroll">
+        <table class="breakdown-table" id="clientsTable">
+          <thead><tr><th>Name</th><th>Land</th><th>Kategorie</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Rechnungen -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3>Rechnungen</h3>
+        <button class="btn-primary sm" id="addInvoiceBtn">+ Rechnung erstellen</button>
+      </div>
+      <div class="table-scroll">
+        <table class="breakdown-table" id="invoicesTable">
+          <thead><tr><th>Nr.</th><th>Datum</th><th>Kunde</th><th>Betrag</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Client Modal -->
+<div class="modal-overlay no-print" id="clientOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="clientModalTitle">Kunde erfassen</h2>
+      <button class="modal-close" id="clientModalClose">✕</button>
+    </div>
+    <form id="clientForm" class="trade-form">
+      <input type="hidden" id="cl_id" />
+      <div class="field"><label>Name</label><input type="text" id="cl_name" required placeholder="z.B. FTMO Evaluation Global s.r.o." /></div>
+      <div class="field"><label>Adresse (mehrzeilig)</label><textarea id="cl_address" rows="3" required placeholder="Straße&#10;PLZ Ort&#10;Land"></textarea></div>
+      <div class="form-row">
+        <div class="field"><label>Land</label><input type="text" id="cl_country" required /></div>
+        <div class="field"><label>Kategorie</label>
+          <select id="cl_category">
+            <option value="domestic">Inland (Deutschland)</option>
+            <option value="eu">EU-Ausland</option>
+            <option value="third_country">Drittland (außerhalb EU)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" id="cl_vat_field" style="display:none;"><label>USt-IdNr. des Kunden</label><input type="text" id="cl_vat" /></div>
+      <div class="field"><label>Standard-Leistungsbeschreibung</label><input type="text" id="cl_description" value="Performance Fee Payout" /></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="cl_deleteBtn" style="display:none;">Löschen</button>
+        <div class="modal-actions-right">
+          <button type="button" class="btn-ghost" id="cl_cancelBtn">Abbrechen</button>
+          <button type="submit" class="btn-primary">Speichern</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Invoice Creation Modal -->
+<div class="modal-overlay no-print" id="invoiceOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Rechnung erstellen</h2>
+      <button class="modal-close" id="invoiceModalClose">✕</button>
+    </div>
+    <form id="invoiceForm" class="trade-form">
+      <div class="field">
+        <label>Verknüpfter Payout (optional — füllt Betrag & Kunde automatisch)</label>
+        <select id="inv_payout"><option value="">— kein Payout / manuell —</option></select>
+      </div>
+      <div class="field">
+        <label>Kunde</label>
+        <select id="inv_client" required></select>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Rechnungs-Nr.</label><input type="text" id="inv_number" required /></div>
+        <div class="field"><label>Rechnungsdatum</label><input type="date" id="inv_date" required /></div>
+      </div>
+      <div class="field"><label>Leistungsbeschreibung</label><input type="text" id="inv_description" required /></div>
+      <div class="field"><label>Details (z.B. Auszahlung via USDT, Wallet-Adresse)</label><textarea id="inv_crypto_detail" rows="2"></textarea></div>
+      <div class="form-row">
+        <div class="field"><label>Betrag</label><input type="number" step="0.01" id="inv_amount" required /></div>
+        <div class="field"><label>Währung</label><input type="text" id="inv_currency" value="USD" required /></div>
+      </div>
+      <div class="modal-actions">
+        <div></div>
+        <div class="modal-actions-right">
+          <button type="button" class="btn-ghost" id="inv_cancelBtn">Abbrechen</button>
+          <button type="submit" class="btn-primary">Erstellen & Vorschau</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Printable invoice -->
+<div id="invoicePrintArea" class="invoice-print-area"></div>
+
+<div class="print-controls no-print" id="printControls" style="display:none;">
+  <button class="btn-ghost sm" id="closePrintBtn">Schließen</button>
+  <button class="btn-primary sm" id="doPrintBtn">Als PDF drucken/speichern</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="invoices.js"></script>
+</body>
+</html>

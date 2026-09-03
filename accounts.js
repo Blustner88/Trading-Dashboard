@@ -4,6 +4,12 @@ export const SUPABASE_URL = 'https://rabbtdooayruveribarq.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_CsC9Ji0H9w_Xkbgoy1QtRg_RasuZtuX';
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+let clientsCache = [];
+async function fetchClientsCache() {
+  const { data } = await supabase.from('clients').select('id, name').order('name');
+  clientsCache = data || [];
+}
+
 const STORAGE_KEY = 'td_selected_account';
 let accounts = [];
 let selectedId = localStorage.getItem(STORAGE_KEY) || 'all';
@@ -116,7 +122,10 @@ function buildManagerModal() {
         <input type="hidden" id="acc_id" />
         <div class="field"><label>Name</label><input type="text" id="acc_name" required placeholder="z.B. FTMO 100k #1" /></div>
         <div class="form-row">
-          <div class="field"><label>Propfirm</label><input type="text" id="acc_prop_firm" placeholder="z.B. FTMO" /></div>
+          <div class="field"><label>Propfirm (Freitext)</label><input type="text" id="acc_prop_firm" placeholder="z.B. FTMO" /></div>
+          <div class="field"><label>Kunde für Rechnungen</label><select id="acc_client"><option value="">— keiner —</option></select></div>
+        </div>
+        <div class="form-row">
           <div class="field"><label>Kontotyp</label>
             <select id="acc_type">
               <option value="personal">Personal</option>
@@ -125,9 +134,9 @@ function buildManagerModal() {
               <option value="funded">Funded</option>
             </select>
           </div>
+          <div class="field"><label>Startkapital</label><input type="number" step="0.01" id="acc_balance" value="0" /></div>
         </div>
         <div class="form-row">
-          <div class="field"><label>Startkapital</label><input type="number" step="0.01" id="acc_balance" value="0" /></div>
           <div class="field"><label>Währung</label><input type="text" id="acc_currency" value="USD" /></div>
         </div>
         <div class="form-row">
@@ -169,9 +178,16 @@ function buildManagerModal() {
 }
 
 function openManager() {
+  fetchClientsCache().then(populateClientSelect);
   renderManagerList();
   document.getElementById('accForm').style.display = 'none';
   document.getElementById('accManagerOverlay').classList.add('visible');
+}
+
+function populateClientSelect() {
+  const sel = document.getElementById('acc_client');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— keiner —</option>' + clientsCache.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
 }
 function closeManager() {
   document.getElementById('accManagerOverlay').classList.remove('visible');
@@ -206,6 +222,7 @@ function showAccForm(account, hide = false) {
   document.getElementById('acc_id').value = account ? account.id : '';
   document.getElementById('acc_name').value = account ? account.name : '';
   document.getElementById('acc_prop_firm').value = account ? (account.prop_firm || '') : '';
+  document.getElementById('acc_client').value = account && account.client_id ? account.client_id : '';
   document.getElementById('acc_type').value = account ? account.account_type : 'personal';
   document.getElementById('acc_balance').value = account ? account.starting_balance : 0;
   document.getElementById('acc_currency').value = account ? account.currency : 'USD';
@@ -223,6 +240,7 @@ async function handleAccSave(e) {
   const payload = {
     name: document.getElementById('acc_name').value.trim(),
     prop_firm: document.getElementById('acc_prop_firm').value.trim() || null,
+    client_id: document.getElementById('acc_client').value || null,
     account_type: document.getElementById('acc_type').value,
     starting_balance: parseFloat(document.getElementById('acc_balance').value) || 0,
     currency: document.getElementById('acc_currency').value.trim() || 'USD',
