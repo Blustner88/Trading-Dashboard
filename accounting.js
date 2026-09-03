@@ -110,9 +110,17 @@ async function loadData() {
   render();
 }
 
+function isLiveAccount(acc) {
+  return acc.account_type === 'funded' || acc.account_type === 'personal';
+}
+
+function getLiveAccounts() {
+  return getAccounts().filter(isLiveAccount);
+}
+
 function populatePayoutAccountSelect() {
   const sel = $('po_account');
-  sel.innerHTML = getAccounts().map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  sel.innerHTML = getLiveAccounts().map(a => `<option value="${a.id}">${a.name}</option>`).join('');
 }
 
 function getPeriodRange() {
@@ -161,7 +169,7 @@ function renderPayouts(periodPayouts) {
     return;
   }
 
-  const accounts = getAccounts();
+  const accounts = getLiveAccounts();
   periodPayouts.forEach(p => {
     const acc = accounts.find(a => a.id === p.account_id);
     const dateStr = new Date(p.payout_date + 'T00:00:00').toLocaleDateString('de-DE');
@@ -191,7 +199,7 @@ function payoutStatusLabel(s) {
 }
 
 function renderBookProfit(periodTrades) {
-  const accounts = getAccounts();
+  const accounts = getLiveAccounts();
   const tbody = document.querySelector('#incomeTable tbody');
   tbody.innerHTML = '';
 
