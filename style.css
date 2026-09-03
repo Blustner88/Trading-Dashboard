@@ -47,10 +47,15 @@ body {
 .brand { display: flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 600; font-size: 18px; }
 .brand-mark { color: var(--indigo-bright); font-size: 20px; }
 
-.tabnav { display: flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 3px; }
-.tab-link { color: var(--text-faint); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 7px; }
+.tabnav { display: flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; padding: 3px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; max-width: 100%; min-width: 0; }
+.tabnav::-webkit-scrollbar { display: none; }
+.tab-link { color: var(--text-faint); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 7px; flex-shrink: 0; white-space: nowrap; }
 .tab-link.active { background: var(--indigo); color: #fff; }
 .tab-link:not(.active):hover { color: var(--text); }
+
+@media (max-width: 560px) {
+  .tab-link { padding: 6px 11px; font-size: 12.5px; }
+}
 
 .stats-strip { display: flex; gap: 26px; margin-left: 8px; flex: 1; }
 .stat { display: flex; flex-direction: column; gap: 2px; }
