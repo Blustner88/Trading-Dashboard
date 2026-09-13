@@ -65,6 +65,7 @@ function bindEvents() {
 function showFallbackHint() {
   const el = $('claudeLinkHint');
   if (el) el.style.display = 'block';
+}
 
 function shiftDate(deltaDays) {
   const d = new Date(currentDate + 'T00:00:00');
