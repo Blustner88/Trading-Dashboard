@@ -65,10 +65,21 @@
         <label>Notizen zum Risk-Sentiment</label>
         <textarea id="riskNotes" rows="2" placeholder="z.B. DXY-Trend, Aktienmärkte, Safe-Haven-Flows…"></textarea>
       </div>
-      <div class="field" style="margin-top:12px;">
-        <label>Kalender-Highlights heute</label>
-        <textarea id="calendarNotes" rows="3" placeholder="Relevante News-Events, Uhrzeiten, erwartete Volatilität…"></textarea>
+    </section>
+
+    <!-- Termine -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3>Termine heute</h3>
+        <button class="btn-ghost sm" id="addCalendarRowBtn">+ Termin</button>
       </div>
+      <div class="table-scroll">
+        <table class="calendar-table" id="calendarTable">
+          <thead><tr><th>Zeit</th><th>Währung</th><th>Event</th><th>Impact</th><th>Notizen</th><th></th></tr></thead>
+          <tbody id="calendarRows"></tbody>
+        </table>
+      </div>
+      <p class="empty-hint-sm" id="calendarEmptyHint" style="display:none;">Noch keine Termine erfasst.</p>
     </section>
 
     <!-- Pair-Bias-Tabelle -->
@@ -77,7 +88,22 @@
         <h3>Pair-Bias & Watchlist</h3>
         <button class="btn-ghost sm" id="addPairRowBtn">+ Pair</button>
       </div>
-      <div class="pair-rows" id="pairRows"></div>
+      <div class="bias-group" data-status="ready">
+        <div class="bias-group-header"><span class="status-dot ready"></span>Bereit <span class="group-count" id="countReady">0</span></div>
+        <div class="bias-group-rows" id="groupReady"></div>
+      </div>
+      <div class="bias-group" data-status="forming">
+        <div class="bias-group-header"><span class="status-dot forming"></span>Setup formt sich <span class="group-count" id="countForming">0</span></div>
+        <div class="bias-group-rows" id="groupForming"></div>
+      </div>
+      <div class="bias-group" data-status="watching">
+        <div class="bias-group-header"><span class="status-dot watching"></span>Beobachten <span class="group-count" id="countWatching">0</span></div>
+        <div class="bias-group-rows" id="groupWatching"></div>
+      </div>
+      <div class="bias-group collapsible collapsed" data-status="no_interest">
+        <div class="bias-group-header" id="noInterestToggle"><span class="status-dot no_interest"></span>Kein Interesse <span class="group-count" id="countNoInterest">0</span><span class="collapse-caret">▸</span></div>
+        <div class="bias-group-rows" id="groupNoInterest" style="display:none;"></div>
+      </div>
     </section>
 
     <!-- Geplante Trades -->
