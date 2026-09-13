@@ -39,6 +39,7 @@ function bindEvents() {
       riskSentiment = btn.dataset.value;
       document.querySelectorAll('#riskSegmented .seg-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      applySentimentColor();
     };
   });
 
@@ -75,6 +76,12 @@ function showFallbackHint() {
   if (el) el.style.display = 'block';
 }
 
+function applySentimentColor() {
+  const val = riskSentiment || '';
+  $('marketPanel').dataset.sentiment = val;
+  $('riskNotes').dataset.sentiment = val;
+}
+
 function shiftDate(deltaDays) {
   const d = new Date(currentDate + 'T00:00:00');
   d.setDate(d.getDate() + deltaDays);
@@ -108,6 +115,7 @@ async function loadPlan(dateStr) {
     $('generalNotes').value = plan.general_notes || '';
 
     document.querySelectorAll('#riskSegmented .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === riskSentiment));
+    applySentimentColor();
 
     const calRows = (plan.daily_plan_calendar || []).sort((a, b) => (a.event_time || '').localeCompare(b.event_time || ''));
     calRows.forEach(c => addCalendarRow(c));
@@ -129,6 +137,7 @@ async function loadPlan(dateStr) {
     $('riskNotes').value = '';
     $('generalNotes').value = '';
     document.querySelectorAll('#riskSegmented .seg-btn').forEach(b => b.classList.remove('active'));
+    applySentimentColor();
     DEFAULT_PAIRS.forEach(p => addPairRow({ pair: p, bias: 'neutral', watchlist_status: 'watching', notes: '' }));
     setSaveStatus('Noch kein Plan für diesen Tag.');
   }
@@ -177,31 +186,58 @@ function addPairRow(data) {
   const row = document.createElement('div');
   row.className = 'pair-row';
   row.dataset.status = status;
+  const scoreVal = data.score !== null && data.score !== undefined ? data.score : '';
   row.innerHTML = `
-    <input type="text" class="pair-name" value="${escapeAttr(data.pair || '')}" placeholder="Pair" />
-    <select class="bias-select">
-      <option value="long" ${data.bias === 'long' ? 'selected' : ''}>Long</option>
-      <option value="neutral" ${data.bias === 'neutral' ? 'selected' : ''}>Neutral</option>
-      <option value="short" ${data.bias === 'short' ? 'selected' : ''}>Short</option>
-    </select>
-    <select class="watchlist-select">
-      <option value="watching" ${status === 'watching' ? 'selected' : ''}>Beobachten</option>
-      <option value="forming" ${status === 'forming' ? 'selected' : ''}>Setup formt sich</option>
-      <option value="ready" ${status === 'ready' ? 'selected' : ''}>Bereit</option>
-      <option value="no_interest" ${status === 'no_interest' ? 'selected' : ''}>Kein Interesse</option>
-    </select>
-    <input type="text" class="pair-notes" value="${escapeAttr(data.notes || '')}" placeholder="Confluence-Faktoren, Begründung…" />
-    <button type="button" class="pair-row-remove" title="Entfernen">✕</button>
+    <div class="pair-row-top">
+      <div class="pf-box"><label>Pair</label><input type="text" class="pair-name" value="${escapeAttr(data.pair || '')}" placeholder="Pair" /></div>
+      <div class="pf-box"><label>Richtung</label>
+        <select class="bias-select">
+          <option value="long" ${data.bias === 'long' ? 'selected' : ''}>Long</option>
+          <option value="neutral" ${data.bias === 'neutral' ? 'selected' : ''}>Neutral</option>
+          <option value="short" ${data.bias === 'short' ? 'selected' : ''}>Short</option>
+        </select>
+      </div>
+      <div class="pf-box"><label>Score</label><input type="number" step="1" class="score-input" value="${escapeAttr(String(scoreVal))}" placeholder="±" /></div>
+      <div class="pf-box"><label>Watchlist</label>
+        <select class="watchlist-select">
+          <option value="watching" ${status === 'watching' ? 'selected' : ''}>Beobachten</option>
+          <option value="forming" ${status === 'forming' ? 'selected' : ''}>Setup formt sich</option>
+          <option value="ready" ${status === 'ready' ? 'selected' : ''}>Bereit</option>
+          <option value="no_interest" ${status === 'no_interest' ? 'selected' : ''}>Kein Interesse</option>
+        </select>
+      </div>
+      <div class="pair-row-remove-wrap"><button type="button" class="pair-row-remove" title="Entfernen">✕</button></div>
+    </div>
+    <div class="pf-box"><label>Konfluenz-Faktoren</label><input type="text" class="confluence-input" value="${escapeAttr(data.confluence || '')}" placeholder="z.B. Carry, Seasonality, BoP, COT" /></div>
+    <div class="pf-box"><label>Beschreibung</label><textarea class="pair-description" rows="3" placeholder="Begründung, News-Sentiment, Event-Risiken…">${escapeAttr(data.notes || '')}</textarea></div>
   `;
   row.querySelector('.pair-row-remove').onclick = () => { row.remove(); updateGroupCounts(); refreshBiasChecks(); };
   row.querySelector('.pair-name').oninput = refreshBiasChecks;
-  row.querySelector('.bias-select').onchange = refreshBiasChecks;
+  const biasSelect = row.querySelector('.bias-select');
+  biasSelect.onchange = () => { updateBiasSelectColor(biasSelect); refreshBiasChecks(); };
+  updateBiasSelectColor(biasSelect);
+  const scoreInput = row.querySelector('.score-input');
+  scoreInput.oninput = () => updateScoreColor(scoreInput);
+  updateScoreColor(scoreInput);
   row.querySelector('.watchlist-select').onchange = (e) => {
     row.dataset.status = e.target.value;
     $(GROUP_IDS[e.target.value]).appendChild(row);
     updateGroupCounts();
   };
   $(GROUP_IDS[status]).appendChild(row);
+}
+
+function updateBiasSelectColor(select) {
+  select.classList.remove('bias-long', 'bias-short');
+  if (select.value === 'long') select.classList.add('bias-long');
+  if (select.value === 'short') select.classList.add('bias-short');
+}
+
+function updateScoreColor(input) {
+  input.classList.remove('score-pos', 'score-neg');
+  const v = parseFloat(input.value);
+  if (!isNaN(v) && v > 0) input.classList.add('score-pos');
+  if (!isNaN(v) && v < 0) input.classList.add('score-neg');
 }
 
 function updateGroupCounts() {
@@ -214,22 +250,54 @@ function addTradeRow(data) {
   const row = document.createElement('div');
   row.className = 'trade-plan-row';
   row.innerHTML = `
-    <input type="text" class="pair-name" value="${escapeAttr(data.pair || '')}" placeholder="Pair" />
-    <select class="direction-select">
-      <option value="long" ${data.direction === 'long' ? 'selected' : ''}>Long</option>
-      <option value="short" ${data.direction === 'short' ? 'selected' : ''}>Short</option>
-    </select>
-    <input type="text" class="setup-input" value="${escapeAttr(data.setup_type || '')}" placeholder="Setup-Typ" />
-    <input type="text" class="entry-input" value="${escapeAttr(data.entry_zone || '')}" placeholder="Entry-Zone/Preis" />
-    <input type="text" class="notes-input" value="${escapeAttr(data.notes || '')}" placeholder="Notizen" />
-    <div style="display:flex; align-items:center; gap:6px;">
-      <span class="bias-check-badge unknown">–</span>
-      <button type="button" class="pair-row-remove" title="Entfernen">✕</button>
+    <div class="trade-plan-row-top">
+      <input type="text" class="pair-name" value="${escapeAttr(data.pair || '')}" placeholder="Pair" />
+      <select class="direction-select">
+        <option value="long" ${data.direction === 'long' ? 'selected' : ''}>Long</option>
+        <option value="short" ${data.direction === 'short' ? 'selected' : ''}>Short</option>
+      </select>
+      <input type="text" class="setup-input" value="${escapeAttr(data.setup_type || '')}" placeholder="Setup-Typ" />
+      <input type="text" class="entry-input" value="${escapeAttr(data.entry_zone || '')}" placeholder="Entry-Zone/Preis" />
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span class="bias-check-badge unknown">–</span>
+        <button type="button" class="pair-row-remove" title="Entfernen">✕</button>
+      </div>
+    </div>
+    <div class="trade-plan-row-bottom">
+      <input type="text" class="notes-input" value="${escapeAttr(data.notes || '')}" placeholder="Notizen" />
+      <div class="plan-screenshot-upload">
+        <input type="file" class="screenshot-input" accept="image/*" />
+        <div class="plan-screenshot-preview"></div>
+      </div>
     </div>
   `;
   row.querySelector('.pair-row-remove').onclick = () => row.remove();
   row.querySelector('.pair-name').oninput = refreshBiasChecks;
   row.querySelector('.direction-select').onchange = refreshBiasChecks;
+
+  const preview = row.querySelector('.plan-screenshot-preview');
+  if (data.screenshot_url) {
+    preview.innerHTML = `<img src="${data.screenshot_url}" />`;
+    row.dataset.screenshotUrl = data.screenshot_url;
+  }
+  row.querySelector('.screenshot-input').onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    preview.innerHTML = '<span style="font-size:11px; color:var(--text-faint);">Lädt hoch…</span>';
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `plan-${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from('trade-screenshots').upload(path, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('trade-screenshots').getPublicUrl(path);
+      row.dataset.screenshotUrl = urlData.publicUrl;
+      preview.innerHTML = `<img src="${urlData.publicUrl}" />`;
+    } catch (err) {
+      preview.innerHTML = '<span style="font-size:11px; color:var(--loss);">Fehler</span>';
+      console.error(err);
+    }
+  };
+
   $('tradePlanRows').appendChild(row);
   refreshBiasChecks();
 }
@@ -289,14 +357,19 @@ async function savePlan() {
 
     // Pair rows
     await supabase.from('daily_plan_pairs').delete().eq('daily_plan_id', planId);
-    const rows = Array.from(document.querySelectorAll('.pair-row')).map((row, idx) => ({
-      daily_plan_id: planId,
-      pair: row.querySelector('.pair-name').value.trim().toUpperCase(),
-      bias: row.querySelector('.bias-select').value,
-      watchlist_status: row.querySelector('.watchlist-select').value,
-      notes: row.querySelector('.pair-notes').value.trim() || null,
-      sort_order: idx,
-    })).filter(r => r.pair);
+    const rows = Array.from(document.querySelectorAll('.pair-row')).map((row, idx) => {
+      const scoreRaw = row.querySelector('.score-input').value.trim();
+      return {
+        daily_plan_id: planId,
+        pair: row.querySelector('.pair-name').value.trim().toUpperCase(),
+        bias: row.querySelector('.bias-select').value,
+        watchlist_status: row.querySelector('.watchlist-select').value,
+        score: scoreRaw === '' ? null : parseFloat(scoreRaw),
+        confluence: row.querySelector('.confluence-input').value.trim() || null,
+        notes: row.querySelector('.pair-description').value.trim() || null,
+        sort_order: idx,
+      };
+    }).filter(r => r.pair);
     if (rows.length > 0) {
       const { error } = await supabase.from('daily_plan_pairs').insert(rows);
       if (error) throw error;
@@ -311,6 +384,7 @@ async function savePlan() {
       setup_type: row.querySelector('.setup-input').value.trim() || null,
       entry_zone: row.querySelector('.entry-input').value.trim() || null,
       notes: row.querySelector('.notes-input').value.trim() || null,
+      screenshot_url: row.dataset.screenshotUrl || null,
       sort_order: idx,
     })).filter(r => r.pair);
     if (tradeRows.length > 0) {

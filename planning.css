@@ -23,14 +23,21 @@
 
 .pair-rows { display: flex; flex-direction: column; gap: 10px; }
 .pair-row {
-  display: grid;
-  grid-template-columns: 110px 130px 150px 1fr auto;
-  gap: 10px;
-  align-items: center;
-  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
   background: var(--surface-2);
   border-radius: 9px;
 }
+.pair-row-top {
+  display: grid;
+  grid-template-columns: 90px 84px 70px 150px auto;
+  gap: 8px;
+  align-items: end;
+}
+.pf-box { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pf-box label { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-faint); font-weight: 600; }
 .pair-row input.pair-name {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -40,18 +47,24 @@
   font-size: 13px;
   font-family: var(--font-mono);
   font-weight: 600;
+  width: 100%;
+  box-sizing: border-box;
 }
-.pair-row select {
+.pair-row select, .pair-row input.score-input, .pair-row input.confluence-input {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
   padding: 8px 10px;
   border-radius: 7px;
   font-size: 12.5px;
+  width: 100%;
+  box-sizing: border-box;
 }
-.pair-row select.bias-long { color: var(--profit); }
-.pair-row select.bias-short { color: var(--loss); }
-.pair-row input.pair-notes {
+.pair-row input.score-input { font-family: var(--font-mono); }
+.pair-row select.bias-select.bias-long, .pair-row .score-input.score-pos { color: var(--profit); }
+.pair-row select.bias-select.bias-short, .pair-row .score-input.score-neg { color: var(--loss); }
+.pair-row-remove-wrap { display: flex; align-items: flex-end; padding-bottom: 1px; }
+.pair-row textarea.pair-description {
   background: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
@@ -59,6 +72,12 @@
   border-radius: 7px;
   font-size: 12.5px;
   font-family: var(--font-body);
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  max-height: 4.6em;
+  overflow-y: auto;
+  line-height: 1.5;
 }
 .pair-row-remove {
   background: none; border: none; color: var(--text-faint);
@@ -68,13 +87,24 @@
 
 .trade-plan-rows { display: flex; flex-direction: column; gap: 10px; }
 .trade-plan-row {
-  display: grid;
-  grid-template-columns: 100px 90px 130px 1fr 1fr auto;
-  gap: 10px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 10px;
   background: var(--surface-2);
   border-radius: 9px;
+}
+.trade-plan-row-top {
+  display: grid;
+  grid-template-columns: 100px 90px 130px 1fr auto;
+  gap: 10px;
+  align-items: center;
+}
+.trade-plan-row-bottom {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: start;
 }
 .trade-plan-row input, .trade-plan-row select {
   background: var(--surface);
@@ -84,9 +114,13 @@
   border-radius: 7px;
   font-size: 12.5px;
   width: 100%;
+  box-sizing: border-box;
 }
 .trade-plan-row input.pair-name, .trade-plan-row select.direction-select { font-family: var(--font-mono); font-weight: 600; }
 .trade-plan-row input.notes-input, .trade-plan-row input.entry-input { font-family: var(--font-body); }
+.plan-screenshot-upload { display: flex; align-items: center; gap: 8px; }
+.plan-screenshot-upload input[type="file"] { font-size: 11px; max-width: 160px; }
+.plan-screenshot-preview img { width: 44px; height: 44px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; }
 .bias-check-badge {
   font-size: 10.5px;
   padding: 3px 9px;
@@ -171,7 +205,20 @@
 .pair-row select.bias-select option[value="long"] { color: var(--profit); }
 .pair-row select.bias-select option[value="short"] { color: var(--loss); }
 
+/* Risk sentiment: color the panel by active state */
+.market-panel { transition: background 0.2s ease, border-color 0.2s ease; border: 1px solid var(--border-soft); }
+.market-panel[data-sentiment="risk_on"] { background: rgba(34,197,94,0.05); border-color: rgba(34,197,94,0.25); }
+.market-panel[data-sentiment="risk_off"] { background: rgba(244,63,94,0.05); border-color: rgba(244,63,94,0.25); }
+.market-panel[data-sentiment="neutral"] { background: rgba(139,146,165,0.05); border-color: var(--border-soft); }
+.seg-btn[data-value="risk_on"].active { background: rgba(34,197,94,0.15); border-color: var(--profit); color: var(--profit); }
+.seg-btn[data-value="risk_off"].active { background: rgba(244,63,94,0.15); border-color: var(--loss); color: var(--loss); }
+.seg-btn[data-value="neutral"].active { background: rgba(139,146,165,0.15); border-color: var(--text-faint); color: var(--text); }
+#riskNotes[data-sentiment="risk_on"] { border-color: rgba(34,197,94,0.4); background: rgba(34,197,94,0.06); }
+#riskNotes[data-sentiment="risk_off"] { border-color: rgba(244,63,94,0.4); background: rgba(244,63,94,0.06); }
+#riskNotes[data-sentiment="neutral"] { border-color: var(--border); }
+
 @media (max-width: 720px) {
-  .pair-row { grid-template-columns: 1fr; }
-  .trade-plan-row { grid-template-columns: 1fr; }
+  .pair-row-top { grid-template-columns: 1fr 1fr; }
+  .trade-plan-row-top { grid-template-columns: 1fr; }
+  .trade-plan-row-bottom { grid-template-columns: 1fr; }
 }
