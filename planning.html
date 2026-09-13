@@ -43,9 +43,11 @@
       <div class="panel-header">
         <h3>So holst du dir die Daten für heute</h3>
         <button class="btn-ghost sm" id="copyPromptBtn">Prompt kopieren</button>
+        <button class="btn-primary sm" id="openInClaudeBtn">In Claude öffnen</button>
       </div>
       <p class="prompt-text" id="promptText">Führe den ForexFundamentals-Check für heute für folgende Pairs durch: EURUSD, GBPUSD, NZDUSD, USDCHF, USDJPY, USDCAD, USDNOK, USDSEK, AUDUSD, EURJPY, EURAUD, EURCAD, EURGBP, EURCHF, EURNZD, EURSEK, EURNOK, GBPAUD, GBPCHF, GBPCAD, GBPJPY, GBPNZD, GBPNOK, NZDCAD, CADCHF, CADJPY, AUDCAD, AUDCHF, AUDNZD, CHFJPY, AUDJPY, NZDCHF, NZDJPY. Ermittle: Risk-Sentiment, relevante Kalender-Events, Currency-Scores/Bias je Pair, COT-Positionierung und Confluence-Faktoren. Trag das Ergebnis direkt in die Planung im Dashboard ein (daily_plans/daily_plan_pairs Tabellen für heute).</p>
       <p style="font-size:11.5px; color:var(--text-faint); margin:10px 0 0;">Tipp: Du musst diesen Prompt nicht mal kopieren — sag im Chat einfach "mach den Tagescheck", dann fülle ich die Planung direkt für dich aus.</p>
+      <p id="claudeLinkHint" style="display:none; font-size:11.5px; color:var(--amber); margin:8px 0 0;">Öffnet sich nichts? Das funktioniert nur mit installierter Claude-Desktop-App (claude.ai/download) — sonst einfach "Prompt kopieren" nutzen.</p>
     </section>
 
     <!-- Marktumfeld -->

@@ -50,7 +50,21 @@ function bindEvents() {
     btn.textContent = 'Kopiert ✓';
     setTimeout(() => { btn.textContent = original; }, 1800);
   };
+
+  $('openInClaudeBtn').onclick = () => {
+    const promptText = $('promptText').textContent.trim();
+    const url = 'claude://claude.ai/new?q=' + encodeURIComponent(promptText);
+    window.location.href = url;
+    // Fallback hint in case the Claude Desktop app isn't installed / scheme not handled
+    setTimeout(() => {
+      showFallbackHint();
+    }, 900);
+  };
 }
+
+function showFallbackHint() {
+  const el = $('claudeLinkHint');
+  if (el) el.style.display = 'block';
 
 function shiftDate(deltaDays) {
   const d = new Date(currentDate + 'T00:00:00');
