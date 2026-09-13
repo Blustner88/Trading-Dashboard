@@ -75,7 +75,7 @@
       </div>
       <div class="table-scroll">
         <table class="breakdown-table" id="clientsTable">
-          <thead><tr><th>Name</th><th>Land</th><th>Kategorie</th><th></th></tr></thead>
+          <thead><tr><th>Propfirm</th><th>Rechnungsempfänger</th><th>Land</th><th>Kategorie</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -107,7 +107,8 @@
     </div>
     <form id="clientForm" class="trade-form">
       <input type="hidden" id="cl_id" />
-      <div class="field"><label>Name</label><input type="text" id="cl_name" required placeholder="z.B. FTMO Evaluation Global s.r.o." /></div>
+      <div class="field"><label>Propfirm (Marke, z.B. "FundedNext")</label><input type="text" id="cl_propfirm_name" placeholder="z.B. FundedNext" /></div>
+      <div class="field"><label>Rechnungsempfänger (rechtliche Entität)</label><input type="text" id="cl_name" required placeholder="z.B. GrowthNext F.Z.E." /></div>
       <div class="field"><label>Adresse (mehrzeilig)</label><textarea id="cl_address" rows="3" required placeholder="Straße&#10;PLZ Ort&#10;Land"></textarea></div>
       <div class="form-row">
         <div class="field"><label>Land</label><input type="text" id="cl_country" required /></div>

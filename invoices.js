@@ -109,10 +109,20 @@ async function saveSettings(e) {
     bank_name: $('cs_bank').value.trim() || null,
   };
 
-  if (companySettings) {
-    await supabase.from('company_settings').update(payload).eq('id', companySettings.id);
-  } else {
-    await supabase.from('company_settings').insert(payload);
+  const saveBtn = $('settingsForm').querySelector('button[type="submit"]');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Speichere…';
+
+  const { error } = companySettings
+    ? await supabase.from('company_settings').update(payload).eq('id', companySettings.id)
+    : await supabase.from('company_settings').insert(payload);
+
+  saveBtn.disabled = false;
+  saveBtn.textContent = 'Speichern';
+
+  if (error) {
+    alert('Fehler beim Speichern der Firmendaten: ' + error.message);
+    return;
   }
 
   $('settingsForm').style.display = 'none';
@@ -131,6 +141,7 @@ function renderClientsTable() {
   clients.forEach(c => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td>${escapeHtml(c.propfirm_name || '—')}</td>
       <td>${escapeHtml(c.name)}</td>
       <td>${escapeHtml(c.country || '—')}</td>
       <td>${categoryLabel(c.country_category)}</td>
@@ -154,6 +165,7 @@ function openClientModal(client = null) {
   $('cl_deleteBtn').style.display = client ? 'block' : 'none';
 
   if (client) {
+    $('cl_propfirm_name').value = client.propfirm_name || '';
     $('cl_name').value = client.name;
     $('cl_address').value = [client.address_line1, client.address_line2].filter(Boolean).join('\n');
     $('cl_country').value = client.country || '';
@@ -179,6 +191,7 @@ async function saveClient(e) {
   const addrLines = $('cl_address').value.split('\n').map(l => l.trim()).filter(Boolean);
 
   const payload = {
+    propfirm_name: $('cl_propfirm_name').value.trim() || null,
     name: $('cl_name').value.trim(),
     address_line1: addrLines[0] || null,
     address_line2: addrLines.slice(1).join(', ') || null,
@@ -188,11 +201,22 @@ async function saveClient(e) {
     default_description: $('cl_description').value.trim() || 'Performance Fee Payout',
   };
 
-  if (id) {
-    await supabase.from('clients').update(payload).eq('id', id);
-  } else {
-    await supabase.from('clients').insert(payload);
+  const saveBtn = $('clientForm').querySelector('button[type="submit"]');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Speichere…';
+
+  const { error } = id
+    ? await supabase.from('clients').update(payload).eq('id', id)
+    : await supabase.from('clients').insert(payload);
+
+  saveBtn.disabled = false;
+  saveBtn.textContent = 'Speichern';
+
+  if (error) {
+    alert('Fehler beim Speichern des Kunden: ' + error.message);
+    return;
   }
+
   closeClientModal();
   await loadAll();
 }
@@ -256,7 +280,7 @@ function openInvoiceModal() {
     }).join('');
 
   const clientSel = $('inv_client');
-  clientSel.innerHTML = clients.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  clientSel.innerHTML = clients.map(c => `<option value="${c.id}">${c.propfirm_name ? escapeHtml(c.propfirm_name) + ' — ' : ''}${escapeHtml(c.name)}</option>`).join('');
 
   $('inv_number').value = computeNextInvoiceNumber();
   const d = new Date();
@@ -277,7 +301,6 @@ function onPayoutSelected() {
   if (acc && acc.client_id) {
     $('inv_client').value = acc.client_id;
   }
-
   const client = clients.find(c => c.id === $('inv_client').value);
   $('inv_description').value = client ? client.default_description : 'Performance Fee Payout';
   $('inv_crypto_detail').value = `Auszahlung via ${payout.crypto_currency}${payout.destination ? ' · ' + payout.destination : ''}`;
