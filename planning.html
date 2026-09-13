@@ -44,7 +44,8 @@
         <h3>So holst du dir die Daten für heute</h3>
         <button class="btn-ghost sm" id="copyPromptBtn">Prompt kopieren</button>
       </div>
-      <p class="prompt-text" id="promptText">Führe den ForexFundamentals-Check für heute für GBPAUD, EURUSD, GBPUSD, USDJPY, USDCAD, EURAUD durch: Risk-Sentiment, relevante Kalender-Events, Currency-Scores/Bias je Pair, COT-Positionierung und Confluence-Faktoren. Fasse es kompakt zusammen.</p>
+      <p class="prompt-text" id="promptText">Führe den ForexFundamentals-Check für heute für folgende Pairs durch: EURUSD, GBPUSD, NZDUSD, USDCHF, USDJPY, USDCAD, USDNOK, USDSEK, AUDUSD, EURJPY, EURAUD, EURCAD, EURGBP, EURCHF, EURNZD, EURSEK, EURNOK, GBPAUD, GBPCHF, GBPCAD, GBPJPY, GBPNZD, GBPNOK, NZDCAD, CADCHF, CADJPY, AUDCAD, AUDCHF, AUDNZD, CHFJPY, AUDJPY, NZDCHF, NZDJPY. Ermittle: Risk-Sentiment, relevante Kalender-Events, Currency-Scores/Bias je Pair, COT-Positionierung und Confluence-Faktoren. Trag das Ergebnis direkt in die Planung im Dashboard ein (daily_plans/daily_plan_pairs Tabellen für heute).</p>
+      <p style="font-size:11.5px; color:var(--text-faint); margin:10px 0 0;">Tipp: Du musst diesen Prompt nicht mal kopieren — sag im Chat einfach "mach den Tagescheck", dann fülle ich die Planung direkt für dich aus.</p>
     </section>
 
     <!-- Marktumfeld -->
@@ -75,6 +76,16 @@
         <button class="btn-ghost sm" id="addPairRowBtn">+ Pair</button>
       </div>
       <div class="pair-rows" id="pairRows"></div>
+    </section>
+
+    <!-- Geplante Trades -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3>Geplante Trades</h3>
+        <button class="btn-ghost sm" id="addTradeRowBtn">+ Trade</button>
+      </div>
+      <p class="import-hint" style="margin-bottom:12px;">Konkrete Setups, die du heute nehmen willst — wird automatisch mit deinem Bias oben abgeglichen.</p>
+      <div class="trade-plan-rows" id="tradePlanRows"></div>
     </section>
 
     <!-- Allgemeine Notizen -->

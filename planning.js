@@ -1,7 +1,13 @@
 import { supabase } from './accounts.js';
 
 const $ = (id) => document.getElementById(id);
-const DEFAULT_PAIRS = ['GBPAUD', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'EURAUD'];
+const DEFAULT_PAIRS = [
+  'EURUSD', 'GBPUSD', 'NZDUSD', 'USDCHF', 'USDJPY', 'USDCAD', 'USDNOK', 'USDSEK', 'AUDUSD',
+  'EURJPY', 'EURAUD', 'EURCAD', 'EURGBP', 'EURCHF', 'EURNZD', 'EURSEK', 'EURNOK',
+  'GBPAUD', 'GBPCHF', 'GBPCAD', 'GBPJPY', 'GBPNZD', 'GBPNOK',
+  'NZDCAD', 'CADCHF', 'CADJPY', 'AUDCAD',
+  'AUDCHF', 'AUDNZD', 'CHFJPY', 'AUDJPY', 'NZDCHF', 'NZDJPY',
+];
 
 let currentDate = todayStr();
 let currentPlanId = null;
@@ -34,6 +40,7 @@ function bindEvents() {
   });
 
   $('addPairRowBtn').onclick = () => addPairRow({ pair: '', bias: 'neutral', watchlist_status: 'watching', notes: '' });
+  $('addTradeRowBtn').onclick = () => addTradeRow({ pair: '', direction: 'long', setup_type: '', entry_zone: '', notes: '' });
   $('savePlanBtn').onclick = savePlan;
 
   $('copyPromptBtn').onclick = () => {
@@ -57,7 +64,7 @@ async function loadPlan(dateStr) {
   setSaveStatus('Lädt…');
   const { data: plan, error } = await supabase
     .from('daily_plans')
-    .select('*, daily_plan_pairs(*)')
+    .select('*, daily_plan_pairs(*), daily_plan_trades(*)')
     .eq('plan_date', dateStr)
     .maybeSingle();
 
@@ -83,6 +90,11 @@ async function loadPlan(dateStr) {
     } else {
       DEFAULT_PAIRS.forEach(p => addPairRow({ pair: p, bias: 'neutral', watchlist_status: 'watching', notes: '' }));
     }
+
+    const tradeRows = (plan.daily_plan_trades || []).sort((a, b) => a.sort_order - b.sort_order);
+    $('tradePlanRows').innerHTML = '';
+    tradeRows.forEach(t => addTradeRow(t));
+
     setSaveStatus(`Gespeichert am ${new Date(plan.updated_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`);
   } else {
     currentPlanId = null;
@@ -93,6 +105,7 @@ async function loadPlan(dateStr) {
     document.querySelectorAll('#riskSegmented .seg-btn').forEach(b => b.classList.remove('active'));
     $('pairRows').innerHTML = '';
     DEFAULT_PAIRS.forEach(p => addPairRow({ pair: p, bias: 'neutral', watchlist_status: 'watching', notes: '' }));
+    $('tradePlanRows').innerHTML = '';
     setSaveStatus('Noch kein Plan für diesen Tag.');
   }
 }
@@ -116,8 +129,63 @@ function addPairRow(data) {
     <input type="text" class="pair-notes" value="${escapeAttr(data.notes || '')}" placeholder="Confluence-Faktoren, Begründung…" />
     <button type="button" class="pair-row-remove" title="Entfernen">✕</button>
   `;
-  row.querySelector('.pair-row-remove').onclick = () => row.remove();
+  row.querySelector('.pair-row-remove').onclick = () => { row.remove(); refreshBiasChecks(); };
+  row.querySelector('.pair-name').oninput = refreshBiasChecks;
+  row.querySelector('.bias-select').onchange = refreshBiasChecks;
   $('pairRows').appendChild(row);
+}
+
+function addTradeRow(data) {
+  const row = document.createElement('div');
+  row.className = 'trade-plan-row';
+  row.innerHTML = `
+    <input type="text" class="pair-name" value="${escapeAttr(data.pair || '')}" placeholder="Pair" />
+    <select class="direction-select">
+      <option value="long" ${data.direction === 'long' ? 'selected' : ''}>Long</option>
+      <option value="short" ${data.direction === 'short' ? 'selected' : ''}>Short</option>
+    </select>
+    <input type="text" class="setup-input" value="${escapeAttr(data.setup_type || '')}" placeholder="Setup-Typ" />
+    <input type="text" class="entry-input" value="${escapeAttr(data.entry_zone || '')}" placeholder="Entry-Zone/Preis" />
+    <input type="text" class="notes-input" value="${escapeAttr(data.notes || '')}" placeholder="Notizen" />
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span class="bias-check-badge unknown">–</span>
+      <button type="button" class="pair-row-remove" title="Entfernen">✕</button>
+    </div>
+  `;
+  row.querySelector('.pair-row-remove').onclick = () => row.remove();
+  row.querySelector('.pair-name').oninput = refreshBiasChecks;
+  row.querySelector('.direction-select').onchange = refreshBiasChecks;
+  $('tradePlanRows').appendChild(row);
+  refreshBiasChecks();
+}
+
+function refreshBiasChecks() {
+  const biasMap = {};
+  document.querySelectorAll('#pairRows .pair-row').forEach(r => {
+    const pair = r.querySelector('.pair-name').value.trim().toUpperCase();
+    if (pair) biasMap[pair] = r.querySelector('.bias-select').value;
+  });
+
+  document.querySelectorAll('#tradePlanRows .trade-plan-row').forEach(r => {
+    const pair = r.querySelector('.pair-name').value.trim().toUpperCase();
+    const direction = r.querySelector('.direction-select').value;
+    const badge = r.querySelector('.bias-check-badge');
+    const bias = biasMap[pair];
+
+    if (!pair || bias === undefined) {
+      badge.textContent = 'Kein Bias';
+      badge.className = 'bias-check-badge unknown';
+    } else if (bias === 'neutral') {
+      badge.textContent = 'Bias neutral';
+      badge.className = 'bias-check-badge unknown';
+    } else if (bias === direction) {
+      badge.textContent = '✓ Stimmt überein';
+      badge.className = 'bias-check-badge match';
+    } else {
+      badge.textContent = `⚠ Gegen Bias (${bias === 'long' ? 'Long' : 'Short'})`;
+      badge.className = 'bias-check-badge mismatch';
+    }
+  });
 }
 
 async function savePlan() {
@@ -159,6 +227,24 @@ async function savePlan() {
 
     if (rows.length > 0) {
       const { error } = await supabase.from('daily_plan_pairs').insert(rows);
+      if (error) throw error;
+    }
+
+    // Replace planned trade rows
+    await supabase.from('daily_plan_trades').delete().eq('daily_plan_id', planId);
+
+    const tradeRows = Array.from(document.querySelectorAll('.trade-plan-row')).map((row, idx) => ({
+      daily_plan_id: planId,
+      pair: row.querySelector('.pair-name').value.trim().toUpperCase(),
+      direction: row.querySelector('.direction-select').value,
+      setup_type: row.querySelector('.setup-input').value.trim() || null,
+      entry_zone: row.querySelector('.entry-input').value.trim() || null,
+      notes: row.querySelector('.notes-input').value.trim() || null,
+      sort_order: idx,
+    })).filter(r => r.pair);
+
+    if (tradeRows.length > 0) {
+      const { error } = await supabase.from('daily_plan_trades').insert(tradeRows);
       if (error) throw error;
     }
 
