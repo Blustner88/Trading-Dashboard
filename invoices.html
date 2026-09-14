@@ -154,7 +154,8 @@
         <div class="field"><label>Rechnungsdatum</label><input type="date" id="inv_date" required /></div>
       </div>
       <div class="field"><label>Leistungsbeschreibung</label><input type="text" id="inv_description" required /></div>
-      <div class="field"><label>Details (z.B. Auszahlung via USDT, Wallet-Adresse)</label><textarea id="inv_crypto_detail" rows="2"></textarea></div>
+      <div class="field"><label>Auszahlungs-Detail (z.B. "Auszahlung via USDT · Bitpanda")</label><input type="text" id="inv_crypto_detail" /></div>
+      <div class="field"><label>Wallet-Adresse (optional)</label><input type="text" id="inv_wallet_address" placeholder="0x…" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;" /></div>
       <div class="form-row">
         <div class="field"><label>Betrag</label><input type="number" step="0.01" id="inv_amount" required /></div>
         <div class="field"><label>Währung</label><input type="text" id="inv_currency" value="USD" required /></div>

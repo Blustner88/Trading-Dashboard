@@ -318,7 +318,13 @@ function onPayoutSelected() {
   }
   const client = clients.find(c => c.id === $('inv_client').value);
   $('inv_description').value = client ? client.default_description : 'Performance Fee Payout';
-  $('inv_crypto_detail').value = `Auszahlung via ${payout.crypto_currency}${payout.destination ? ' · ' + payout.destination : ''}`;
+
+  // Heuristic: does "destination" look like a wallet address (0x… or long, no spaces) or an exchange name?
+  const dest = (payout.destination || '').trim();
+  const looksLikeAddress = /^0x[a-fA-F0-9]{10,}$/.test(dest) || (dest.length >= 20 && !dest.includes(' '));
+
+  $('inv_crypto_detail').value = `Auszahlung via ${payout.crypto_currency}${(dest && !looksLikeAddress) ? ' · ' + dest : ''}`;
+  $('inv_wallet_address').value = looksLikeAddress ? dest : '';
   $('inv_amount').value = payout.crypto_amount;
   $('inv_currency').value = payout.crypto_currency === 'USDT' ? 'USD' : payout.crypto_currency;
 }
@@ -345,6 +351,7 @@ async function createInvoice(e) {
     currency: $('inv_currency').value.trim().toUpperCase(),
     country_category: client.country_category,
     crypto_detail: $('inv_crypto_detail').value.trim() || null,
+    wallet_address: $('inv_wallet_address').value.trim() || null,
   };
 
   const { data, error } = await supabase.from('invoices').insert(payload).select('*, clients(*)').single();
@@ -375,15 +382,16 @@ function openPrintView(invoice) {
   const deliveryStr = new Date(invoice.delivery_date + 'T00:00:00').toLocaleDateString('de-DE');
 
   const legalText = getLegalText(invoice.country_category, client ? client.country : '');
-  const cryptoDetailHtml = invoice.crypto_detail ? escapeHtml(invoice.crypto_detail).replace(/\n/g, '<br>') : '';
+  const detailLines = [];
+  if (invoice.crypto_detail) detailLines.push(escapeHtml(invoice.crypto_detail));
+  if (invoice.wallet_address) detailLines.push('Wallet-Adresse: ' + escapeHtml(invoice.wallet_address));
+  const detailHtml = detailLines.join('<br>');
 
   // Footer: split "71254 Ditzingen, Deutschland" style into separate lines like the reference invoice
   const addr2Parts = (s.address_line2 || '').split(',').map(p => p.trim()).filter(Boolean);
 
   $('invoicePrintArea').innerHTML = `
     <div class="invoice-page">
-      <div class="invoice-page-num">1/1</div>
-
       <div class="invoice-logo-row">
         <img src="logo.png" class="invoice-logo" />
       </div>
@@ -394,7 +402,7 @@ function openPrintView(invoice) {
         <div class="invoice-recipient">
           <strong>${escapeHtml(client ? client.name : '')}</strong><br>
           ${escapeHtml(client ? client.address_line1 || '' : '')}<br>
-          ${escapeHtml(client ? client.address_line2 || '' : '')}
+          ${escapeHtml(client ? client.address_line2 || '' : '')}${client && client.country ? '<br>' + escapeHtml(client.country) : ''}
         </div>
         <div class="invoice-meta">
           <table>
@@ -419,7 +427,7 @@ function openPrintView(invoice) {
             <td>${unitPriceStr} ${escapeHtml(invoice.currency)}</td>
             <td>${total} ${escapeHtml(invoice.currency)}</td>
           </tr>
-          ${invoice.crypto_detail ? `<tr><td></td><td class="item-detail" colspan="4">${cryptoDetailHtml}</td></tr>` : ''}
+          ${detailHtml ? `<tr><td></td><td class="item-detail" colspan="4">${detailHtml}</td></tr>` : ''}
         </tbody>
       </table>
 

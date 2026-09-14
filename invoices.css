@@ -33,7 +33,6 @@
   line-height: 1.5;
   position: relative;
 }
-.invoice-page-num { position: absolute; top: 20mm; right: 18mm; font-size: 8pt; color: #888; }
 .invoice-logo-row { text-align: right; margin-bottom: 8px; }
 .invoice-logo { max-width: 150px; max-height: 95px; object-fit: contain; }
 .invoice-sender-line { font-size: 8.5pt; color: #444; margin: 18px 0 26px; }
@@ -49,10 +48,10 @@
 .invoice-table th { background: #111; color: #fff; text-align: left; padding: 8px 10px; font-size: 9pt; font-weight: 600; }
 .invoice-table th:last-child, .invoice-table td:last-child, .invoice-table th:nth-child(3), .invoice-table td:nth-child(3), .invoice-table th:nth-child(4), .invoice-table td:nth-child(4) { text-align: right; }
 .invoice-table td { padding: 8px 10px; border-bottom: 1px solid #ddd; vertical-align: top; }
-.invoice-table .item-detail { font-size: 9pt; color: #555; padding-top: 0; line-height: 1.5; }
+.invoice-table .item-detail { font-size: 9pt; color: #555; padding-top: 0; line-height: 1.5; text-align: left !important; }
 .invoice-totals { margin-top: 4px; }
-.invoice-totals-row { display: flex; justify-content: flex-end; gap: 30px; padding: 3px 10px; font-size: 9.5pt; }
-.invoice-totals-row.plain { justify-content: flex-end; font-size: 9pt; color: #444; }
+.invoice-totals-row { display: flex; justify-content: space-between; padding: 3px 10px; font-size: 9.5pt; }
+.invoice-totals-row.plain { justify-content: flex-start; font-size: 9pt; color: #444; }
 .invoice-totals-row.grand { font-weight: 700; font-size: 10.5pt; border-top: 1px solid #111; padding-top: 6px; margin-top: 4px; }
 .invoice-legal { margin-top: 24px; font-size: 8.5pt; color: #333; line-height: 1.6; }
 .invoice-signoff { margin-top: 36px; font-size: 10pt; }
