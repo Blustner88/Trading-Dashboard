@@ -245,14 +245,29 @@ function renderInvoicesTable() {
       <td>${escapeHtml(inv.invoice_number)}</td>
       <td>${dateStr}</td>
       <td>${escapeHtml(inv.clients ? inv.clients.name : '—')}</td>
-      <td>${(Number(inv.unit_price) * Number(inv.quantity)).toFixed(2)} ${escapeHtml(inv.currency)}</td>
-      <td class="client-row-actions"><button class="icon-btn" data-id="${inv.id}">📄 Ansehen</button></td>
+      <td>${formatDe(Number(inv.unit_price) * Number(inv.quantity))} ${escapeHtml(inv.currency)}</td>
+      <td class="client-row-actions">
+        <button class="icon-btn" data-action="view" data-id="${inv.id}">📄 Ansehen</button>
+        <button class="icon-btn" data-action="delete" data-id="${inv.id}" title="Löschen">🗑</button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
-  tbody.querySelectorAll('[data-id]').forEach(btn => {
+  tbody.querySelectorAll('[data-action="view"]').forEach(btn => {
     btn.onclick = () => openPrintView(invoices.find(i => i.id === btn.dataset.id));
   });
+  tbody.querySelectorAll('[data-action="delete"]').forEach(btn => {
+    btn.onclick = () => deleteInvoice(btn.dataset.id);
+  });
+}
+
+async function deleteInvoice(id) {
+  const inv = invoices.find(i => i.id === id);
+  if (!inv) return;
+  if (!confirm(`Rechnung ${inv.invoice_number} wirklich löschen? Der zugehörige Payout wird wieder als "nicht fakturiert" markiert.`)) return;
+  const { error } = await supabase.from('invoices').delete().eq('id', id);
+  if (error) { alert('Fehler beim Löschen: ' + error.message); return; }
+  await loadAll();
 }
 
 function computeNextInvoiceNumber() {
@@ -345,36 +360,48 @@ async function createInvoice(e) {
   openPrintView(data);
 }
 
+function formatDe(num) {
+  return Number(num).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
 // ---------- Print view ----------
 function openPrintView(invoice) {
   const client = invoice.clients || clients.find(c => c.id === invoice.client_id);
   const s = companySettings || {};
-  const total = (Number(invoice.unit_price) * Number(invoice.quantity)).toFixed(2);
+  const total = formatDe(Number(invoice.unit_price) * Number(invoice.quantity));
+  const unitPriceStr = formatDe(invoice.unit_price);
+  const qtyStr = formatDe(invoice.quantity);
   const dateStr = new Date(invoice.invoice_date + 'T00:00:00').toLocaleDateString('de-DE');
   const deliveryStr = new Date(invoice.delivery_date + 'T00:00:00').toLocaleDateString('de-DE');
 
   const legalText = getLegalText(invoice.country_category, client ? client.country : '');
+  const cryptoDetailHtml = invoice.crypto_detail ? escapeHtml(invoice.crypto_detail).replace(/\n/g, '<br>') : '';
+
+  // Footer: split "71254 Ditzingen, Deutschland" style into separate lines like the reference invoice
+  const addr2Parts = (s.address_line2 || '').split(',').map(p => p.trim()).filter(Boolean);
 
   $('invoicePrintArea').innerHTML = `
     <div class="invoice-page">
-      <div class="invoice-header">
-        <div>
-          <div class="invoice-sender-line">${escapeHtml(s.company_name || '')} &nbsp;·&nbsp; ${escapeHtml(s.address_line1 || '')} &nbsp;·&nbsp; ${escapeHtml(s.address_line2 || '')}</div>
-          <div class="invoice-recipient">
-            <strong>${escapeHtml(client ? client.name : '')}</strong><br>
-            ${escapeHtml(client ? client.address_line1 || '' : '')}<br>
-            ${escapeHtml(client ? client.address_line2 || '' : '')}
-          </div>
+      <div class="invoice-page-num">1/1</div>
+
+      <div class="invoice-logo-row">
+        <img src="logo.png" class="invoice-logo" />
+      </div>
+
+      <div class="invoice-sender-line">${escapeHtml(s.company_name || '')} &nbsp;-&nbsp; ${escapeHtml(s.address_line1 || '')} &nbsp;-&nbsp; ${escapeHtml(s.address_line2 || '')}</div>
+
+      <div class="invoice-top-row">
+        <div class="invoice-recipient">
+          <strong>${escapeHtml(client ? client.name : '')}</strong><br>
+          ${escapeHtml(client ? client.address_line1 || '' : '')}<br>
+          ${escapeHtml(client ? client.address_line2 || '' : '')}
         </div>
-        <div>
-          <img src="logo.png" class="invoice-logo" />
-          <div class="invoice-meta" style="margin-top:14px;">
-            <table>
-              <tr><td>Rechnungs-Nr.</td><td>${escapeHtml(invoice.invoice_number)}</td></tr>
-              <tr><td>Rechnungsdatum</td><td>${dateStr}</td></tr>
-              <tr><td>Lieferdatum</td><td>${deliveryStr}</td></tr>
-            </table>
-          </div>
+        <div class="invoice-meta">
+          <table>
+            <tr><td>Rechnungs-Nr.</td><td>${escapeHtml(invoice.invoice_number)}</td></tr>
+            <tr><td>Rechnungsdatum</td><td>${dateStr}</td></tr>
+            <tr><td>Lieferdatum</td><td>${deliveryStr}</td></tr>
+          </table>
         </div>
       </div>
 
@@ -388,17 +415,17 @@ function openPrintView(invoice) {
           <tr>
             <td>1.</td>
             <td><strong>${escapeHtml(invoice.description)}</strong></td>
-            <td>${Number(invoice.quantity).toFixed(2)}</td>
-            <td>${Number(invoice.unit_price).toFixed(2)} ${escapeHtml(invoice.currency)}</td>
+            <td>${qtyStr}</td>
+            <td>${unitPriceStr} ${escapeHtml(invoice.currency)}</td>
             <td>${total} ${escapeHtml(invoice.currency)}</td>
           </tr>
-          ${invoice.crypto_detail ? `<tr><td></td><td class="item-detail" colspan="4">${escapeHtml(invoice.crypto_detail)}</td></tr>` : ''}
+          ${invoice.crypto_detail ? `<tr><td></td><td class="item-detail" colspan="4">${cryptoDetailHtml}</td></tr>` : ''}
         </tbody>
       </table>
 
       <div class="invoice-totals">
         <div class="invoice-totals-row"><span>Gesamtbetrag netto</span><span>${total} ${escapeHtml(invoice.currency)}</span></div>
-        <div class="invoice-totals-row"><span colspan="2">Umsatzsteuer nicht erhoben gemäß §19 UStG.</span></div>
+        <div class="invoice-totals-row plain"><span>Umsatzsteuer nicht erhoben gemäß §19UStG.</span></div>
         <div class="invoice-totals-row grand"><span>Gesamtbetrag brutto</span><span>${total} ${escapeHtml(invoice.currency)}</span></div>
       </div>
 
@@ -409,8 +436,8 @@ function openPrintView(invoice) {
       </div>
 
       <div class="invoice-footer">
-        <div>${escapeHtml(s.company_name || '')}<br>${escapeHtml(s.address_line1 || '')}<br>${escapeHtml(s.address_line2 || '')}</div>
-        <div>${s.phone ? 'Tel. ' + escapeHtml(s.phone) : ''}<br>${s.email ? 'E-Mail ' + escapeHtml(s.email) : ''}</div>
+        <div>${escapeHtml(s.company_name || '')}<br>${escapeHtml(s.address_line1 || '')}<br>${addr2Parts.map(p => escapeHtml(p)).join('<br>')}</div>
+        <div>${s.phone ? 'Tel. ' + escapeHtml(s.phone) : ''}${s.email ? '<br>E-Mail ' + escapeHtml(s.email) : ''}</div>
         <div>Inhaber/-in ${escapeHtml(s.owner_name || '')}</div>
       </div>
     </div>
