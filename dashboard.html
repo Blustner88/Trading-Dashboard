@@ -50,6 +50,32 @@
       </div>
     </section>
 
+    <!-- Trader-Level (Gamification) -->
+    <section class="panel level-panel" id="levelPanel">
+      <div class="panel-header">
+        <h3>Trader-Level</h3>
+        <span class="level-tier-badge" id="levelTierBadge">–</span>
+      </div>
+      <div class="level-top-row">
+        <div class="level-badge-circle" id="levelBadgeCircle">1</div>
+        <div class="level-progress-wrap">
+          <div class="level-progress-label">
+            <span id="levelXpLabel">0 / 150 XP</span>
+            <span id="levelNextLabel">bis Level 2</span>
+          </div>
+          <div class="level-bar"><div class="level-bar-fill" id="levelBarFill" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="level-stats-row">
+        <div class="level-stat"><span class="kpi-label">Dokumentierte Trades</span><span class="kpi-value" id="statDocumented">–</span></div>
+        <div class="level-stat"><span class="kpi-label">Split-TP genutzt</span><span class="kpi-value" id="statSplitTp">–</span></div>
+        <div class="level-stat"><span class="kpi-label">Risk-Diszipliniert</span><span class="kpi-value" id="statRiskDisc">–</span></div>
+        <div class="level-stat"><span class="kpi-label">Planungstage (30T)</span><span class="kpi-value" id="statPlanDays">–</span></div>
+      </div>
+      <p class="level-hint">XP kommt aus Disziplin, nicht aus Trade-Anzahl: dokumentierte Trades, Split-TP-Nutzung, korrekte Risk-Größe, Tagespläne und Payouts.</p>
+      <div class="badge-grid" id="badgeGrid"></div>
+    </section>
+
     <!-- Propfirm Drawdown-Tracker -->
     <section class="panel" id="drawdownSection" style="display:none;">
       <div class="panel-header"><h3>Drawdown-Tracker (Propfirm-Limits)</h3></div>

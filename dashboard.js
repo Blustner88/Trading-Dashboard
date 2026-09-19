@@ -5,6 +5,7 @@ const $ = (id) => document.getElementById(id);
 let allTrades = [];
 let allPayouts = [];
 let allExpenses = [];
+let allPlanDates = [];
 let currentRange = '30';
 
 async function init() {
@@ -43,6 +44,9 @@ async function loadTrades() {
   const { data: expenses } = await supabase.from('business_expenses').select('*');
   allExpenses = expenses || [];
 
+  const { data: plans } = await supabase.from('daily_plans').select('plan_date');
+  allPlanDates = (plans || []).map(p => p.plan_date);
+
   render();
 }
 
@@ -70,6 +74,7 @@ function render() {
   renderMistakes(trades);
   renderOverallBalance();
   renderTaxWidget();
+  renderLevelPanel();
   renderDrawdownTracker();
   renderChallengeProgress();
 }
@@ -537,6 +542,75 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+// ---------- Trader-Level (Gamification) ----------
+const XP_PER_LEVEL = 150;
+const TIERS = [
+  { min: 1, max: 2, name: 'Bronze' },
+  { min: 3, max: 5, name: 'Silber' },
+  { min: 6, max: 9, name: 'Gold' },
+  { min: 10, max: 14, name: 'Platin' },
+  { min: 15, max: Infinity, name: 'Diamant' },
+];
+
+function tierName(level) {
+  return (TIERS.find(t => level >= t.min && level <= t.max) || TIERS[0]).name;
+}
+
+function renderLevelPanel() {
+  const closedTrades = allTrades.filter(t => t.status === 'closed');
+
+  const documented = closedTrades.filter(t => t.notes && t.notes.trim().length > 0);
+  const splitTp = closedTrades.filter(t => t.tp1 !== null && t.tp1 !== undefined && t.tp2 !== null && t.tp2 !== undefined);
+  const riskDisciplined = closedTrades.filter(t => t.risk_percent !== null && Math.abs(Number(t.risk_percent) - 0.8) <= 0.1);
+  const withScreenshot = closedTrades.filter(t => t.chart_entry_url);
+
+  const cutoff30 = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const planDaysLast30 = new Set(allPlanDates.filter(d => new Date(d + 'T00:00:00').getTime() >= cutoff30)).size;
+
+  const xp =
+    documented.length * 10 +
+    splitTp.length * 15 +
+    riskDisciplined.length * 10 +
+    withScreenshot.length * 5 +
+    allPlanDates.length * 20 +
+    allPayouts.length * 50;
+
+  const level = Math.floor(xp / XP_PER_LEVEL) + 1;
+  const xpIntoLevel = xp % XP_PER_LEVEL;
+  const progressPct = (xpIntoLevel / XP_PER_LEVEL) * 100;
+  const tier = tierName(level);
+
+  $('levelBadgeCircle').textContent = level;
+  $('levelTierBadge').textContent = tier + '-Trader';
+  $('levelXpLabel').textContent = `${xpIntoLevel} / ${XP_PER_LEVEL} XP`;
+  $('levelNextLabel').textContent = `bis Level ${level + 1}`;
+  $('levelBarFill').style.width = `${progressPct}%`;
+
+  $('statDocumented').textContent = `${documented.length} / ${closedTrades.length}`;
+  $('statSplitTp').textContent = `${splitTp.length} / ${closedTrades.length}`;
+  $('statRiskDisc').textContent = `${riskDisciplined.length} / ${closedTrades.length}`;
+  $('statPlanDays').textContent = `${planDaysLast30} / 30`;
+
+  const badges = [
+    { icon: '🌱', label: 'Erster Trade', earned: closedTrades.length >= 1 },
+    { icon: '📝', label: 'Dokus-Profi (20)', earned: documented.length >= 20 },
+    { icon: '🎯', label: 'Split-TP-Meister (10)', earned: splitTp.length >= 10 },
+    { icon: '🛡️', label: 'Risk-Diszipliniert (15)', earned: riskDisciplined.length >= 15 },
+    { icon: '📅', label: 'Planer (5 Tage)', earned: allPlanDates.length >= 5 },
+    { icon: '📆', label: 'Planungs-Serie (10/30T)', earned: planDaysLast30 >= 10 },
+    { icon: '💰', label: 'Erster Payout', earned: allPayouts.length >= 1 },
+    { icon: '🏆', label: '10 Trades geschlossen', earned: closedTrades.length >= 10 },
+  ];
+
+  const grid = $('badgeGrid');
+  grid.innerHTML = badges.map(b => `
+    <div class="badge-item ${b.earned ? 'earned' : ''}">
+      <span class="badge-icon">${b.icon}</span>
+      <span class="badge-label">${b.label}</span>
+    </div>
+  `).join('');
 }
 
 init();
