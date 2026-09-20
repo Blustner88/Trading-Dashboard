@@ -25,6 +25,7 @@
       <a href="planning.html" class="tab-link">Planung</a>
       <a href="accounting.html" class="tab-link">Steuer</a>
       <a href="invoices.html" class="tab-link">Rechnungen</a>
+      <a href="level.html" class="tab-link">Level</a>
     </nav>
     <div class="account-switcher" id="accountSwitcher"></div>
     <div class="filter-spacer"></div>
@@ -50,30 +51,22 @@
       </div>
     </section>
 
-    <!-- Trader-Level (Gamification) -->
-    <section class="panel level-panel" id="levelPanel">
+    <!-- Trader-Level (Gamification) - Kurzübersicht -->
+    <section class="panel level-panel level-panel-compact">
       <div class="panel-header">
         <h3>Trader-Level</h3>
-        <span class="level-tier-badge" id="levelTierBadge">–</span>
+        <a href="level.html" class="btn-ghost sm">→ Details & Badges</a>
       </div>
-      <div class="level-top-row">
+      <div class="level-top-row" style="margin-bottom:0;">
         <div class="level-badge-circle" id="levelBadgeCircle">1</div>
         <div class="level-progress-wrap">
           <div class="level-progress-label">
             <span id="levelXpLabel">0 / 150 XP</span>
-            <span id="levelNextLabel">bis Level 2</span>
+            <span class="level-tier-badge-inline" id="levelTierBadge">–</span>
           </div>
           <div class="level-bar"><div class="level-bar-fill" id="levelBarFill" style="width:0%"></div></div>
         </div>
       </div>
-      <div class="level-stats-row">
-        <div class="level-stat"><span class="kpi-label">Dokumentierte Trades</span><span class="kpi-value" id="statDocumented">–</span></div>
-        <div class="level-stat"><span class="kpi-label">Split-TP genutzt</span><span class="kpi-value" id="statSplitTp">–</span></div>
-        <div class="level-stat"><span class="kpi-label">Risk-Diszipliniert</span><span class="kpi-value" id="statRiskDisc">–</span></div>
-        <div class="level-stat"><span class="kpi-label">Planungstage (30T)</span><span class="kpi-value" id="statPlanDays">–</span></div>
-      </div>
-      <p class="level-hint">XP kommt aus Disziplin, nicht aus Trade-Anzahl: dokumentierte Trades, Split-TP-Nutzung, korrekte Risk-Größe, Tagespläne und Payouts.</p>
-      <div class="badge-grid" id="badgeGrid"></div>
     </section>
 
     <!-- Propfirm Drawdown-Tracker -->

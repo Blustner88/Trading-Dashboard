@@ -1,0 +1,13 @@
+.xp-source-list { display: flex; flex-direction: column; gap: 8px; }
+.xp-source-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 12px; background: var(--surface-2); border-radius: 8px; font-size: 13px;
+}
+.xp-source-row .label { color: var(--text-muted); }
+.xp-source-row .value { font-family: var(--font-mono); font-weight: 700; }
+.xp-source-row .value.pos { color: var(--profit); }
+.xp-source-row .value.neg { color: var(--loss); }
+.xp-source-row .count { color: var(--text-faint); font-size: 11.5px; margin-left: 6px; }
+
+#penaltyPanel { border: 1px solid rgba(244,63,94,0.15); }
+.penalty-empty { color: var(--text-faint); font-size: 12.5px; text-align: center; padding: 10px 0; }
