@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Desk — Trading Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="desk.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <nav class="tabnav">
+      <a href="dashboard.html" class="tab-link">Dashboard</a>
+      <a href="desk.html" class="tab-link active">Desk</a>
+      <a href="index.html" class="tab-link">Journal</a>
+      <a href="planning.html" class="tab-link">Planung</a>
+      <a href="accounting.html" class="tab-link">Steuer</a>
+      <a href="invoices.html" class="tab-link">Rechnungen</a>
+      <a href="level.html" class="tab-link">Level</a>
+    </nav>
+  </header>
+
+  <main class="dash-main">
+
+    <div class="desk-kpis">
+      <div class="desk-kpi"><span class="kpi-label">Warten auf Setup</span><span class="kpi-value" id="kpiWatching">–</span></div>
+      <div class="desk-kpi"><span class="kpi-label">Offene Vorschläge</span><span class="kpi-value" id="kpiPending">–</span></div>
+      <div class="desk-kpi"><span class="kpi-label">Heute genommen</span><span class="kpi-value" id="kpiTaken">–</span></div>
+      <div class="desk-kpi"><span class="kpi-label">Heute blockiert</span><span class="kpi-value" id="kpiBlocked">–</span></div>
+    </div>
+
+    <div class="desk-grid">
+      <div class="desk-col">
+        <section class="panel">
+          <div class="panel-header">
+            <h3>Offene Vorschläge</h3>
+            <span class="desk-hint">Entscheidung per Telegram</span>
+          </div>
+          <div id="pendingList" class="proposal-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header"><h3>Warten auf BITR-Setup</h3></div>
+          <div id="watchingList" class="row-list"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h3>Letzte Entscheidungen</h3>
+            <span class="desk-hint">R = Schatten-Auswertung</span>
+          </div>
+          <div id="historyList" class="row-list"></div>
+        </section>
+      </div>
+
+      <section class="panel squawk-panel">
+        <div class="panel-header">
+          <h3>Squawk</h3>
+          <span class="live-dot" id="liveDot" title="Live-Verbindung">● live</span>
+        </div>
+        <div id="squawkFeed" class="squawk-feed"></div>
+      </section>
+    </div>
+
+  </main>
+</div>
+
+<script type="module" src="desk.js"></script>
+</body>
+</html>

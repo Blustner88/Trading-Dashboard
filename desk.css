@@ -1,0 +1,72 @@
+.desk-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.desk-kpi {
+  background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px;
+  padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;
+}
+
+.desk-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.desk-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.desk-hint { font-size: 11.5px; color: var(--text-faint); }
+.desk-empty { color: var(--text-faint); font-size: 12.5px; text-align: center; padding: 10px 0; }
+
+/* Vorschlags-Karten */
+.proposal-list { display: flex; flex-direction: column; gap: 10px; }
+.proposal {
+  background: var(--surface-2); border-radius: 10px; padding: 12px 14px;
+  border-left: 3px solid var(--indigo);
+}
+.proposal.long { border-left-color: var(--profit); }
+.proposal.short { border-left-color: var(--loss); }
+.proposal-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.proposal-pair { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+.dir { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; margin-left: 8px; }
+.dir.long { color: var(--profit); }
+.dir.short { color: var(--loss); }
+.valid { font-family: var(--font-mono); font-size: 11.5px; color: var(--amber); }
+.levels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 10px; }
+.level { display: flex; flex-direction: column; gap: 2px; }
+.level .v { font-family: var(--font-mono); font-size: 13px; font-weight: 600; }
+.level .s { font-size: 10.5px; color: var(--text-faint); }
+.why { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin: 4px 0 0; }
+.why b { color: var(--text); font-weight: 600; }
+
+/* Zeilen (Watching, Historie) */
+.row-list { display: flex; flex-direction: column; gap: 6px; }
+.row {
+  display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 10px; align-items: center;
+  padding: 8px 12px; background: var(--surface-2); border-radius: 8px; font-size: 12.5px;
+}
+.row .p { font-weight: 600; }
+.row .t { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row .r { font-family: var(--font-mono); font-weight: 700; text-align: right; }
+.r.pos { color: var(--profit); }
+.r.neg { color: var(--loss); }
+.status { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 6px; border-radius: 4px; background: var(--border-soft); color: var(--text-muted); }
+.status.taken { background: var(--profit-soft); color: var(--profit); }
+.status.blocked { background: var(--loss-soft); color: var(--loss); }
+
+/* Squawk */
+.squawk-panel { position: sticky; top: 12px; }
+.live-dot { font-size: 11px; color: var(--text-faint); }
+.live-dot.on { color: var(--profit); }
+.squawk-feed { display: flex; flex-direction: column; gap: 2px; max-height: 75vh; overflow-y: auto; }
+.sq { display: grid; grid-template-columns: 44px 78px minmax(0, 1fr); gap: 8px; padding: 6px 4px; font-size: 12.5px; border-bottom: 1px solid var(--border-soft); }
+.sq .time { font-family: var(--font-mono); color: var(--text-faint); font-size: 11.5px; }
+.sq .src { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.sq .msg { color: var(--text-muted); overflow-wrap: anywhere; }
+.sq .msg b { color: var(--text); }
+.src.fundamental { color: var(--indigo-bright); }
+.src.technik { color: var(--amber); }
+.src.risk { color: var(--loss); }
+.src.boss { color: var(--profit); }
+.src.system { color: var(--text-faint); }
+.sq.new { animation: flash 1.5s ease-out; }
+@keyframes flash { from { background: rgba(99,102,241,0.18); } to { background: transparent; } }
+
+@media (max-width: 900px) {
+  .desk-grid { grid-template-columns: 1fr; }
+  .squawk-panel { position: static; }
+  .desk-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .row { grid-template-columns: 90px minmax(0, 1fr) auto; }
+}
