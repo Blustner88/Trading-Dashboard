@@ -72,6 +72,7 @@
 
     <!-- Aufschlüsselungen -->
     <section class="bt-breakdowns">
+      <div class="panel"><div class="panel-header"><h3>Nach Setup-Typ</h3></div><div id="bySetup"></div></div>
       <div class="panel"><div class="panel-header"><h3>Nach Grade</h3></div><div id="byGrade"></div></div>
       <div class="panel"><div class="panel-header"><h3>Nach Pair</h3></div><div id="byPair"></div></div>
       <div class="panel"><div class="panel-header"><h3>Nach Session</h3></div><div id="bySession"></div></div>
@@ -134,9 +135,20 @@
         </div>
       </div>
 
-      <div class="field">
-        <label>Setup-Typ</label>
-        <input type="text" id="f_setup" placeholder="z.B. 4H-Zone Retest + 15M BOS" />
+      <div class="form-row">
+        <div class="field">
+          <label>Setup-Typ</label>
+          <select id="f_setup" required>
+            <option value="">— wählen —</option>
+            <option value="Trend">Trend (≥ 2R)</option>
+            <option value="Scale-In">Scale-In (1,5–2R)</option>
+            <option value="Pullback">Pullback (1,5R)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Ziel-R <span class="field-hint" id="targetHint"></span></label>
+          <input type="number" step="0.1" id="f_target" required />
+        </div>
       </div>
 
       <hr class="form-divider" />
@@ -149,16 +161,16 @@
         <div class="field"><label>Stop Loss</label><input type="number" step="any" id="f_sl" /></div>
       </div>
       <div class="form-row">
-        <div class="field"><label>TP1 (2,2R)</label><input type="number" step="any" id="f_tp1" /></div>
-        <div class="field"><label>Exit (Rest)</label><input type="number" step="any" id="f_exit" /></div>
+        <div class="field"><label>Take Profit <span class="field-hint">aus Ziel-R</span></label><input type="number" step="any" id="f_tp1" /></div>
+        <div class="field"><label>Exit <span class="field-hint">nur bei vorzeitigem Schluss</span></label><input type="number" step="any" id="f_exit" /></div>
       </div>
       <div class="form-row">
         <div class="field">
           <label>Ergebnis</label>
           <select id="f_result" required>
             <option value="">— wählen —</option>
-            <option value="tp">TP1 erreicht</option>
-            <option value="partial">Teilgewinn</option>
+            <option value="tp">TP erreicht (komplett geschlossen)</option>
+            <option value="partial">Vorzeitig geschlossen</option>
             <option value="be">Break-even</option>
             <option value="sl">Stop Loss</option>
             <option value="open">Offen / unklar</option>
@@ -166,7 +178,7 @@
         </div>
         <div class="field">
           <label>Ergebnis in R</label>
-          <input type="number" step="0.01" id="f_r" placeholder="z.B. 2.2 oder -1" />
+          <input type="number" step="0.01" id="f_r" placeholder="wird berechnet" />
         </div>
       </div>
       <div class="field">

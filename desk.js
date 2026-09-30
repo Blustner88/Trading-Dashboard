@@ -24,20 +24,36 @@ function minutesLeft(ts) {
   return m > 0 ? `noch ${m} min` : 'läuft ab';
 }
 
+// Strategie-Regel: Trend ≥ 2R, Scale-In 1,5–2R, Pullback 1,5R — am TP komplett schließen.
+const MIN_R = { 'Trend': 2, 'Scale-In': 1.5, 'Pullback': 1.5 };
+const fmtR1 = (v) => v == null ? '–' : `${Number(v).toFixed(1).replace('.', ',')}R`;
+
+function rewardR(p) {
+  const e = Number(p.entry_price), sl = Number(p.stop_loss), tp = Number(p.take_profit);
+  if (!isFinite(e) || !isFinite(sl) || !isFinite(tp) || e === sl) return null;
+  return Math.abs(tp - e) / Math.abs(e - sl);
+}
+
 function renderPending(rows) {
   $('pendingList').innerHTML = rows.length ? rows.map(p => {
-    const runner = p.tp1_lots != null ? Math.round((p.lots - p.tp1_lots) * 100) / 100 : null;
-    const tpNote = runner > 0 ? `${p.tp1_lots} Lots schließen, ${runner} trailen` : 'alles schließen';
+    const rr = rewardR(p);
+    const minR = MIN_R[p.setup_type];
+    const partial = p.tp1_lots != null && Number(p.tp1_lots) < Number(p.lots);
+    const warn = [
+      minR != null && rr != null && rr < minR - 0.05 ? `unter ${fmtR1(minR)} Minimum` : null,
+      partial ? 'Bot plant Teilschluss' : null,
+    ].filter(Boolean).join(' · ');
+    const tpNote = warn ? `⚠ ${warn}` : 'komplett schließen';
     return `
     <div class="proposal ${p.direction === 'short' ? 'short' : 'long'}">
       <div class="proposal-head">
-        <span><span class="proposal-pair">${esc(p.pair)}</span>${dirTag(p.direction)}</span>
+        <span><span class="proposal-pair">${esc(p.pair)}</span>${dirTag(p.direction)}${p.setup_type ? `<span class="setup-tag">${esc(p.setup_type)}</span>` : ''}</span>
         <span class="valid">bis ${hhmm(p.valid_until)} · ${minutesLeft(p.valid_until)}</span>
       </div>
       <div class="levels">
         <div class="level"><span class="kpi-label">Entry</span><span class="v">${esc(p.entry_price)}</span></div>
         <div class="level"><span class="kpi-label">SL</span><span class="v">${esc(p.stop_loss)}</span><span class="s">${esc(p.sl_pips)} Pips</span></div>
-        <div class="level"><span class="kpi-label">TP1 2,2R</span><span class="v">${esc(p.take_profit)}</span><span class="s">${esc(tpNote)}</span></div>
+        <div class="level"><span class="kpi-label">TP ${fmtR1(rr)}</span><span class="v">${esc(p.take_profit)}</span><span class="s${warn ? ' warn' : ''}">${esc(tpNote)}</span></div>
         <div class="level"><span class="kpi-label">Lots</span><span class="v">${esc(p.lots)}</span><span class="s">${esc(p.risk_percent)} % Risiko</span></div>
       </div>
       <p class="why"><b>Technik:</b> ${esc(p.tech_notes)}</p>

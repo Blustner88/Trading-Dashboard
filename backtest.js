@@ -8,11 +8,17 @@ const CHECKLIST = [
   { id: 'zone',   label: 'Preis an definierter 4H-Zone / Key-Level' },
   { id: 'trigger',label: '15M-Trigger bestätigt (Schlusskurs, nicht Docht)' },
   { id: 'sl',     label: 'SL ATR-basiert und hinter Struktur' },
-  { id: 'room',   label: 'Freier Weg bis 2,2R (kein Level im Weg)' },
+  { id: 'room',   label: 'Freier Weg bis zum Ziel-R (kein Level im Weg)' },
   { id: 'news',   label: 'Kein High-Impact-Event im Trade-Fenster' },
 ];
 const TARGET = 50;
-const TP1_R = 2.2, TP1_SHARE = 0.8;
+// Ziel-R je Setup-Typ. Position wird am TP komplett geschlossen.
+const SETUPS = {
+  'Trend':    { min: 2,   max: null, def: 2,   hint: 'mind. 2R, höher bei Freiraum' },
+  'Scale-In': { min: 1.5, max: 2,    def: 1.5, hint: '1,5–2R je nach Freiraum' },
+  'Pullback': { min: 1.5, max: 1.5,  def: 1.5, hint: 'fix 1,5R' },
+};
+const SETUP_ORDER = Object.keys(SETUPS);
 const WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
 const GRADES = ['A+', 'A', 'B', 'C'];
 
@@ -97,6 +103,7 @@ function render() {
   $('streakInfo').textContent = s.n ? `Längste Verlustserie: ${s.maxStreak}` : '';
 
   renderChart(s.curve);
+  renderBreakdown('bySetup', list, r => r.setup_type || '–', SETUP_ORDER.concat('–'));
   renderBreakdown('byGrade', list, r => r.grade || '–', GRADES);
   renderBreakdown('byPair', list, r => r.pair);
   renderBreakdown('bySession', list, r => r.session || '–');
@@ -159,7 +166,7 @@ function renderList(list) {
           <span class="bt-grade g-${(r.grade || 'C').replace('+', 'p')}">${esc(r.grade || '–')}</span>
         </div>
         <div class="tc-meta"><span>${d}</span><span>${esc(r.session || '')}</span><span>${r.checklist_score ?? 0}/${CHECKLIST.length}</span></div>
-        ${r.setup_type ? `<div class="tc-setup">${esc(r.setup_type)}</div>` : ''}
+        ${r.setup_type ? `<div class="tc-setup">${esc(r.setup_type)}${r.target_r != null ? ` · Ziel ${Number(r.target_r).toFixed(1).replace('.', ',')}R` : ''}</div>` : ''}
       </div>
       <div class="tc-r"><span class="tc-r-value ${rv > 0 ? 'pos' : rv < 0 ? 'neg' : ''}">${fmtR(rv)}</span></div>
     </div>`;
@@ -211,7 +218,8 @@ function openModal(r = null) {
     $('f_pair').value = r.pair;
     $('f_date').value = toLocalInput(r.setup_date);
     $('f_session').value = r.session || '';
-    $('f_setup').value = r.setup_type || '';
+    $('f_setup').value = SETUPS[r.setup_type] ? r.setup_type : '';
+    $('f_target').value = r.target_r ?? '';
     $('f_entry').value = r.entry_price ?? '';
     $('f_sl').value = r.stop_loss ?? '';
     $('f_tp1').value = r.tp1 ?? '';
@@ -222,6 +230,8 @@ function openModal(r = null) {
     $('f_chart').value = r.chart_url || '';
     $('f_notes').value = r.notes || '';
   }
+  tpManual = !!(r && r.tp1 != null);
+  applySetupRule(false);
   updateGradePreview();
   $('modalOverlay').classList.add('visible');
 }
@@ -231,16 +241,41 @@ function closeModal() {
   editingId = null;
 }
 
-// R aus Preisen, falls nicht manuell eingetragen: 80 % bei 2,2R, Rest am Exit.
-function computeR(result, entry, sl, exit) {
+// ---------- Ziel-R & Take Profit ----------
+let tpManual = false;
+
+function applySetupRule(resetTarget = true) {
+  const rule = SETUPS[$('f_setup').value];
+  const t = $('f_target');
+  $('targetHint').textContent = rule ? rule.hint : '';
+  if (!rule) { t.disabled = false; t.removeAttribute('min'); t.removeAttribute('max'); return; }
+  t.min = rule.min;
+  if (rule.max != null) t.max = rule.max; else t.removeAttribute('max');
+  if (resetTarget || t.value === '') t.value = rule.def;
+  t.disabled = rule.min === rule.max;
+  if (t.disabled) t.value = rule.min;
+  syncTp();
+}
+
+// TP aus Entry, SL und Ziel-R, solange der TP nicht von Hand geändert wurde
+function syncTp() {
+  const entry = num($('f_entry').value), sl = num($('f_sl').value), tr = num($('f_target').value);
+  if (tpManual || entry == null || sl == null || tr == null || entry === sl || !direction) return;
+  const risk = Math.abs(entry - sl), sign = direction === 'short' ? -1 : 1;
+  const decimals = Math.max(countDecimals($('f_entry').value), countDecimals($('f_sl').value));
+  $('f_tp1').value = (entry + sign * tr * risk).toFixed(decimals);
+}
+const countDecimals = (v) => (String(v).split('.')[1] || '').length;
+
+// R aus Preisen, falls nicht manuell eingetragen. Am TP wird komplett geschlossen.
+function computeR(result, entry, sl, exit, targetR) {
   if (result === 'sl') return -1;
   if (result === 'be') return 0;
+  if (result === 'tp' && targetR != null) return +targetR.toFixed(2);
   if (entry == null || sl == null || entry === sl) return null;
   const risk = Math.abs(entry - sl);
   const sign = direction === 'short' ? -1 : 1;
-  const restR = exit != null ? sign * (exit - entry) / risk : TP1_R;
-  if (result === 'tp') return +(TP1_SHARE * TP1_R + (1 - TP1_SHARE) * restR).toFixed(2);
-  if (result === 'partial' && exit != null) return +restR.toFixed(2);
+  if (result === 'partial' && exit != null) return +(sign * (exit - entry) / risk).toFixed(2);
   return null;
 }
 
@@ -251,8 +286,14 @@ async function save(e) {
   const score = Object.values(checklist).filter(Boolean).length;
   const entry = num($('f_entry').value), sl = num($('f_sl').value), exit = num($('f_exit').value);
   const result = $('f_result').value;
+  const setupType = $('f_setup').value;
+  const rule = SETUPS[setupType];
+  const targetR = num($('f_target').value);
+  if (rule && (targetR == null || targetR < rule.min || (rule.max != null && targetR > rule.max))) {
+    toast(`Ziel-R für ${setupType}: ${rule.hint}.`); return;
+  }
   let r = num($('f_r').value);
-  if (r == null && result !== 'open') r = computeR(result, entry, sl, exit);
+  if (r == null && result !== 'open') r = computeR(result, entry, sl, exit, targetR);
 
   const payload = {
     test_series: $('f_series').value.trim(),
@@ -260,7 +301,8 @@ async function save(e) {
     direction,
     setup_date: new Date($('f_date').value).toISOString(),
     session: $('f_session').value || null,
-    setup_type: $('f_setup').value.trim() || null,
+    setup_type: setupType || null,
+    target_r: targetR,
     checklist, checklist_score: score, grade: gradeFor(score),
     entry_price: entry, stop_loss: sl, tp1: num($('f_tp1').value), exit_price: exit,
     result, r_multiple: r, mfe_r: num($('f_mfe').value),
@@ -319,7 +361,10 @@ function init() {
   $('deleteBtn').onclick = remove;
   $('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
   $('btForm').onsubmit = save;
-  document.querySelectorAll('#f_direction .seg-btn').forEach(b => b.onclick = () => setDirection(b.dataset.value));
+  document.querySelectorAll('#f_direction .seg-btn').forEach(b => b.onclick = () => { setDirection(b.dataset.value); syncTp(); });
+  $('f_setup').onchange = () => applySetupRule(true);
+  ['f_entry', 'f_sl', 'f_target'].forEach(id => $(id).addEventListener('input', syncTp));
+  $('f_tp1').addEventListener('input', () => { tpManual = $('f_tp1').value !== ''; });
   $('seriesSelect').onchange = (e) => { series = e.target.value; localStorage.setItem('td_bt_series', series); render(); };
   load();
 }

@@ -57,3 +57,4 @@
   .bt-breakdowns { grid-template-columns: 1fr; }
   .bt-chart { height: 160px; }
 }
+.field-hint { font-weight: 400; color: var(--text-faint); font-size: 11px; margin-left: 4px; text-transform: none; letter-spacing: 0; }

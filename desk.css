@@ -160,3 +160,5 @@
 @media (prefers-reduced-motion: reduce) {
   .agent *, .agent { animation: none !important; transition: none !important; }
 }
+.setup-tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-left: 8px; padding: 2px 6px; border-radius: 4px; background: var(--border-soft); color: var(--text-muted); }
+.level .s.warn { color: var(--amber); }
