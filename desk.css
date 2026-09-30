@@ -70,3 +70,93 @@
   .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .row { grid-template-columns: 90px minmax(0, 1fr) auto; }
 }
+
+/* ===== Team-Büro (animierte Agenten) ===== */
+.office-panel { margin-bottom: 16px; overflow: visible; }
+.office {
+  position: relative;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
+  padding: 58px 4px 4px;
+}
+.agent {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px;
+  background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 12px;
+  padding: 12px 8px 10px; transition: border-color .3s, box-shadow .3s;
+}
+.agent.working { border-color: var(--border); box-shadow: 0 0 0 1px rgba(99,102,241,0.25), 0 8px 24px -12px rgba(99,102,241,0.5); }
+.agent-svg { width: 100%; max-width: 132px; height: auto; image-rendering: pixelated; overflow: visible; }
+.agent-meta { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 0; width: 100%; }
+.agent-name { font-size: 11.5px; }
+.agent-role { font-size: 11px; color: var(--text-faint); }
+.agent-status { font-size: 11px; color: var(--text-muted); max-width: 100%; }
+.agent.working .agent-mode { color: var(--profit); font-weight: 600; }
+
+/* Bildschirm-Glühen und Tippen */
+.agent .lid-glow { opacity: .35; }
+.agent.working .lid-glow { animation: glow 0.9s steps(2) infinite; }
+.agent.working .hand-l { animation: type 0.22s steps(1) infinite; }
+.agent.working .hand-r { animation: type 0.22s steps(1) infinite 0.11s; }
+.agent.working .body-g { animation: lean 2.4s ease-in-out infinite; }
+@keyframes glow { 0% { opacity: .5; } 100% { opacity: 1; } }
+@keyframes type { 0% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
+@keyframes lean { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(0.6px); } }
+
+/* Ruhe: leichtes Atmen, Blinzeln */
+.agent.idle .body-g { animation: breathe 3.2s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.5px); } }
+.agent.blink .eye { transform: scaleY(0.2); transform-box: fill-box; transform-origin: center; }
+
+/* Schlafen: Kopf gesenkt, Augen zu, Zzz */
+.agent.sleeping .body-g { transform: translateY(1.5px); }
+.agent.sleeping .eye { transform: scaleY(0.2); transform-box: fill-box; transform-origin: center; }
+.agent.sleeping { opacity: .75; }
+.zzz { position: absolute; top: 14px; right: 22%; font-family: var(--font-mono); font-weight: 700; font-size: 12px; color: var(--text-faint); display: none; }
+.zzz span { display: inline-block; }
+.agent.sleeping .zzz { display: block; animation: zzz 3s ease-in-out infinite; }
+.zzz span:nth-child(1) { font-size: 10px; transform: translate(2px, -6px); }
+.zzz span:nth-child(2) { font-size: 8px; transform: translate(4px, -12px); }
+@keyframes zzz { 0% { opacity: 0; transform: translateY(4px); } 30%, 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+
+/* Sprechblase */
+.bubble {
+  position: absolute; bottom: calc(100% - 6px); left: 50%; z-index: 3;
+  width: max-content; max-width: min(240px, 44vw);
+  background: var(--text); color: #0a0c10; font-size: 11.5px; line-height: 1.4;
+  padding: 7px 10px; border-radius: 10px;
+  opacity: 0; transform: translate(-50%, 6px); pointer-events: none;
+  transition: opacity .25s, transform .25s;
+}
+.bubble b { color: #0a0c10; }
+.bubble::after {
+  content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+  border: 6px solid transparent; border-top-color: var(--text);
+}
+.bubble.show { opacity: 1; transform: translate(-50%, 0); }
+.agent:first-child .bubble { left: 0; transform: translate(0, 6px); }
+.agent:first-child .bubble.show { transform: translate(0, 0); }
+.agent:first-child .bubble::after { left: 24px; }
+.agent:last-child .bubble { left: auto; right: 0; transform: translate(0, 6px); }
+.agent:last-child .bubble.show { transform: translate(0, 0); }
+.agent:last-child .bubble::after { left: auto; right: 24px; transform: none; }
+
+/* Fliegendes Dokument (Übergabe zwischen Agenten) */
+.flying-doc {
+  position: absolute; top: 0; left: 0; z-index: 4; pointer-events: none;
+  display: flex; align-items: center; gap: 4px; margin: -12px 0 0 -12px;
+  font-size: 18px;
+}
+.flying-doc b { font-family: var(--font-mono); font-size: 10.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 4px; }
+
+@media (max-width: 900px) {
+  .office { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-top: 52px; row-gap: 60px; }
+  .agent:nth-child(2) .bubble, .agent:nth-child(4) .bubble { left: auto; right: 0; transform: translate(0, 6px); }
+  .agent:nth-child(2) .bubble.show, .agent:nth-child(4) .bubble.show { transform: translate(0, 0); }
+  .agent:nth-child(2) .bubble::after, .agent:nth-child(4) .bubble::after { left: auto; right: 24px; transform: none; }
+  .agent:nth-child(3) .bubble { left: 0; transform: translate(0, 6px); }
+  .agent:nth-child(3) .bubble.show { transform: translate(0, 0); }
+  .agent:nth-child(3) .bubble::after { left: 24px; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent *, .agent { animation: none !important; transition: none !important; }
+}

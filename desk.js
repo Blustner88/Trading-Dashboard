@@ -1,4 +1,5 @@
 import { supabase } from './accounts.js';
+import { initAgents, seedAgents, agentSquawk, agentProposal, seedProposals, runDemo } from './desk-agents.js';
 
 // Desk: nur lesend. Vorschläge und Squawk schreibt der lokale Bot;
 // entschieden wird per Telegram.
@@ -87,6 +88,7 @@ async function loadProposals() {
       .order('updated_at', { ascending: false }).limit(25),
     supabase.from('trade_proposals').select('status').gte('updated_at', startOfDay.toISOString()),
   ]);
+  seedProposals([...(open || []), ...(history || [])]);
   const pending = (open || []).filter(r => r.status === 'pending');
   const watching = (open || []).filter(r => r.status === 'watching');
   renderPending(pending);
@@ -100,6 +102,7 @@ async function loadProposals() {
 
 async function loadSquawk() {
   const { data } = await supabase.from('desk_squawk').select('*').order('created_at', { ascending: false }).limit(150);
+  seedAgents(data);
   $('squawkFeed').innerHTML = (data || []).length
     ? data.map(s => squawkRow(s)).join('')
     : '<p class="desk-empty">Noch keine Meldungen.</p>';
@@ -111,12 +114,15 @@ function subscribe() {
       const feed = $('squawkFeed');
       if (feed.querySelector('.desk-empty')) feed.innerHTML = '';
       feed.insertAdjacentHTML('afterbegin', squawkRow(s, true));
+      agentSquawk(s);
     })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'trade_proposals' }, () => loadProposals())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'trade_proposals' }, (evt) => { agentProposal(evt); loadProposals(); })
     .subscribe((status) => $('liveDot').classList.toggle('on', status === 'SUBSCRIBED'));
 }
 
+initAgents($('agentOffice'));
 await Promise.all([loadProposals(), loadSquawk()]);
+if (new URLSearchParams(location.search).has('demo')) runDemo();
 subscribe();
 // Fallback, falls Realtime hängt, und damit die Restlaufzeiten aktuell bleiben
 setInterval(loadProposals, 60000);
