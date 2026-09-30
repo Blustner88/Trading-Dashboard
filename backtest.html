@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Backtest — Trading Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="backtest.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <nav class="tabnav">
+      <a href="dashboard.html" class="tab-link">Dashboard</a>
+      <a href="desk.html" class="tab-link">Desk</a>
+      <a href="index.html" class="tab-link">Journal</a>
+      <a href="backtest.html" class="tab-link active">Backtest</a>
+      <a href="planning.html" class="tab-link">Planung</a>
+      <a href="accounting.html" class="tab-link">Steuer</a>
+      <a href="invoices.html" class="tab-link">Rechnungen</a>
+      <a href="level.html" class="tab-link">Level</a>
+    </nav>
+    <div class="filter-spacer"></div>
+    <button class="btn-primary" id="openAddBt">+ Backtest-Trade</button>
+  </header>
+
+  <main class="dash-main">
+
+    <p class="bt-note">Backtest-Daten liegen in einer eigenen Tabelle und fließen nicht in Dashboard, Journal oder Level ein.</p>
+
+    <!-- Testreihe + Fortschritt -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3>Testreihe</h3>
+        <select id="seriesSelect" class="bt-series-select"></select>
+      </div>
+      <div class="bt-progress-label">
+        <span id="progressLabel">0 / 50 Trades</span>
+        <span id="progressHint">Ziel Phase 1: 50 Setups</span>
+      </div>
+      <div class="level-bar"><div class="level-bar-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="filter-group bt-grade-filter" id="gradeFilter">
+        <span class="filter-label">Grade</span>
+      </div>
+    </section>
+
+    <!-- KPIs -->
+    <section class="kpi-grid">
+      <div class="kpi-card"><span class="kpi-label">Trades</span><span class="kpi-value" id="kCount">–</span></div>
+      <div class="kpi-card"><span class="kpi-label">Win-Rate</span><span class="kpi-value" id="kWin">–</span></div>
+      <div class="kpi-card"><span class="kpi-label">Expectancy</span><span class="kpi-value" id="kExp">–</span></div>
+      <div class="kpi-card"><span class="kpi-label">Total R</span><span class="kpi-value" id="kTotal">–</span></div>
+      <div class="kpi-card"><span class="kpi-label">Profit Factor</span><span class="kpi-value" id="kPF">–</span></div>
+      <div class="kpi-card"><span class="kpi-label">Max DD</span><span class="kpi-value neg" id="kDD">–</span></div>
+    </section>
+
+    <!-- Equity-Kurve in R -->
+    <section class="panel">
+      <div class="panel-header"><h3>Equity-Kurve (R)</h3><span class="bt-hint" id="streakInfo"></span></div>
+      <div id="equityChart" class="bt-chart"></div>
+    </section>
+
+    <!-- Aufschlüsselungen -->
+    <section class="bt-breakdowns">
+      <div class="panel"><div class="panel-header"><h3>Nach Grade</h3></div><div id="byGrade"></div></div>
+      <div class="panel"><div class="panel-header"><h3>Nach Pair</h3></div><div id="byPair"></div></div>
+      <div class="panel"><div class="panel-header"><h3>Nach Session</h3></div><div id="bySession"></div></div>
+      <div class="panel"><div class="panel-header"><h3>Nach Wochentag</h3></div><div id="byWeekday"></div></div>
+    </section>
+
+    <!-- Liste -->
+    <section class="panel">
+      <div class="panel-header"><h3>Backtest-Trades</h3></div>
+      <div class="tradelist" id="btList"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Backtest-Trade erfassen</h2>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+
+    <form id="btForm" class="trade-form">
+      <div class="field">
+        <label>Testreihe</label>
+        <input type="text" id="f_series" list="seriesList" required placeholder="z.B. BITR v1" />
+        <datalist id="seriesList"></datalist>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>Pair</label>
+          <input type="text" id="f_pair" list="pairList" required placeholder="z.B. GBPAUD" />
+          <datalist id="pairList"></datalist>
+        </div>
+        <div class="field">
+          <label>Richtung</label>
+          <div class="segmented" id="f_direction">
+            <button type="button" class="seg-btn" data-value="long">Long</button>
+            <button type="button" class="seg-btn" data-value="short">Short</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field">
+          <label>Setup-Datum/Zeit (historisch)</label>
+          <input type="datetime-local" id="f_date" required />
+        </div>
+        <div class="field">
+          <label>Session</label>
+          <select id="f_session">
+            <option value="">–</option>
+            <option>London</option>
+            <option>New York</option>
+            <option>Asia</option>
+            <option>Overlap</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Setup-Typ</label>
+        <input type="text" id="f_setup" placeholder="z.B. 4H-Zone Retest + 15M BOS" />
+      </div>
+
+      <hr class="form-divider" />
+      <p class="section-label">A+-Checkliste <span id="gradePreview" class="bt-grade">–</span></p>
+      <div class="bt-checklist" id="checklist"></div>
+
+      <hr class="form-divider" />
+      <div class="form-row">
+        <div class="field"><label>Entry</label><input type="number" step="any" id="f_entry" /></div>
+        <div class="field"><label>Stop Loss</label><input type="number" step="any" id="f_sl" /></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>TP1 (2,2R)</label><input type="number" step="any" id="f_tp1" /></div>
+        <div class="field"><label>Exit (Rest)</label><input type="number" step="any" id="f_exit" /></div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Ergebnis</label>
+          <select id="f_result" required>
+            <option value="">— wählen —</option>
+            <option value="tp">TP1 erreicht</option>
+            <option value="partial">Teilgewinn</option>
+            <option value="be">Break-even</option>
+            <option value="sl">Stop Loss</option>
+            <option value="open">Offen / unklar</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Ergebnis in R</label>
+          <input type="number" step="0.01" id="f_r" placeholder="z.B. 2.2 oder -1" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Max. möglicher Gewinn (MFE in R, optional)</label>
+        <input type="number" step="0.01" id="f_mfe" placeholder="Wie weit lief der Preis maximal in deine Richtung?" />
+      </div>
+      <div class="field">
+        <label>Chart-Link (TradingView-Snapshot)</label>
+        <input type="url" id="f_chart" placeholder="https://www.tradingview.com/x/…" />
+      </div>
+      <div class="field">
+        <label>Notizen / Learnings</label>
+        <textarea id="f_notes" rows="3"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="deleteBtn" style="display:none;">Löschen</button>
+        <div class="modal-actions-right">
+          <button type="button" class="btn-ghost" id="cancelBtn">Abbrechen</button>
+          <button type="submit" class="btn-primary">Speichern</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module" src="backtest.js"></script>
+</body>
+</html>
