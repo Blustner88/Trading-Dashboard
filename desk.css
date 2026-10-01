@@ -45,6 +45,20 @@
 .status.taken { background: var(--profit-soft); color: var(--profit); }
 .status.blocked { background: var(--loss-soft); color: var(--loss); }
 
+/* Schatten-Bilanz */
+.shadow-scroll { overflow-x: auto; }
+.shadow-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.shadow-table th { font-size: 10.5px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; text-align: right; padding: 4px 8px; }
+.shadow-table td { padding: 5px 8px; text-align: right; font-family: var(--font-mono); color: var(--text-muted); border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+.shadow-table td:first-child { text-align: left; font-family: var(--font-body); color: var(--text); }
+.shadow-table td.r { font-weight: 700; }
+.shadow-table .s { display: block; font-size: 10.5px; font-weight: 400; color: var(--text-faint); }
+.shadow-table tr.total td { font-weight: 700; color: var(--text); }
+.shadow-table tr.grp td { padding-top: 12px; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); border-bottom: none; }
+.shadow-sub { font-family: var(--font-display); font-size: 13px; font-weight: 600; margin: 16px 0 6px; }
+.shadow-open { font-size: 12.5px; color: var(--text-muted); line-height: 1.6; margin: 12px 0 4px; }
+.shadow-open .r { font-family: var(--font-mono); font-weight: 700; }
+
 /* Squawk */
 .squawk-panel { position: sticky; top: 12px; }
 .live-dot { font-size: 11px; color: var(--text-faint); }

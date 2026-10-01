@@ -87,6 +87,89 @@ function renderHistory(rows) {
   }).join('') : '<p class="desk-empty">Noch keine Entscheidungen.</p>';
 }
 
+// Schatten-Bilanz — gleiche Rechnung wie shadow.py (/bilanz im Telegram)
+const RISK_PERCENT = 0.8;          // risk.DEFAULT_RISK_PERCENT
+const MAX_CONCURRENT_TRADES = 3;   // risk.MAX_CONCURRENT_TRADES
+const CLOSED = ['tp', 'sl', 'timeout'];
+const HORIZONS = [['Woche', 1], ['Monat', 52 / 12], ['Quartal', 13], ['Jahr', 52]];
+const SHADOW_STATUS_LABEL = {
+  taken: 'Genommen', dismissed: 'Verworfen', expired: 'Abgelaufen / kein Setup', blocked: 'Blockiert (Risk)',
+  analysed: 'Nie verarbeitet', watching: 'Wartet auf Setup', pending: 'Offen',
+};
+const signed = (v, digits = 2) => `${v > 0 ? '+' : ''}${v.toFixed(digits)}`;
+const rClass = (v) => v > 0 ? 'pos' : v < 0 ? 'neg' : '';
+
+function scoreBucket(score) {
+  const s = Math.abs(Number(score || 0));
+  return s >= 25 ? 'Score ≥25' : s >= 15 ? 'Score 15–24' : 'Score <15';
+}
+
+function statsCells(rows) {
+  const rs = rows.map(r => Number(r.shadow_r));
+  const sum = rs.reduce((a, b) => a + b, 0);
+  const wins = rows.filter(r => r.shadow_result === 'tp').length;  // TP1 erreicht
+  return `<td>${rows.length}</td><td>${Math.round(wins / rows.length * 100)} %</td>
+    <td class="r ${rClass(sum)}">${signed(sum / rows.length)}R</td><td class="r ${rClass(sum)}">${signed(sum, 1)}R</td>`;
+}
+
+function groupTable(title, closed, key) {
+  const buckets = {};
+  closed.forEach(r => (buckets[key(r)] ||= []).push(r));
+  const body = Object.keys(buckets).sort().map(k => `<tr><td>${esc(k)}</td>${statsCells(buckets[k])}</tr>`).join('');
+  return `<tr class="grp"><td colspan="5">${title}</td></tr>${body}`;
+}
+
+function projectionTable(closed) {
+  const start = Math.min(...closed.map(r => new Date(r.shadow_start || r.created_at).getTime()));
+  const weeks = Math.max((Date.now() - start) / (7 * 86400000), 1);   // unter 1 Woche nicht aufblasen
+  const groups = [
+    ['Alle Vorschläge', closed],
+    ['Mit BITR-Setup', closed.filter(r => r.entry_price != null)],
+    ['Genommen', closed.filter(r => r.status === 'taken')],
+  ].filter(([, rows]) => rows.length);
+  const body = groups.map(([label, rows]) => {
+    const perWeek = rows.reduce((a, r) => a + Number(r.shadow_r), 0) / weeks;
+    return `<tr><td>${label}<span class="s">${(rows.length / weeks).toFixed(1)}/Wo.</span></td>${HORIZONS.map(([, w]) => {
+      const r = perWeek * w;
+      return `<td class="r ${rClass(r)}">${signed(r, 1)}R<span class="s">${signed(r * RISK_PERCENT, 1)} %</span></td>`;
+    }).join('')}</tr>`;
+  }).join('');
+  return `
+    <h4 class="shadow-sub">Hochrechnung <span class="desk-hint">Tempo der letzten ${weeks.toFixed(1)} Wo. · ${RISK_PERCENT} % Risiko/Trade</span></h4>
+    <div class="shadow-scroll"><table class="shadow-table proj">
+      <thead><tr><th></th>${HORIZONS.map(([n]) => `<th>${n}</th>`).join('')}</tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>
+    <p class="desk-hint">Linear, ohne Zinseszins und ohne Limit von ${MAX_CONCURRENT_TRADES} gleichzeitigen Trades.</p>`;
+}
+
+async function loadShadow() {
+  const { data } = await supabase.from('trade_proposals')
+    .select('pair, status, conviction, score, entry_price, created_at, shadow_start, shadow_result, shadow_r')
+    .in('shadow_result', [...CLOSED, 'open']);
+  const rows = (data || []).filter(r => r.shadow_r != null);
+  const closed = rows.filter(r => CLOSED.includes(r.shadow_result));
+  const open = rows.filter(r => r.shadow_result === 'open');
+  if (!closed.length) {
+    $('shadowStats').innerHTML = `<p class="desk-empty">Noch kein Vorschlag abgeschlossen${open.length ? ` (${open.length} offen)` : ''}.</p>`;
+    return;
+  }
+  $('shadowStats').innerHTML = `
+    <div class="shadow-scroll"><table class="shadow-table">
+      <thead><tr><th></th><th>Anzahl</th><th>TP1</th><th>Ø</th><th>Σ</th></tr></thead>
+      <tbody>
+        <tr class="total"><td>Gesamt</td>${statsCells(closed)}</tr>
+        ${groupTable('Nach deiner Entscheidung', closed, r => SHADOW_STATUS_LABEL[r.status] || r.status)}
+        ${groupTable('Nach Conviction', closed, r => r.conviction || '?')}
+        ${groupTable('Nach Score', closed, r => scoreBucket(r.score))}
+      </tbody>
+    </table></div>
+    ${projectionTable(closed)}
+    ${open.length ? `<p class="shadow-open"><b>Noch offen (${open.length}):</b> ${open.map(r =>
+      `${esc(r.pair)} <span class="r ${rClass(Number(r.shadow_r))}">${signed(Number(r.shadow_r), 1)}R</span>`).join(' · ')}</p>` : ''}
+    ${closed.length < 30 ? `<p class="desk-hint">Erst ${closed.length} abgeschlossene Vorschläge — unter ~30 ist das statistisch noch nicht belastbar.</p>` : ''}`;
+}
+
 function squawkRow(s, isNew = false) {
   return `
     <div class="sq${isNew ? ' new' : ''}">
@@ -114,6 +197,7 @@ async function loadProposals() {
   $('kpiPending').textContent = pending.length;
   $('kpiTaken').textContent = (today || []).filter(r => r.status === 'taken').length;
   $('kpiBlocked').textContent = (today || []).filter(r => r.status === 'blocked').length;
+  await loadShadow();
 }
 
 async function loadSquawk() {
