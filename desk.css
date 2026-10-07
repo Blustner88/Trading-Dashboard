@@ -96,27 +96,28 @@
 }
 .office-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
-/* Tageszeit im Fenster */
-.office .sky-top { stop-color: #0b1026; }
-.office .sky-bottom { stop-color: #27234a; }
-.office .bld { fill: #121726; }
-.office .lit { fill: #fcd34d; opacity: .75; }
-.office .sun { fill: #fde68a; opacity: 0; }
+/* Tageszeit im Fenster: Himmel in 6 Farbstufen (Pixel-Look statt Verlauf) */
+.office .sky-0 { fill: #0b1026; } .office .sky-1 { fill: #0e1430; } .office .sky-2 { fill: #121838; }
+.office .sky-3 { fill: #171c40; } .office .sky-4 { fill: #1d2048; } .office .sky-5 { fill: #262450; }
+.office .bld { fill: #121726; } .office .bld2 { fill: #0e121e; }
+.office .lit { fill: #fcd34d; opacity: .8; }
+.office .beacon { fill: #f43f5e; animation: of-ping 2s steps(1) infinite; }
+.office .sun { opacity: 0; }
 .office .stars { opacity: .9; }
 .office .lamp-cone { opacity: 1; }
-.office.t-day .sky-top { stop-color: #60a5fa; }
-.office.t-day .sky-bottom { stop-color: #bfdbfe; }
-.office.t-day .bld { fill: #334155; }
-.office.t-day .lit { opacity: .08; }
-.office.t-day .sun { opacity: .9; }
+.office.t-day .sky-0 { fill: #3b82f6; } .office.t-day .sky-1 { fill: #4a8ff7; } .office.t-day .sky-2 { fill: #60a5fa; }
+.office.t-day .sky-3 { fill: #7cb5fb; } .office.t-day .sky-4 { fill: #93c5fd; } .office.t-day .sky-5 { fill: #bfdbfe; }
+.office.t-day .bld { fill: #334155; } .office.t-day .bld2 { fill: #283444; }
+.office.t-day .lit { opacity: .1; }
+.office.t-day .sun { opacity: .95; }
 .office.t-day .stars { opacity: 0; }
 .office.t-day .lamp-cone { opacity: .35; }
-.office.t-dusk .sky-top { stop-color: #4c1d95; }
-.office.t-dusk .sky-bottom { stop-color: #f97316; }
-.office.t-dusk .bld { fill: #1e1b3a; }
-.office.t-dusk .lit { opacity: .5; }
+.office.t-dusk .sky-0 { fill: #3b1a6e; } .office.t-dusk .sky-1 { fill: #5b2183; } .office.t-dusk .sky-2 { fill: #86297f; }
+.office.t-dusk .sky-3 { fill: #b83b6b; } .office.t-dusk .sky-4 { fill: #e2574c; } .office.t-dusk .sky-5 { fill: #f97316; }
+.office.t-dusk .bld { fill: #1e1b3a; } .office.t-dusk .bld2 { fill: #17152e; }
+.office.t-dusk .lit { opacity: .55; }
 .office.t-dusk .stars { opacity: .25; }
-.office .sky-top, .office .sky-bottom, .office .bld, .office .lit, .office .sun, .office .stars { transition: all 2s; }
+.office [class^="sky-"], .office .bld, .office .bld2, .office .lit, .office .sun, .office .stars { transition: fill 2s, opacity 2s; }
 
 /* Arbeitsplätze: SVG-Gruppen animieren */
 .st .person, .st .head, .st .hand, .st .eye, .st .steam, .st .live-candle { transform-box: fill-box; }
@@ -130,12 +131,12 @@
 
 .st.idle .person { animation: of-breathe 3.6s steps(1) infinite; }
 .st.working .screen-ui { opacity: 1; }
-.st.working .screen-glow { animation: of-glow 1.8s ease-in-out infinite; }
+.st.working .screen-glow { animation: of-glow 1.8s steps(2) infinite; }
 .st.working .hand-l { animation: of-type .24s steps(1) infinite; }
 .st.working .hand-r { animation: of-type .24s steps(1) infinite .12s; }
 .st.working .head { animation: of-nod 2.8s steps(1) infinite; }
-.st.working .steam { animation: of-steam 2.4s ease-in-out infinite; }
-.st.working .live-candle { animation: of-candle 1.2s ease-in-out infinite; transform-origin: 50% 100%; }
+.st.working .steam { animation: of-steam 2.4s steps(1) infinite; }
+.st.working .live-candle { animation: of-candle 1.2s steps(1) infinite; }
 .st.working .phone-glow { animation: of-ping 1s ease-in-out infinite; }
 .st.blink .eye { transform: scaleY(.15); }
 .st.sleeping .head { transform: translate(-4px, 8px); }
@@ -146,8 +147,8 @@
 @keyframes of-glow { 0%, 100% { opacity: .05; } 50% { opacity: .16; } }
 @keyframes of-type { 0% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @keyframes of-nod { 0%, 100% { transform: translate(0, 0); } 30% { transform: translate(0, 4px); } 60% { transform: translate(4px, 0); } }
-@keyframes of-steam { 0% { opacity: 0; transform: translateY(2px); } 40% { opacity: .8; } 100% { opacity: 0; transform: translateY(-6px); } }
-@keyframes of-candle { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.35); } }
+@keyframes of-steam { 0% { opacity: 0; transform: translateY(4px); } 33% { opacity: .8; transform: translateY(0); } 66% { opacity: .5; transform: translateY(-4px); } 100% { opacity: 0; transform: translateY(-8px); } }
+@keyframes of-candle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @keyframes of-ping { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
 
 /* Wandbildschirm */

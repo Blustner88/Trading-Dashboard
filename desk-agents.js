@@ -28,25 +28,6 @@ let officeEl = null;
 // ---------------------------------------------------------------------------
 // Szene
 // ---------------------------------------------------------------------------
-function skyline() {
-  // Feste Pseudo-Zufallsfolge, damit die Stadt bei jedem Laden gleich aussieht
-  let seed = 7;
-  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-  let out = '', x = 40;
-  while (x < 560) {
-    const w = 34 + Math.floor(rnd() * 46), h = 50 + Math.floor(rnd() * 120);
-    const top = 230 - h;
-    out += `<rect x="${x}" y="${top}" width="${w}" height="${h}" class="bld" />`;
-    for (let wy = top + 10; wy < 222; wy += 14) {
-      for (let wx = x + 6; wx < x + w - 8; wx += 11) {
-        if (rnd() < 0.38) out += `<rect x="${wx}" y="${wy}" width="5" height="7" class="lit" />`;
-      }
-    }
-    x += w + 4;
-  }
-  return out;
-}
-
 // ---------------------------------------------------------------------------
 // Figuren als moderne Pixel-Art: Raster mit PX Einheiten je Pixel, dunkle
 // Kontur, Licht links / Schatten rechts. Zeichen -> Farbe siehe palette().
@@ -157,92 +138,145 @@ function pixelHands(a) {
 }
 
 function screenUi(a) {
-  // Inhalt des Monitors (lokale Koordinaten: Bildschirm x 40..100, y -70..-26)
+  // Inhalt des Monitors (lokale Koordinaten: Bildschirm x 40..100, y -72..-24), alles im 4er-Raster
   switch (a.screen) {
     case 'chart': {
-      const c = [[46, -46, -38, 1], [53, -50, -42, 1], [60, -48, -40, 0], [67, -56, -46, 1], [74, -52, -45, 0], [81, -60, -50, 1], [88, -64, -55, 1]];
-      return c.map(([x, y1, y2, up], i) => `<g class="${i === c.length - 1 ? 'live-candle' : ''}"><path d="M${x + 2} ${y1 - 4} V${y2 + 4}" stroke="${up ? '#4ade80' : '#fb7185'}" stroke-width="1"/><rect x="${x}" y="${y1}" width="4" height="${y2 - y1}" fill="${up ? '#4ade80' : '#fb7185'}"/></g>`).join('')
-        + `<path d="M44 -34 L96 -34" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3 2"/>`;
+      const c = [[44, -44, 8, 1], [52, -48, 8, 1], [60, -48, 4, 0], [68, -56, 12, 1], [76, -52, 4, 0], [84, -60, 8, 1], [92, -64, 8, 1]];
+      return c.map(([x, y, h, up], i) => `<rect class="${i === c.length - 1 ? 'live-candle' : ''}" x="${x}" y="${y}" width="4" height="${h}" fill="${up ? '#4ade80' : '#fb7185'}"/>`).join('')
+        + [44, 56, 68, 80, 92].map(x => `<rect x="${x}" y="-32" width="4" height="4" fill="#fbbf24" opacity=".7"/>`).join('');
     }
-    case 'gauge':
-      return `<circle cx="62" cy="-48" r="13" fill="none" stroke="#2c3346" stroke-width="5"/>`
-        + `<circle class="gauge-arc" cx="62" cy="-48" r="13" fill="none" stroke="${a.color}" stroke-width="5" stroke-dasharray="52 82" transform="rotate(-90 62 -48)"/>`
-        + `<rect x="82" y="-60" width="12" height="3" rx="1.5" fill="#94a3b8"/><rect x="82" y="-52" width="9" height="3" rx="1.5" fill="#94a3b8"/><rect x="82" y="-44" width="12" height="3" rx="1.5" fill="#4ade80"/><rect x="82" y="-36" width="7" height="3" rx="1.5" fill="#94a3b8"/>`;
+    case 'gauge': {
+      const ring = ['..rrr..', '.r...r.', 'r.....r', 'g.....r', 'g.....r', '.g...g.', '..ggg..'];
+      return pixels(ring, { r: '#2c3346', g: a.color }, 44, -68)
+        + `<rect x="76" y="-64" width="16" height="4" fill="#94a3b8"/><rect x="76" y="-56" width="12" height="4" fill="#94a3b8"/><rect x="76" y="-48" width="16" height="4" fill="#4ade80"/><rect x="76" y="-40" width="8" height="4" fill="#94a3b8"/>`;
+    }
     case 'chat':
-      return `<rect x="45" y="-66" width="34" height="9" rx="4" fill="#334155"/><rect x="60" y="-53" width="35" height="9" rx="4" fill="${a.color}" opacity=".85"/>`
-        + `<rect class="chat-new" x="45" y="-40" width="28" height="9" rx="4" fill="#334155"/>`;
+      return `<rect x="44" y="-68" width="32" height="8" fill="#334155"/><rect x="60" y="-56" width="36" height="8" fill="${a.color}" opacity=".85"/>`
+        + `<rect class="chat-new" x="44" y="-44" width="28" height="8" fill="#334155"/>`;
     default:
-      return `<rect x="45" y="-66" width="22" height="14" rx="2" fill="${a.color}" opacity=".7"/><rect x="71" y="-66" width="24" height="3" rx="1.5" fill="#cbd5e1"/><rect x="71" y="-60" width="20" height="3" rx="1.5" fill="#64748b"/><rect x="71" y="-54" width="22" height="3" rx="1.5" fill="#64748b"/>`
-        + `<g class="news-lines"><rect x="45" y="-46" width="50" height="3" rx="1.5" fill="#64748b"/><rect x="45" y="-40" width="42" height="3" rx="1.5" fill="#64748b"/><rect x="45" y="-34" width="47" height="3" rx="1.5" fill="#64748b"/></g>`;
+      return `<rect x="44" y="-68" width="20" height="16" fill="${a.color}" opacity=".7"/><rect x="68" y="-68" width="28" height="4" fill="#cbd5e1"/><rect x="68" y="-60" width="20" height="4" fill="#64748b"/>`
+        + `<g class="news-lines"><rect x="44" y="-48" width="52" height="4" fill="#64748b"/><rect x="44" y="-40" width="40" height="4" fill="#64748b"/><rect x="44" y="-32" width="48" height="4" fill="#64748b"/></g>`;
   }
 }
 
+// Kasten mit abgeschnittenen Ecken (Pixel-Look statt Rundung)
+function pbox(x, y, w, h, fill, extra = '') {
+  return `<rect x="${x + 4}" y="${y}" width="${w - 8}" height="${h}" fill="${fill}" ${extra}/><rect x="${x}" y="${y + 4}" width="${w}" height="${h - 8}" fill="${fill}" ${extra}/>`;
+}
+
 function station(a) {
+  const mug = pixels(['wwwW.', 'wwwWW', 'wwwWW', 'wwwW.'], { w: '#e8ebf2', W: '#b6bccb' }, -92, -20);
   const phone = a.key === 'boss'
-    ? `<g class="phone"><rect x="-64" y="-12" width="14" height="22" rx="3" transform="rotate(-70 -57 -1)" fill="#0f172a" stroke="#475569" stroke-width="1"/><circle class="phone-glow" cx="-57" cy="-2" r="4" fill="${a.color}"/></g>`
+    ? `<g class="phone">${pbox(-68, -24, 16, 20, '#475569')}<rect x="-64" y="-20" width="8" height="12" fill="#0f172a"/><rect class="phone-glow" x="-64" y="-16" width="8" height="4" fill="${a.color}"/></g>`
     : '';
   return `
   <g class="st st-${a.key}" transform="translate(${a.x} ${DESK_Y})">
-    <ellipse cx="0" cy="74" rx="122" ry="9" fill="#000" opacity=".35"/>
-    <rect x="-48" y="-122" width="96" height="122" rx="20" fill="#20273a"/>
-    <rect x="-36" y="-116" width="72" height="5" rx="2.5" fill="${a.color}" opacity=".45"/>
+    <rect x="-116" y="72" width="232" height="8" fill="#000" opacity=".3"/>
+    <rect x="-108" y="80" width="216" height="4" fill="#000" opacity=".18"/>
+    <!-- Stuhl -->
+    <rect x="-40" y="-124" width="80" height="4" fill="#20273a"/><rect x="-44" y="-120" width="88" height="4" fill="#20273a"/>
+    <rect x="-48" y="-116" width="96" height="116" fill="#20273a"/>
+    <rect x="-44" y="-116" width="4" height="112" fill="#2a3249"/>
+    <rect x="-36" y="-116" width="72" height="4" fill="${a.color}" opacity=".45"/>
     ${pixelPerson(a)}
-    <rect x="-110" y="-4" width="220" height="12" rx="4" fill="#323a50"/>
-    <rect x="-110" y="-4" width="220" height="3" rx="1.5" fill="#4a5470"/>
-    <rect x="-102" y="8" width="204" height="62" rx="7" fill="#1a1f2d"/>
-    <rect x="-102" y="8" width="204" height="3" fill="${a.color}" opacity=".6"/>
-    <rect x="-28" y="-10" width="56" height="7" rx="2" fill="#0f131c"/>
+    <!-- Tisch -->
+    <rect x="-112" y="-4" width="224" height="4" fill="#4a5470"/>
+    <rect x="-112" y="0" width="224" height="8" fill="#323a50"/>
+    <rect x="-104" y="8" width="208" height="64" fill="#12151f"/>
+    <rect x="-100" y="8" width="200" height="60" fill="#1a1f2d"/>
+    <rect x="-100" y="8" width="200" height="4" fill="${a.color}" opacity=".6"/>
+    <rect x="-100" y="64" width="200" height="4" fill="#151925"/>
+    <rect x="-28" y="-12" width="56" height="8" fill="#0f131c"/>
+    ${[-24, -16, -8, 0, 8, 16].map(x => `<rect x="${x}" y="-12" width="4" height="4" fill="#232a3b"/>`).join('')}
     ${pixelHands(a)}
-    <rect x="66" y="-24" width="6" height="20" fill="#2c3346"/><rect x="56" y="-6" width="26" height="4" rx="2" fill="#2c3346"/>
-    <rect x="36" y="-76" width="68" height="54" rx="6" fill="#0b0e15" stroke="#2f3750" stroke-width="2"/>
+    <!-- Monitor -->
+    <rect x="64" y="-24" width="8" height="20" fill="#2c3346"/><rect x="56" y="-8" width="24" height="4" fill="#2c3346"/>
+    ${pbox(36, -76, 68, 56, '#2f3750')}
+    <rect x="40" y="-72" width="60" height="48" fill="#0b0e15"/>
+    <rect x="40" y="-72" width="60" height="4" fill="#141a26"/>
     <g class="screen-ui">${screenUi(a)}</g>
-    <rect class="screen-glow" x="38" y="-74" width="64" height="50" rx="5" fill="${a.color}"/>
-    <g class="mug"><rect x="-92" y="-20" width="15" height="16" rx="3" fill="#e8ebf2"/><path d="M-77 -16 Q-70 -13 -77 -9" stroke="#e8ebf2" stroke-width="2.5" fill="none"/>
-      <g class="steam" stroke="#94a3b8" stroke-width="1.6" fill="none" stroke-linecap="round"><path d="M-88 -24 Q-91 -30 -88 -36"/><path d="M-82 -24 Q-79 -31 -82 -38"/></g></g>
+    <rect class="screen-glow" x="40" y="-72" width="60" height="48" fill="${a.color}"/>
+    <g class="mug">${mug}
+      <g class="steam" fill="#94a3b8"><rect x="-88" y="-28" width="4" height="4"/><rect x="-84" y="-32" width="4" height="4"/><rect x="-88" y="-36" width="4" height="4"/><rect x="-80" y="-36" width="4" height="4"/></g></g>
     ${phone}
   </g>`;
 }
 
+function skyline() {
+  // Feste Pseudo-Zufallsfolge, damit die Stadt bei jedem Laden gleich aussieht; alles im 4er-Raster
+  let seed = 7;
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const snap = (v) => Math.round(v / 4) * 4;
+  let out = '', x = 40;
+  while (x < 560) {
+    const w = Math.min(snap(32 + rnd() * 44), 556 - x), h = snap(48 + rnd() * 116);
+    if (w < 8) break;
+    const top = 228 - h;
+    out += `<rect x="${x}" y="${top}" width="${w}" height="${h}" class="bld"/><rect x="${x + w - 8}" y="${top}" width="8" height="${h}" class="bld2"/>`;
+    if (rnd() < 0.3) out += `<rect x="${x + snap(w / 2) - 4}" y="${top - 12}" width="4" height="12" class="bld"/><rect x="${x + snap(w / 2) - 4}" y="${top - 16}" width="4" height="4" class="beacon"/>`;
+    for (let wy = top + 8; wy < 220; wy += 12) {
+      for (let wx = x + 4; wx < x + w - 12; wx += 8) {
+        if (rnd() < 0.36) out += `<rect x="${wx}" y="${wy}" width="4" height="4" class="lit"/>`;
+      }
+    }
+    x += w + 4;
+  }
+  return out;
+}
+
+function plant() {
+  const g = ['..l.....l', '.lL....lL.', '.lLl..lLl.', '..lLllLl..', '.l.lLLl.l.', 'lLl.ll.lLl', '.lLlllLl..', '..lLlLl...',
+    '...llll...', '....ll....', '..pppppp..', '..pPPPPp..', '...pPPp...', '...pppp...'];
+  return pixels(g.map(r => r.padEnd(10, '.')), { l: '#16a34a', L: '#4ade80', p: '#334155', P: '#475569' }, 564, 244);
+}
+
+function lamp(x) {
+  const shade = pixels(['..ooooooo..', '.ossssssso.', 'ossssssssso', '.yyyyyyyyy.'], { o: '#232a3d', s: '#2f3750', y: '#fde68a' }, x - 22, 24);
+  let cone = '';
+  for (let i = 0; i < 16; i++) {
+    const y = 40 + i * 16, half = 20 + i * 6;
+    cone += `<rect x="${x - Math.round(half / 4) * 4}" y="${y}" width="${Math.round(half / 4) * 8}" height="16" fill="#fde68a" opacity="${(0.045 - i * 0.0026).toFixed(3)}"/>`;
+  }
+  return `<g class="lamp"><rect x="${x - 2}" y="0" width="4" height="24" fill="#2f3750"/>${shade}<g class="lamp-cone">${cone}</g></g>`;
+}
+
 function scene() {
+  const SUN = ['..sss..', '.sssss.', 'sssssss', 'sssssss', 'sssssss', '.sssss.', '..sss..'];
+  // Boden: Dielen in zwei Tönen mit versetzten Fugen
+  let floor = '';
+  for (let r = 0, y = 304; y < H; r++, y += 16) {
+    floor += `<rect x="0" y="${y}" width="${W}" height="16" fill="${r % 2 ? '#171c28' : '#1a1f2c'}"/>`;
+    for (let x = (r % 2) * 48; x < W; x += 96) floor += `<rect x="${x}" y="${y}" width="4" height="16" fill="#131722"/>`;
+  }
   return `
-  <svg class="office-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-    <defs>
-      <linearGradient id="ofWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#171c2a"/><stop offset="1" stop-color="#0f131d"/></linearGradient>
-      <linearGradient id="ofFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1a1f2c"/><stop offset="1" stop-color="#10131b"/></linearGradient>
-      <linearGradient id="ofSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="sky-top"/><stop offset="1" class="sky-bottom"/></linearGradient>
-      <radialGradient id="ofLamp" cx=".5" cy="0" r=".9"><stop offset="0" stop-color="#fde68a" stop-opacity=".22"/><stop offset="1" stop-color="#fde68a" stop-opacity="0"/></radialGradient>
-      <clipPath id="ofWin"><rect x="40" y="36" width="520" height="194" rx="10"/></clipPath>
-    </defs>
+  <svg class="office-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" shape-rendering="crispEdges" aria-hidden="true">
+    <!-- Wand mit Paneelen, Sockel und Fußleiste -->
+    <rect width="${W}" height="304" fill="#161b28"/>
+    ${Array.from({ length: 9 }, (_, i) => `<rect x="${i * 120 + 56}" y="0" width="4" height="248" fill="#1a2030"/>`).join('')}
+    <rect y="248" width="${W}" height="48" fill="#131826"/>
+    <rect y="244" width="${W}" height="4" fill="#222a3d"/>
+    <rect y="296" width="${W}" height="8" fill="#252c3e"/>
+    <rect y="296" width="${W}" height="4" fill="#2d3550"/>
+    ${floor}
 
-    <rect width="${W}" height="300" fill="url(#ofWall)"/>
-    <rect y="300" width="${W}" height="${H - 300}" fill="url(#ofFloor)"/>
-    <g opacity=".06" stroke="#c7d2fe">${Array.from({ length: 13 }, (_, i) => `<path d="M${i * 90 - 40} 300 L${i * 110 - 160} ${H}"/>`).join('')}<path d="M0 340 H${W}"/><path d="M0 395 H${W}"/></g>
-    <rect y="296" width="${W}" height="5" fill="#252c3e"/>
-
-    <!-- Fenster mit Skyline (Tageszeit per CSS) -->
-    <g clip-path="url(#ofWin)">
-      <rect x="40" y="36" width="520" height="194" fill="url(#ofSky)"/>
-      <g class="stars">${[[90, 60], [160, 48], [250, 70], [330, 52], [420, 64], [500, 46], [530, 80]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.2" fill="#e0e7ff"/>`).join('')}</g>
-      <circle class="sun" cx="470" cy="78" r="18"/>
-      <g class="city">${skyline()}</g>
-    </g>
-    <rect x="40" y="36" width="520" height="194" rx="10" fill="none" stroke="#2c3448" stroke-width="6"/>
-    <path d="M213 36 V230 M387 36 V230" stroke="#2c3448" stroke-width="5"/>
-    <rect x="34" y="228" width="532" height="8" rx="3" fill="#262d40"/>
+    <!-- Fenster mit Skyline (Himmelsstufen und Licht per CSS nach Tageszeit) -->
+    ${[0, 1, 2, 3, 4, 5].map(i => `<rect class="sky-${i}" x="40" y="${40 + i * 32}" width="520" height="32"/>`).join('')}
+    <g class="stars">${[[88, 56], [160, 48], [248, 68], [328, 52], [420, 60], [500, 48], [532, 80], [120, 96], [380, 88]].map(([x, y]) => `<rect x="${x}" y="${y}" width="4" height="4" fill="#e0e7ff"/>`).join('')}</g>
+    <g class="sun">${pixels(SUN, { s: '#fde68a' }, 456, 64)}</g>
+    <g class="city">${skyline()}</g>
+    <rect x="36" y="32" width="528" height="8" fill="#2c3448"/><rect x="36" y="32" width="528" height="4" fill="#3a4460"/>
+    <rect x="36" y="40" width="8" height="192" fill="#2c3448"/><rect x="556" y="40" width="8" height="192" fill="#2c3448"/>
+    <rect x="208" y="40" width="8" height="188" fill="#2c3448"/><rect x="384" y="40" width="8" height="188" fill="#2c3448"/>
+    <rect x="32" y="228" width="536" height="8" fill="#262d40"/><rect x="32" y="228" width="536" height="4" fill="#323b55"/>
 
     <!-- Wandbildschirm (Text als HTML darüber) -->
-    <rect x="606" y="40" width="318" height="166" rx="12" fill="#0a0d14" stroke="#2f3750" stroke-width="3"/>
-    <rect x="762" y="206" width="6" height="12" fill="#2f3750"/>
+    ${pbox(604, 36, 324, 172, '#2f3750')}
+    <rect x="612" y="44" width="308" height="156" fill="#0a0d14"/>
+    ${Array.from({ length: 19 }, (_, i) => `<rect x="612" y="${48 + i * 8}" width="308" height="4" fill="#0d1119"/>`).join('')}
+    <rect x="760" y="208" width="8" height="12" fill="#2f3750"/>
 
-    <!-- Pflanze -->
-    <g transform="translate(583 298)">
-      <path d="M-14 0 L-11 -26 H11 L14 0 Z" fill="#334155"/>
-      <g fill="#22c55e"><ellipse cx="-12" cy="-44" rx="7" ry="18" transform="rotate(-25 -12 -44)"/><ellipse cx="10" cy="-48" rx="7" ry="20" transform="rotate(22 10 -48)"/><ellipse cx="0" cy="-56" rx="6" ry="22"/></g>
-      <g fill="#16a34a"><ellipse cx="-4" cy="-38" rx="5" ry="14" transform="rotate(-10 -4 -38)"/><ellipse cx="6" cy="-36" rx="5" ry="13" transform="rotate(14 6 -36)"/></g>
-    </g>
-
-    <!-- Hängelampen -->
-    ${[270, 510, 750].map(x => `<g class="lamp"><path d="M${x} 0 V26" stroke="#2f3750" stroke-width="2"/><path d="M${x - 22} 40 Q${x} 18 ${x + 22} 40 Z" fill="#2f3750"/><ellipse cx="${x}" cy="40" rx="10" ry="3" fill="#fde68a"/><path class="lamp-cone" d="M${x - 20} 40 L${x - 110} 300 H${x + 110} L${x + 20} 40 Z" fill="url(#ofLamp)"/></g>`).join('')}
+    ${plant()}
+    ${[270, 510, 750].map(lamp).join('')}
 
     ${AGENTS.map(station).join('')}
   </svg>`;
