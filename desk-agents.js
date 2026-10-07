@@ -47,28 +47,113 @@ function skyline() {
   return out;
 }
 
-function hair(a) {
-  switch (a.style) {
-    case 'curly': return `<g fill="${a.hair}">${[-16, -8, 0, 8, 16].map(dx => `<circle cx="${dx}" cy="-113" r="9"/>`).join('')}<circle cx="-20" cy="-102" r="7"/><circle cx="20" cy="-102" r="7"/></g>`;
-    case 'long': return `<path d="M-24 -92 Q-26 -122 0 -120 Q26 -122 24 -92 L26 -60 Q14 -64 14 -84 Q0 -104 -14 -84 Q-14 -64 -26 -60 Z" fill="${a.hair}"/>`;
-    case 'side': return `<path d="M-23 -96 Q-22 -121 2 -119 Q24 -118 23 -96 Q12 -110 -6 -106 Q-16 -104 -23 -96 Z" fill="${a.hair}"/>`;
-    default: return `<path d="M-23 -94 Q-24 -120 0 -119 Q24 -120 23 -94 Q20 -108 0 -108 Q-20 -108 -23 -94 Z" fill="${a.hair}"/>`;
-  }
+// ---------------------------------------------------------------------------
+// Figuren als moderne Pixel-Art: Raster mit PX Einheiten je Pixel, dunkle
+// Kontur, Licht links / Schatten rechts. Zeichen -> Farbe siehe palette().
+// ---------------------------------------------------------------------------
+const PX = 4;
+
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = (v) => Math.max(0, Math.min(255, Math.round(amt < 0 ? v * (1 + amt) : v + (255 - v) * amt)));
+  return '#' + [n >> 16, (n >> 8) & 255, n & 255].map(v => ch(v).toString(16).padStart(2, '0')).join('');
 }
 
-function accessory(a) {
-  switch (a.acc) {
-    case 'glasses': return `<g fill="none" stroke="#e5e7eb" stroke-width="1.6"><rect x="-15" y="-98" width="12" height="9" rx="3"/><rect x="3" y="-98" width="12" height="9" rx="3"/><path d="M-3 -94 H3"/></g>`;
-    case 'headset': return `<g fill="none" stroke="#1f2937" stroke-width="4" stroke-linecap="round"><path d="M-24 -96 Q-24 -124 0 -124 Q24 -124 24 -96"/></g><rect x="-29" y="-101" width="9" height="14" rx="4" fill="#1f2937"/><rect x="20" y="-101" width="9" height="14" rx="4" fill="#1f2937"/><path d="M-25 -88 Q-22 -76 -8 -78" stroke="#1f2937" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="-8" cy="-78" r="2.5" fill="${a.color}"/>`;
-    default: return '';
-  }
+function palette(a) {
+  return {
+    o: '#121622', s: a.skin, S: shade(a.skin, -0.18), b: shade(a.skin, -0.08),
+    h: a.hair, H: shade(a.hair, 0.28), c: a.shirt, L: shade(a.shirt, 0.22), C: shade(a.shirt, -0.25),
+    w: '#f1f5f9', t: a.color, g: '#0f172a', k: '#1f2937', a: a.color,
+  };
 }
 
-function torso(a) {
-  const base = `<path d="M-40 0 V-34 Q-40 -64 -14 -66 H14 Q40 -64 40 -34 V0 Z" fill="${a.shirt}"/>`;
-  if (a.acc !== 'tie') return base + `<path d="M-9 -66 L0 -56 L9 -66" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="2"/>`;
-  return base + `<path d="M-12 -66 L0 -46 L12 -66 Z" fill="#f8fafc"/><path d="M-2 -60 H2 L4 -30 L0 -24 L-4 -30 Z" fill="${a.color}"/>`
-    + `<path d="M-14 -66 L-4 -40 L-20 -50 Z M14 -66 L4 -40 L20 -50 Z" fill="#1e293b"/>`;
+// Gesicht ohne Haare (14 × 13)
+const FACE = [
+  '..............', '..............',
+  '...oooooooo...', '..ossssssssSo.', '.ossssssssssSo', '.ossssssssssSo',
+  '.ossssssssssSo', '.ossssssssssSo', '.osbssssssbsSo', '.ossssssssssSo',
+  '..osssssssSSo.', '...oSSSSSSoo..', '....oooooo....',
+];
+
+const HAIR = {
+  short: ['....oooooo....', '..oohHHhhhoo..', '.ohhHhhhhhhho.', '.ohhhhhhhhhhho', 'ohh........hho', 'oh..........ho'],
+  curly: ['..oo.oooo.oo..', '.ohhohhhhohho.', 'ohhhhHhhhhhhho', 'ohhHhhhhhhHhho', 'ohh........hho', 'oh..........ho', 'oh..........ho'],
+  long: ['....oooooo....', '..oohhhhhhoo..', '.ohhhHHhhhhho.', 'ohhhhhhhhhhhho', 'ohhh......hhho', 'ohh........hho',
+    'oh..........ho', 'oh..........ho', 'oh..........ho', 'oh..........ho', 'ohh........hho', 'ohhh......hhho', '.ooo......ooo.'],
+  side: ['....oooooo....', '..oohhhhHHoo..', '.ohhhhhhhHHho.', '.ohhhhhh....o.', '.oh...........'],
+};
+
+const ACC = {
+  glasses: ['', '', '', '', '', '...ggg..ggg...', '...g.gggg.g...', '...g.g..g.g...', '...ggg..ggg...'],
+  headset: ['', '...kkkkkkkk...', '..k........k..', '.k..........k.', 'kk..........kk', 'kk..........kk', 'kk..........kk',
+    'kk..........kk', '.k............', '.k............', '..kkka........'],
+};
+
+// Oberkörper: linke Hälfte (11 Spalten), wird gespiegelt; rechts L -> C (Schatten)
+const BODY_LEFT = [
+  '.........os', '.........oS', '....oooooLs', '..ooLLccccw', '.oLLccccccc', '.oLcccccccc',
+  'oLccccccccc', 'oLccccccccc', 'oLccccccccc', 'oLcoccccccc', 'oLcoccccccc', 'oLcoccccccc',
+  'oLcoccccccc', 'oLcoccccccc', 'oLcoccccccc', 'oLcoccccccc', 'oLcoccccccc',
+];
+
+function bodyRows(a) {
+  return BODY_LEFT.map((left, r) => {
+    const row = (left + [...left].reverse().join('').replace(/L/g, 'C')).split('');
+    if (a.acc === 'tie' && r >= 3 && r <= 15) {   // Sakko: Hemd + Krawatte in der Mitte, Revers
+      row[9] = row[12] = 'w';
+      row[10] = row[11] = 't';
+      if (r <= 8) row[8] = row[13] = 'o';
+    }
+    return row.join('');
+  });
+}
+
+function overlay(base, top) {
+  return base.map((row, r) => {
+    const t = top[r];
+    if (!t) return row;
+    return [...row].map((ch, i) => (t[i] && t[i] !== '.' ? t[i] : ch)).join('');
+  });
+}
+
+// Raster -> <rect>s (gleichfarbige Läufe je Zeile zusammengefasst)
+function pixels(rows, pal, x0, y0) {
+  let out = '';
+  rows.forEach((row, r) => {
+    for (let i = 0; i < row.length;) {
+      const ch = row[i];
+      let j = i;
+      while (j < row.length && row[j] === ch) j++;
+      if (ch !== '.' && pal[ch]) out += `<rect x="${x0 + i * PX}" y="${y0 + r * PX}" width="${(j - i) * PX}" height="${PX}" fill="${pal[ch]}"/>`;
+      i = j;
+    }
+  });
+  return out;
+}
+
+function pixelPerson(a) {
+  const pal = palette(a);
+  const hx = -7 * PX, hy = -122;                 // Kopf 14 × 13 Pixel
+  let head = overlay(FACE, HAIR[a.style] || HAIR.short);
+  if (ACC[a.acc]) head = overlay(head, ACC[a.acc]);
+  return `
+    <g class="person" shape-rendering="crispEdges">
+      ${pixels(bodyRows(a), pal, -11 * PX, -70)}
+      <g class="head">
+        ${pixels(head, pal, hx, hy)}
+        <g class="eyes"><rect class="eye" x="${hx + 4 * PX}" y="${hy + 6 * PX}" width="${PX}" height="${2 * PX}" fill="#0b0d14"/><rect class="eye" x="${hx + 9 * PX}" y="${hy + 6 * PX}" width="${PX}" height="${2 * PX}" fill="#0b0d14"/></g>
+        <rect class="mouth" x="${hx + 6 * PX}" y="${hy + 9 * PX}" width="${2 * PX}" height="${PX}" fill="${shade(a.skin, -0.42)}"/>
+      </g>
+    </g>`;
+}
+
+function pixelHands(a) {
+  const pal = palette(a);
+  const hand = ['CCoo.', 'Cosso', 'CoSSo'];        // Ärmel + Hand, 5 × 3 Pixel
+  const mirror = hand.map(r => [...r].reverse().join(''));
+  return `
+    <g class="hand hand-l" shape-rendering="crispEdges">${pixels(hand, pal, -6 * PX, -15)}</g>
+    <g class="hand hand-r" shape-rendering="crispEdges">${pixels(mirror, pal, 1 * PX, -15)}</g>`;
 }
 
 function screenUi(a) {
@@ -93,7 +178,6 @@ function screenUi(a) {
 }
 
 function station(a) {
-  const skinDark = 'rgba(0,0,0,.18)';
   const phone = a.key === 'boss'
     ? `<g class="phone"><rect x="-64" y="-12" width="14" height="22" rx="3" transform="rotate(-70 -57 -1)" fill="#0f172a" stroke="#475569" stroke-width="1"/><circle class="phone-glow" cx="-57" cy="-2" r="4" fill="${a.color}"/></g>`
     : '';
@@ -102,28 +186,13 @@ function station(a) {
     <ellipse cx="0" cy="74" rx="122" ry="9" fill="#000" opacity=".35"/>
     <rect x="-48" y="-122" width="96" height="122" rx="20" fill="#20273a"/>
     <rect x="-36" y="-116" width="72" height="5" rx="2.5" fill="${a.color}" opacity=".45"/>
-    <g class="person">
-      ${torso(a)}
-      <rect x="-7" y="-78" width="14" height="14" rx="4" fill="${a.skin}"/><rect x="-7" y="-70" width="14" height="6" fill="${skinDark}"/>
-      <g class="head">
-        ${a.style === 'long' ? hair(a) : ''}
-        <circle cx="0" cy="${HEAD_DY}" r="22" fill="${a.skin}"/>
-        <circle cx="-13" cy="-86" r="3.5" fill="#f43f5e" opacity=".18"/><circle cx="13" cy="-86" r="3.5" fill="#f43f5e" opacity=".18"/>
-        ${a.style === 'long' ? `<path d="M-22 -96 Q-18 -116 0 -116 Q18 -116 22 -96 Q10 -108 -4 -104 Q-16 -102 -22 -96 Z" fill="${a.hair}"/>` : hair(a)}
-        <g class="eyes"><ellipse class="eye" cx="-8" cy="-93" rx="2.6" ry="3.2" fill="#111827"/><ellipse class="eye" cx="8" cy="-93" rx="2.6" ry="3.2" fill="#111827"/></g>
-        <path class="mouth" d="M-6 -82 Q0 -77 6 -82" stroke="#7a3e2b" stroke-width="2" fill="none" stroke-linecap="round"/>
-        ${accessory(a)}
-      </g>
-    </g>
+    ${pixelPerson(a)}
     <rect x="-110" y="-4" width="220" height="12" rx="4" fill="#323a50"/>
     <rect x="-110" y="-4" width="220" height="3" rx="1.5" fill="#4a5470"/>
     <rect x="-102" y="8" width="204" height="62" rx="7" fill="#1a1f2d"/>
     <rect x="-102" y="8" width="204" height="3" fill="${a.color}" opacity=".6"/>
     <rect x="-28" y="-10" width="56" height="7" rx="2" fill="#0f131c"/>
-    <path class="arm arm-l" d="M-33 -44 Q-44 -16 -18 -10" stroke="${a.shirt}" stroke-width="12" fill="none" stroke-linecap="round"/>
-    <path class="arm arm-r" d="M33 -44 Q44 -16 18 -10" stroke="${a.shirt}" stroke-width="12" fill="none" stroke-linecap="round"/>
-    <ellipse class="hand hand-l" cx="-16" cy="-10" rx="6" ry="4.5" fill="${a.skin}"/>
-    <ellipse class="hand hand-r" cx="16" cy="-10" rx="6" ry="4.5" fill="${a.skin}"/>
+    ${pixelHands(a)}
     <rect x="66" y="-24" width="6" height="20" fill="#2c3346"/><rect x="56" y="-6" width="26" height="4" rx="2" fill="#2c3346"/>
     <rect x="36" y="-76" width="68" height="54" rx="6" fill="#0b0e15" stroke="#2f3750" stroke-width="2"/>
     <g class="screen-ui">${screenUi(a)}</g>

@@ -121,31 +121,31 @@
 /* Arbeitsplätze: SVG-Gruppen animieren */
 .st .person, .st .head, .st .hand, .st .eye, .st .steam, .st .live-candle { transform-box: fill-box; }
 .st .person { transform-origin: 50% 100%; }
-.st .head { transform-origin: 50% 100%; transition: transform .6s; }
+.st .head { transform-origin: 50% 100%; }
 .st .eye { transform-origin: center; }
 .st .screen-ui { opacity: .55; transition: opacity .6s; }
 .st .screen-glow { opacity: 0; transition: opacity .6s; }
 .st .steam { opacity: 0; }
 .st .phone-glow { opacity: .25; }
 
-.st.idle .person { animation: of-breathe 3.6s ease-in-out infinite; }
+.st.idle .person { animation: of-breathe 3.6s steps(1) infinite; }
 .st.working .screen-ui { opacity: 1; }
 .st.working .screen-glow { animation: of-glow 1.8s ease-in-out infinite; }
 .st.working .hand-l { animation: of-type .24s steps(1) infinite; }
 .st.working .hand-r { animation: of-type .24s steps(1) infinite .12s; }
-.st.working .head { animation: of-nod 2.8s ease-in-out infinite; }
+.st.working .head { animation: of-nod 2.8s steps(1) infinite; }
 .st.working .steam { animation: of-steam 2.4s ease-in-out infinite; }
 .st.working .live-candle { animation: of-candle 1.2s ease-in-out infinite; transform-origin: 50% 100%; }
 .st.working .phone-glow { animation: of-ping 1s ease-in-out infinite; }
 .st.blink .eye { transform: scaleY(.15); }
-.st.sleeping .head { transform: translateY(6px) rotate(-8deg); }
+.st.sleeping .head { transform: translate(-4px, 8px); }
 .st.sleeping .eye { transform: scaleY(.15); }
 .st.sleeping .screen-ui { opacity: .12; }
 
-@keyframes of-breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.2px); } }
+@keyframes of-breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @keyframes of-glow { 0%, 100% { opacity: .05; } 50% { opacity: .16; } }
-@keyframes of-type { 0% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
-@keyframes of-nod { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(2deg); } 60% { transform: rotate(-1.5deg); } }
+@keyframes of-type { 0% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@keyframes of-nod { 0%, 100% { transform: translate(0, 0); } 30% { transform: translate(0, 4px); } 60% { transform: translate(4px, 0); } }
 @keyframes of-steam { 0% { opacity: 0; transform: translateY(2px); } 40% { opacity: .8; } 100% { opacity: 0; transform: translateY(-6px); } }
 @keyframes of-candle { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.35); } }
 @keyframes of-ping { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
