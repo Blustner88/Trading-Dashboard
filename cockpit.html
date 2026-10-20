@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cockpit — Trading Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="cockpit.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <nav class="tabnav"></nav>
+    <div class="ck-date" id="ckDate"></div>
+  </header>
+
+  <main class="dash-main cockpit">
+
+    <!-- Briefing: die vier Dinge, die vor jedem Trade zählen -->
+    <section class="ck-brief" aria-label="Briefing">
+      <div class="ck-tile" id="tileRisk">
+        <span class="kpi-label">Risikostimmung</span>
+        <span class="ck-big" id="riskLabel">–</span>
+        <span class="ck-sub" id="riskSub">VIX –</span>
+      </div>
+      <div class="ck-tile" id="tileEvents">
+        <span class="kpi-label">High-Impact heute</span>
+        <span class="ck-big" id="eventsCount">–</span>
+        <span class="ck-sub" id="eventsNext">–</span>
+      </div>
+      <a class="ck-tile ck-link" href="desk.html" id="tileProposals">
+        <span class="kpi-label">Offene Vorschläge</span>
+        <span class="ck-big" id="proposalsCount">–</span>
+        <span class="ck-sub" id="proposalsSub">Entscheidung per Telegram</span>
+      </a>
+      <div class="ck-tile" id="tileAccounts">
+        <span class="kpi-label">Konten (Limits)</span>
+        <span class="ck-big" id="accountsLabel">–</span>
+        <div id="accountsBars"></div>
+      </div>
+    </section>
+
+    <div class="ck-grid">
+      <div class="ck-col">
+        <section class="panel">
+          <div class="panel-header">
+            <h3>Währungsstärke</h3>
+            <span class="desk-hint" id="strengthStand">eigenes Fundamental-Tool</span>
+          </div>
+          <div id="strength" class="ck-strength"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h3>Pairs</h3>
+            <span class="desk-hint">sortiert nach Stärke des Bias · klicken für Details</span>
+          </div>
+          <div id="pairTiles" class="ck-pairs"></div>
+          <div id="pairDetail" class="ck-detail" hidden></div>
+        </section>
+      </div>
+
+      <div class="ck-col">
+        <section class="panel">
+          <div class="panel-header">
+            <h3>Watchlist</h3>
+            <span class="desk-hint">automatisch aus dem Bias · Status & Notiz landen im Tagesplan</span>
+          </div>
+          <div id="watchlist" class="ck-watch"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header"><h3>Termine</h3><span class="desk-hint">High Impact · heute & morgen</span></div>
+          <div id="events" class="ck-events"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header"><h3>Top-News</h3><a class="btn-ghost sm" href="desk.html">alle News →</a></div>
+          <div id="topNews" class="ck-news"></div>
+        </section>
+      </div>
+    </div>
+
+    <p class="desk-hint ck-foot">Der Fundamental-Bias ist eine Information, kein Signal: im Faktor-Test schlägt nur das Arbeitsmarkt-Momentum den Zufall, und auch das noch ohne Bestätigung auf neuen Daten.</p>
+  </main>
+</div>
+
+<script type="module" src="cockpit.js"></script>
+</body>
+</html>

@@ -5,6 +5,7 @@
 
 const AREAS = [
   { key: 'cockpit', label: 'Cockpit', icon: '◎', pages: [
+    { href: 'cockpit.html', label: 'Überblick' },
     { href: 'planning.html', label: 'Tagesplan' },
   ] },
   { key: 'desk', label: 'Desk', icon: '◉', pages: [
@@ -22,7 +23,7 @@ const AREAS = [
   ] },
 ];
 
-const START_PAGE = 'planning.html';   // Cockpit
+const START_PAGE = 'cockpit.html';
 
 function currentPage() {
   const file = location.pathname.split('/').pop();
