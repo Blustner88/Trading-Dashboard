@@ -4,6 +4,173 @@ export const SUPABASE_URL = 'https://rabbtdooayruveribarq.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_CsC9Ji0H9w_Xkbgoy1QtRg_RasuZtuX';
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ---------------------------------------------------------------------------
+// Login: alle Seiten importieren dieses Modul, das top-level await unten hält
+// sie an, bis eine Sitzung besteht. Die Datenbank lässt ohne Login nichts zu
+// (RLS: nur das Konto in app_owners). Sitzung bleibt im Browser gespeichert.
+// ---------------------------------------------------------------------------
+const LOGIN_EMAIL_KEY = 'td_login_email';
+const loginEsc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function injectLoginStyles() {
+  if (document.getElementById('td-login-styles')) return;
+  const st = document.createElement('style');
+  st.id = 'td-login-styles';
+  st.textContent = `
+    .td-login { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; padding: 16px;
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(99,102,241,.18), transparent 60%), var(--bg, #0b0d14); }
+    .td-login form { width: min(380px, 100%); background: var(--surface, #12151f); border: 1px solid var(--border-soft, #232838);
+      border-radius: 14px; padding: 26px 24px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 30px 80px -30px rgba(0,0,0,.8); }
+    .td-login h1 { margin: 0 0 4px; font: 600 20px var(--font-display, system-ui); color: var(--text, #e7e9ee); display: flex; gap: 8px; align-items: center; }
+    .td-login p { margin: 0; font-size: 13px; color: var(--text-muted, #9aa3b5); line-height: 1.45; }
+    .td-login label { font-size: 12px; color: var(--text-muted, #9aa3b5); display: flex; flex-direction: column; gap: 5px; }
+    .td-login input { font: 14px var(--font-body, system-ui); padding: 10px 12px; border-radius: 8px; color: var(--text, #e7e9ee);
+      background: var(--surface-2, #171b27); border: 1px solid var(--border, #2c3346); }
+    .td-login input:focus { outline: 2px solid var(--indigo-bright, #818cf8); outline-offset: 1px; }
+    .td-login button { font: 600 14px var(--font-body, system-ui); padding: 10px 12px; border-radius: 8px; border: 0; cursor: pointer;
+      background: var(--indigo, #6366f1); color: #fff; }
+    .td-login button:disabled { opacity: .6; cursor: wait; }
+    .td-login .td-link { background: none; color: var(--text-muted, #9aa3b5); padding: 0; font-weight: 500; font-size: 12.5px; text-decoration: underline; align-self: flex-start; }
+    .td-login .td-msg { font-size: 12.5px; min-height: 1em; }
+    .td-login .td-msg.err { color: var(--loss, #fb7185); } .td-login .td-msg.ok { color: var(--profit, #4ade80); }
+    .td-logout { margin-left: 10px; font: 500 12px var(--font-body, system-ui); padding: 6px 10px; border-radius: 8px; cursor: pointer;
+      background: transparent; color: var(--text-muted, #9aa3b5); border: 1px solid var(--border-soft, #232838); }
+    .td-logout:hover { color: var(--text, #e7e9ee); }`;
+  document.head.appendChild(st);
+}
+
+function loginForm(mode) {
+  const email = loginEsc(localStorage.getItem(LOGIN_EMAIL_KEY) || '');
+  if (mode === 'recovery') {
+    return `<form autocomplete="on">
+      <h1><span>◈</span> Neues Passwort</h1>
+      <p>Lege ein neues Passwort für dein Trading Journal fest.</p>
+      <label>Neues Passwort<input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
+      <button type="submit">Passwort speichern</button>
+      <div class="td-msg" role="status"></div>
+    </form>`;
+  }
+  return `<form autocomplete="on">
+    <h1><span>◈</span> Trading Journal</h1>
+    <p>Bitte anmelden. Ohne Login sind keine Daten sichtbar.</p>
+    <label>E-Mail<input name="email" type="email" autocomplete="username" value="${email}" required></label>
+    <label>Passwort<input name="password" type="password" autocomplete="current-password" required></label>
+    <button type="submit">Anmelden</button>
+    <button type="button" class="td-link" data-act="reset">Passwort vergessen?</button>
+    <div class="td-msg" role="status"></div>
+  </form>`;
+}
+
+function showLogin(mode = 'login') {
+  injectLoginStyles();
+  return new Promise((resolve) => {
+    const box = document.createElement('div');
+    box.className = 'td-login';
+    box.innerHTML = loginForm(mode);
+    document.body.appendChild(box);
+    const form = box.querySelector('form');
+    const msg = box.querySelector('.td-msg');
+    const btn = form.querySelector('button[type=submit]');
+    const say = (text, cls = 'err') => { msg.textContent = text; msg.className = `td-msg ${cls}`; };
+    (form.email && !form.email.value ? form.email : form.password).focus();
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      say('');
+      if (mode === 'recovery') {
+        const { error } = await supabase.auth.updateUser({ password: form.password.value });
+        btn.disabled = false;
+        if (error) return say(error.message);
+        history.replaceState(null, '', location.pathname);
+        box.remove();
+        return resolve();
+      }
+      const email = form.email.value.trim();
+      const { error } = await supabase.auth.signInWithPassword({ email, password: form.password.value });
+      btn.disabled = false;
+      if (error) return say(error.message === 'Invalid login credentials' ? 'E-Mail oder Passwort falsch.' : error.message);
+      localStorage.setItem(LOGIN_EMAIL_KEY, email);
+      box.remove();
+      resolve();
+    });
+
+    box.querySelector('[data-act=reset]')?.addEventListener('click', async () => {
+      const email = form.email.value.trim();
+      if (!email) return say('Bitte erst die E-Mail eintragen.');
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+      if (error) return say(error.message);
+      say('Link zum Zurücksetzen ist unterwegs — bitte Postfach prüfen.', 'ok');
+    });
+  });
+}
+
+function addLogoutButton() {
+  const bar = document.querySelector('.topbar');
+  if (!bar || bar.querySelector('.td-logout')) return;
+  const b = document.createElement('button');
+  b.className = 'td-logout';
+  b.textContent = 'Abmelden';
+  b.onclick = async () => { await supabase.auth.signOut(); location.reload(); };
+  bar.appendChild(b);
+}
+
+async function requireLogin() {
+  // Rückkehr aus der "Passwort vergessen"-Mail: supabase-js liest das Token aus der URL
+  const recovery = /type=recovery/.test(location.hash);
+  const { data: { session } } = await supabase.auth.getSession();
+  if (recovery && session) await showLogin('recovery');
+  else if (!session) await showLogin('login');
+  injectLoginStyles();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addLogoutButton);
+  else addLogoutButton();
+}
+
+await requireLogin();
+
+// ---------------------------------------------------------------------------
+// Private Buckets: gespeicherte Adressen ".../object/public/<bucket>/<pfad>"
+// werden beim Anzeigen gegen einen signierten Link (1 h) getauscht — für jedes
+// <img src> und <a href> auf allen Seiten, ohne dass die Seiten das wissen müssen.
+// ---------------------------------------------------------------------------
+const PRIVATE_BUCKETS = ['business-receipts', 'trade-screenshots'];
+const PUBLIC_MARK = '/storage/v1/object/public/';
+
+function storageRef(url) {
+  const i = (url || '').indexOf(PUBLIC_MARK);
+  if (i < 0) return null;
+  const [bucket, ...rest] = url.slice(i + PUBLIC_MARK.length).split('?')[0].split('/');
+  return PRIVATE_BUCKETS.includes(bucket) ? { bucket, path: decodeURIComponent(rest.join('/')) } : null;
+}
+
+export async function signedStorageUrl(url) {
+  const ref = storageRef(url);
+  if (!ref) return url;
+  const { data, error } = await supabase.storage.from(ref.bucket).createSignedUrl(ref.path, 3600);
+  return error ? url : data.signedUrl;
+}
+
+function signMedia(el) {
+  const attr = el.tagName === 'IMG' ? 'src' : 'href';
+  const url = el.getAttribute(attr);
+  if (!storageRef(url)) return;
+  signedStorageUrl(url).then(s => { if (s !== url) el.setAttribute(attr, s); });
+}
+
+function scanMedia(root) {
+  if (root.nodeType !== 1) return;
+  if (root.matches?.('img[src], a[href]')) signMedia(root);
+  root.querySelectorAll?.('img[src], a[href]').forEach(signMedia);
+}
+
+new MutationObserver((muts) => {
+  for (const m of muts) {
+    if (m.type === 'attributes') signMedia(m.target);
+    else m.addedNodes.forEach(scanMedia);
+  }
+}).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['src', 'href'] });
+scanMedia(document.body);   // was beim Laden schon im HTML steht
+
 let clientsCache = [];
 async function fetchClientsCache() {
   const { data } = await supabase.from('clients').select('id, name').order('name');
