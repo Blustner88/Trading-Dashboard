@@ -268,6 +268,19 @@ function subscribe() {
 }
 
 initAgents($('agentOffice'));
+
+// Büro einklappbar: zu = nur Team-Leiste (Status + letzte Meldung je Agent)
+const OFFICE_KEY = 'td_office_open';
+function setOffice(open) {
+  $('agentOffice').classList.toggle('office-collapsed', !open);
+  $('officeToggle').textContent = open ? 'Büro einklappen' : 'Büro anzeigen';
+  $('officeToggle').setAttribute('aria-expanded', String(open));
+  try { localStorage.setItem(OFFICE_KEY, open ? '1' : '0'); } catch { /* privat-Modus */ }
+}
+let officeOpen = false;
+try { officeOpen = localStorage.getItem(OFFICE_KEY) === '1'; } catch { /* privat-Modus */ }
+setOffice(officeOpen);
+$('officeToggle').onclick = () => setOffice($('agentOffice').classList.contains('office-collapsed'));
 await Promise.all([loadProposals(), loadSquawk(), loadNews()]);
 if (new URLSearchParams(location.search).has('demo')) runDemo();
 subscribe();

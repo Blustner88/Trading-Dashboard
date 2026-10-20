@@ -1,4 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { renderNav } from './nav.js';
+
+renderNav();   // Navigation steht schon hinter der Anmeldemaske
 
 export const SUPABASE_URL = 'https://rabbtdooayruveribarq.supabase.co';
 export const SUPABASE_KEY = 'sb_publishable_CsC9Ji0H9w_Xkbgoy1QtRg_RasuZtuX';

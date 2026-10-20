@@ -57,6 +57,46 @@ body {
   .tab-link { padding: 6px 11px; font-size: 12.5px; }
 }
 
+[hidden] { display: none !important; }
+
+/* Bereiche (nav.js): Cockpit · Desk · Auswertung · Business */
+.area-nav .tab-link { display: inline-flex; align-items: center; gap: 7px; padding: 7px 15px; }
+.tab-icon { font-size: 13px; opacity: .75; }
+.tab-link.active .tab-icon { opacity: 1; }
+
+/* Unter-Tabs des aktiven Bereichs */
+.subnav { display: flex; gap: 2px; padding: 10px 0 0; margin-bottom: 4px; border-bottom: 1px solid var(--border-soft); overflow-x: auto; scrollbar-width: none; }
+.subnav::-webkit-scrollbar { display: none; }
+.sub-link {
+  color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 500; white-space: nowrap;
+  padding: 8px 12px 10px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.sub-link:hover { color: var(--text); }
+.sub-link.active { color: var(--text); border-bottom-color: var(--indigo-bright); font-weight: 600; }
+
+.nav-add { margin-left: auto; text-decoration: none; display: inline-flex; align-items: center; gap: 2px; }
+
+/* Handy: Bereiche als Leiste am unteren Rand, Daumen-erreichbar */
+@media (max-width: 700px) {
+  .app { padding-bottom: 92px; }
+  .topbar { gap: 12px; }
+  .area-nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; max-width: none;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    border-radius: 0; border: 0; border-top: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(10px);
+  }
+  .area-nav .tab-link { flex-direction: column; gap: 2px; padding: 6px 2px; font-size: 11px; justify-content: center; }
+  .area-nav .tab-link.active { background: transparent; color: var(--indigo-bright); }
+  .tab-icon { font-size: 17px; }
+  .nav-add {
+    position: fixed; right: 16px; bottom: calc(76px + env(safe-area-inset-bottom)); z-index: 901;
+    width: 52px; height: 52px; border-radius: 50%; justify-content: center; padding: 0; font-size: 22px;
+    box-shadow: 0 12px 30px -8px rgba(99,102,241,.7);
+  }
+  .nav-add-label { display: none; }
+}
+
 .stats-strip { display: flex; gap: 26px; margin-left: 8px; flex: 1; }
 .stat { display: flex; flex-direction: column; gap: 2px; }
 .stat-label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; }

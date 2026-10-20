@@ -88,6 +88,9 @@
 
 /* ===== Team-Büro: gemeinsames Großraumbüro ===== */
 .office-panel { margin-bottom: 16px; overflow: hidden; padding-bottom: 14px; }
+.office-toggle { margin-left: auto; }
+.office-collapsed .office-scene { display: none; }
+.office-collapsed .team-bar { margin-top: 0; }
 .office { position: relative; }
 .office-scene {
   position: relative; container-type: inline-size;

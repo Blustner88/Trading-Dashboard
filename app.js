@@ -20,6 +20,11 @@ async function init() {
   bindEvents();
   window.addEventListener('account-changed', () => { populateAccountSelect(); loadTrades(); });
   await loadTrades();
+  // "+ Trade" aus der Navigation anderer Seiten (nav.js) öffnet direkt den Dialog
+  if (location.hash === '#neu') {
+    history.replaceState(null, '', location.pathname);
+    $('openAddTrade').click();
+  }
 }
 
 function populateAccountSelect() {
