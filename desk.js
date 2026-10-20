@@ -187,9 +187,11 @@ function renderNews() {
     `<button class="news-chip${newsFilter === c ? ' on' : ''}" data-ccy="${c ?? ''}">${c ?? 'Alle'}</button>`).join('');
   const rows = newsRows.filter(n => !newsFilter || n.fb_news_impacts.some(i => i.currency === newsFilter)).slice(0, 24);
   $('newsList').innerHTML = rows.length ? rows.map(n => {
-    const strong = n.fb_news_impacts.some(i => Number(i.strength) >= 0.67);
+    const imp = Math.max(...n.fb_news_impacts.map(i => Number(i.importance) || 1));
+    const strong = imp >= 4;
     const tags = n.fb_news_impacts.map(i =>
-      `<span class="news-tag ${i.direction > 0 ? 'up' : 'down'}" title="Stärke ${Math.round(i.strength * 100)} %">${esc(i.currency)} ${i.direction > 0 ? '▲' : '▼'}</span>`).join('');
+      `<span class="news-tag ${i.direction > 0 ? 'up' : 'down'}" title="Wichtigkeit ${i.importance}/5">${esc(i.currency)} ${i.direction > 0 ? '▲' : '▼'}</span>`).join('')
+      + `<span class="news-imp" title="Wichtigkeit ${imp} von 5">${'●'.repeat(imp)}${'○'.repeat(5 - imp)}</span>`;
     return `
       <div class="news-card${strong ? ' strong' : ''}">
         <div class="news-meta"><span>${esc(n.source)} · ${ago(n.published_at)}</span><span class="news-tags">${tags}</span></div>
@@ -202,7 +204,7 @@ function renderNews() {
 async function loadNews() {
   const since = new Date(Date.now() - 48 * 3600000).toISOString();
   const { data } = await supabase.from('fb_news')
-    .select('id, title, url, source, published_at, summary, fb_news_impacts!inner(currency, direction, strength)')
+    .select('id, title, url, source, published_at, summary, fb_news_impacts!inner(currency, direction, importance)')
     .eq('relevant', true).gte('published_at', since)
     .order('published_at', { ascending: false }).limit(150);
   newsRows = data || [];

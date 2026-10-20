@@ -154,7 +154,7 @@ async function showPair(pair) {
 
   const since = new Date(Date.now() - 48 * 3600000).toISOString();
   const { data: news } = await supabase.from('fb_news')
-    .select('title, url, source, published_at, fb_news_impacts!inner(currency, direction, strength)')
+    .select('title, url, source, published_at, fb_news_impacts!inner(currency, direction, importance)')
     .in('fb_news_impacts.currency', [b, q]).gte('published_at', since)
     .order('published_at', { ascending: false }).limit(6);
   const evs = events.filter(e => e.currency === b || e.currency === q);
@@ -250,7 +250,9 @@ function ago(ts) {
 }
 
 function newsLine(n) {
-  const tags = n.fb_news_impacts.map(i => `<span class="${i.direction > 0 ? 'pos' : 'neg'}">${esc(i.currency)} ${i.direction > 0 ? '▲' : '▼'}</span>`).join(' ');
+  const imp = Math.max(...n.fb_news_impacts.map(i => Number(i.importance) || 1));
+  const tags = n.fb_news_impacts.map(i => `<span class="${i.direction > 0 ? 'pos' : 'neg'}">${esc(i.currency)} ${i.direction > 0 ? '▲' : '▼'}</span>`).join(' ')
+    + ` <span class="imp" title="Wichtigkeit ${imp} von 5">${'●'.repeat(imp)}${'○'.repeat(5 - imp)}</span>`;
   const href = /^https?:\/\//i.test(n.url || '') ? esc(n.url) : '#';
   return `<div class="ck-n"><span class="meta">${esc(n.source)} · ${ago(n.published_at)} · ${tags}</span><a href="${href}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a></div>`;
 }
@@ -258,10 +260,10 @@ function newsLine(n) {
 async function loadTopNews() {
   const since = new Date(Date.now() - 24 * 3600000).toISOString();
   const { data } = await supabase.from('fb_news')
-    .select('title, url, source, published_at, fb_news_impacts!inner(currency, direction, strength)')
+    .select('title, url, source, published_at, fb_news_impacts!inner(currency, direction, importance)')
     .eq('relevant', true).gte('published_at', since).order('published_at', { ascending: false }).limit(80);
   const top = (data || [])
-    .map(n => ({ ...n, s: Math.max(...n.fb_news_impacts.map(i => Number(i.strength))) }))
+    .map(n => ({ ...n, s: Math.max(...n.fb_news_impacts.map(i => Number(i.importance))) }))
     .sort((a, b) => b.s - a.s || new Date(b.published_at) - new Date(a.published_at))
     .slice(0, 5);
   $('topNews').innerHTML = top.length ? top.map(newsLine).join('') : '<p class="desk-empty">Keine eingeordneten Schlagzeilen in den letzten 24 h.</p>';

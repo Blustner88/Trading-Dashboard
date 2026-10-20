@@ -262,6 +262,7 @@
 .news-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 5px; }
 .news-tags { display: flex; gap: 6px; font-family: var(--font-mono); font-weight: 700; letter-spacing: 0; }
 .news-tag.up { color: var(--profit); } .news-tag.down { color: var(--loss); }
+.news-imp { color: #38bdf8; letter-spacing: 1px; font-size: 9px; align-self: center; }
 .news-card a { color: var(--text); font-weight: 600; font-size: 13px; line-height: 1.35; text-decoration: none; overflow-wrap: anywhere; }
 .news-card a:hover { text-decoration: underline; }
 .news-card p { font-size: 12px; color: var(--text-muted); margin: 5px 0 0; line-height: 1.4; }
