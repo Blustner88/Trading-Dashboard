@@ -1,0 +1,65 @@
+/* Business-Überblick */
+.business .pos { color: var(--profit); }
+.business .neg { color: var(--loss); }
+.bz-hint { font-size: 11.5px; color: var(--text-faint); }
+.bz-hint a { color: var(--text-muted); }
+.bz-note { margin: 0; font-size: 12px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border-soft); border-left: 3px solid var(--amber); border-radius: 8px; padding: 9px 12px; }
+.bz-year { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-muted); margin-left: auto; }
+.bz-year select { font: 600 13px var(--font-mono); color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; }
+.business .panel-header { flex-wrap: wrap; gap: 4px 12px; }
+.bz-actions { display: flex; gap: 8px; }
+
+.bz-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.bz-kpi { background: var(--surface); border: 1px solid var(--border-soft); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.bz-sub { font-size: 11.5px; color: var(--text-faint); font-family: var(--font-mono); }
+
+.bz-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.bz-stats div { display: flex; flex-direction: column; gap: 3px; }
+.bz-stats b { font-family: var(--font-mono); font-size: 15px; }
+
+.bz-scroll { overflow-x: auto; }
+.bz-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.bz-table th { text-align: left; font-weight: 500; color: var(--text-faint); font-size: 11px; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.bz-table td { padding: 7px 8px; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+.bz-table .n, .bz-table th:not(:first-child):not(:nth-child(2)) { text-align: right; font-family: var(--font-mono); white-space: nowrap; }
+.bz-table.eur th:nth-child(2) { text-align: left; }
+.bz-table tr.dim td { color: var(--text-faint); }
+.bz-table .s { display: block; font-size: 10.5px; color: var(--text-faint); }
+.bz-table .s2 { color: var(--text-muted); font-size: 11.5px; }
+.bz-table .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 7px; }
+.bz-table .miss { color: var(--amber); font-family: var(--font-body); font-size: 11.5px; }
+.bz-table .st { font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 5px; background: var(--surface-2); color: var(--text-muted); }
+.bz-table .st.active { color: var(--indigo-bright); } .bz-table .st.passed { color: var(--profit); } .bz-table .st.breached { color: var(--loss); }
+.bz-table tr.sec td { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); padding-top: 14px; }
+.bz-table tr.tot td { font-weight: 600; border-top: 1px solid var(--border); }
+.bz-table tr.big td { font-size: 14px; }
+#monthTable th:nth-child(2) { text-align: right; }
+
+.bz-fee { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-top: 12px; padding: 12px; background: var(--surface-2); border-radius: 10px; }
+.bz-fee b { width: 100%; font-size: 13px; }
+.bz-fee label { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--text-muted); }
+.bz-fee label.wide { flex: 1; min-width: 200px; }
+.bz-fee input { font: 13px var(--font-body); color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; }
+
+.bz-checks { font-size: 12.5px; background: color-mix(in srgb, var(--amber) 8%, transparent); border: 1px solid color-mix(in srgb, var(--amber) 35%, transparent); border-radius: 10px; padding: 10px 14px; margin-bottom: 12px; }
+.bz-checks b { color: var(--amber); }
+.bz-checks ul { margin: 6px 0 0; padding-left: 18px; color: var(--text-muted); }
+
+@media (max-width: 900px) {
+  .bz-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bz-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .bz-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bz-year { margin-left: 0; }
+}
+
+/* Drucken: nur die EÜR */
+@media print {
+  body.print-eur { background: #fff; color: #000; }
+  body.print-eur .topbar, body.print-eur .subnav, body.print-eur .nav-add, body.print-eur .bz-kpis,
+  body.print-eur .business > section:not(:last-of-type), body.print-eur .bz-actions, body.print-eur .td-logout { display: none !important; }
+  body.print-eur .panel { border: 0; background: #fff; box-shadow: none; }
+  body.print-eur .bz-table td, body.print-eur .bz-table th, body.print-eur .panel-header h3, body.print-eur .bz-hint { color: #000 !important; }
+  body.print-eur .bz-note { color: #000; background: #fff; }
+}

@@ -18,6 +18,7 @@ const AREAS = [
     { href: 'level.html', label: 'Level' },
   ] },
   { key: 'business', label: 'Business', icon: '▣', pages: [
+    { href: 'business.html', label: 'Überblick & EÜR' },
     { href: 'accounting.html', label: 'Buchhaltung & Steuer' },
     { href: 'invoices.html', label: 'Rechnungen' },
   ] },

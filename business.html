@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Business — Trading Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="business.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <nav class="tabnav"></nav>
+    <div class="account-switcher" id="accountSwitcher"></div>
+    <label class="bz-year">Jahr <select id="yearSelect"></select></label>
+  </header>
+
+  <main class="dash-main business">
+
+    <p class="bz-note">⚠ Kein Ersatz für steuerliche Beratung. Kleinunternehmer (§ 19 UStG): Beträge ohne Umsatzsteuer. Einnahmen zählen beim Zufluss (Payout erhalten), nicht beim Buchgewinn im Propfirm-Konto.</p>
+
+    <!-- Geschäftsbilanz des Jahres -->
+    <section class="bz-kpis" aria-label="Geschäftsbilanz">
+      <div class="bz-kpi"><span class="kpi-label">Einnahmen (Payouts)</span><span class="kpi-value pos" id="kIncome">–</span></div>
+      <div class="bz-kpi"><span class="kpi-label">Propfirm-Gebühren</span><span class="kpi-value neg" id="kFees">–</span></div>
+      <div class="bz-kpi"><span class="kpi-label">Sonstige Ausgaben</span><span class="kpi-value neg" id="kOther">–</span></div>
+      <div class="bz-kpi"><span class="kpi-label">Ergebnis</span><span class="kpi-value" id="kResult">–</span><span class="bz-sub" id="kTotal"></span></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header"><h3>Monate</h3><span class="bz-hint">Einnahmen, Ausgaben und Ergebnis je Monat · kumuliert rechts</span></div>
+      <div class="bz-scroll"><table class="bz-table" id="monthTable"></table></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h3>Challenges & Konten</h3>
+        <span class="bz-hint">Gebühren hier erfassen, dann zählen sie je Konto und in der EÜR</span>
+      </div>
+      <div class="bz-stats" id="challengeStats"></div>
+      <div class="bz-scroll"><table class="bz-table" id="accountTable"></table></div>
+      <form id="feeForm" class="bz-fee" hidden>
+        <b id="feeTitle"></b>
+        <label>Datum<input type="date" name="date" required></label>
+        <label>Betrag (€)<input type="number" name="amount" step="0.01" min="0" required></label>
+        <label class="wide">Beschreibung<input type="text" name="description" required></label>
+        <button class="btn-primary sm" type="submit">Gebühr speichern</button>
+        <button class="btn-ghost sm" type="button" id="feeCancel">Abbrechen</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h3>EÜR <span id="eurYear"></span></h3>
+        <div class="bz-actions">
+          <button class="btn-ghost sm" id="eurCsv">CSV mit Belegliste</button>
+          <button class="btn-ghost sm" id="eurPrint">Drucken / PDF</button>
+        </div>
+      </div>
+      <div id="eurChecks"></div>
+      <div class="bz-scroll"><table class="bz-table eur" id="eurTable"></table></div>
+      <p class="bz-hint">Gruppiert nach den Bereichen der Anlage EÜR. Die genaue Zeile im ELSTER-Formular kann je Jahr wechseln — die Zuordnung bitte einmal mit dem Steuerberater abstimmen. Einzelposten erfasst du unter <a href="accounting.html">Buchhaltung & Steuer</a>.</p>
+    </section>
+  </main>
+</div>
+
+<script type="module" src="business.js"></script>
+</body>
+</html>
