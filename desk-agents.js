@@ -1,17 +1,19 @@
-// Desk-Büro: ein gemeinsames Großraumbüro, in dem die vier Agenten an ihren Plätzen sitzen.
+// Desk-Büro: ein gemeinsames Großraumbüro, in dem die fünf Agenten an ihren Plätzen sitzen.
 // Gesteuert von desk_squawk und trade_proposals: wer eine Meldung schreibt, arbeitet sichtbar
 // (tippt, Bildschirm leuchtet, Sprechblase), danach Ruhe; nach langer Pause schläft er ein.
 // Szene = ein SVG (viewBox W×H), Texte liegen als HTML darüber (Positionen in % derselben Maße).
 
 const W = 1000, H = 460;
 const DESK_Y = 360;                 // Oberkante der Tische in der Szene
-const HEAD_DY = -94;                // Kopfmitte relativ zur Tischkante
+const SCALE = 0.8;                  // Arbeitsplätze verkleinert, damit fünf nebeneinander passen
+const HEAD_DY = Math.round(-94 * SCALE);   // Kopfmitte relativ zur Tischkante
 
 const AGENTS = [
-  { key: 'fundamental', name: 'Fundamental', role: 'Bias & News', x: 150, color: '#818cf8', shirt: '#4f46e5', skin: '#f1c27d', hair: '#3b2f2a', style: 'short', acc: 'glasses', screen: 'news' },
-  { key: 'technik', name: 'Technik', role: 'BITR & ORB', x: 390, color: '#fbbf24', shirt: '#d97706', skin: '#8d5524', hair: '#111827', style: 'curly', acc: 'headset', screen: 'chart' },
-  { key: 'risk', name: 'Risk', role: 'Größe & Limits', x: 630, color: '#fb7185', shirt: '#e11d48', skin: '#e0ac69', hair: '#7c2d12', style: 'long', acc: 'none', screen: 'gauge' },
-  { key: 'boss', name: 'Boss', role: 'Entscheidung', x: 870, color: '#4ade80', shirt: '#334155', skin: '#c68642', hair: '#9ca3af', style: 'side', acc: 'tie', screen: 'chat' },
+  { key: 'fundamental', name: 'Fundamental', role: 'Bias & Makro', x: 100, color: '#818cf8', shirt: '#4f46e5', skin: '#f1c27d', hair: '#3b2f2a', style: 'short', acc: 'glasses', screen: 'news' },
+  { key: 'news', name: 'News', role: 'Schlagzeilen', x: 300, color: '#38bdf8', shirt: '#0369a1', skin: '#ffdbac', hair: '#b7793e', style: 'curly', acc: 'none', screen: 'ticker' },
+  { key: 'technik', name: 'Technik', role: 'BITR & ORB', x: 500, color: '#fbbf24', shirt: '#d97706', skin: '#8d5524', hair: '#111827', style: 'curly', acc: 'headset', screen: 'chart' },
+  { key: 'risk', name: 'Risk', role: 'Größe & Limits', x: 700, color: '#fb7185', shirt: '#e11d48', skin: '#e0ac69', hair: '#7c2d12', style: 'long', acc: 'none', screen: 'gauge' },
+  { key: 'boss', name: 'Boss', role: 'Entscheidung', x: 900, color: '#4ade80', shirt: '#334155', skin: '#c68642', hair: '#9ca3af', style: 'side', acc: 'tie', screen: 'chat' },
 ];
 
 const WORK_MS = 25000;       // so lange arbeitet ein Agent nach einer Meldung
@@ -150,6 +152,9 @@ function screenUi(a) {
       return pixels(ring, { r: '#2c3346', g: a.color }, 44, -68)
         + `<rect x="76" y="-64" width="16" height="4" fill="#94a3b8"/><rect x="76" y="-56" width="12" height="4" fill="#94a3b8"/><rect x="76" y="-48" width="16" height="4" fill="#4ade80"/><rect x="76" y="-40" width="8" height="4" fill="#94a3b8"/>`;
     }
+    case 'ticker':   // Schlagzeilen mit Währungs-Tags: grün = stärker, rot = schwächer
+      return [[-68, '#4ade80', 40], [-56, '#fb7185', 32], [-44, '#4ade80', 44], [-32, '#fb7185', 28]]
+        .map(([y, c, w], i) => `<rect class="${i === 0 ? 'live-candle' : ''}" x="44" y="${y}" width="8" height="4" fill="${c}"/><rect x="56" y="${y}" width="${w}" height="4" fill="#64748b"/>`).join('');
     case 'chat':
       return `<rect x="44" y="-68" width="32" height="8" fill="#334155"/><rect x="60" y="-56" width="36" height="8" fill="${a.color}" opacity=".85"/>`
         + `<rect class="chat-new" x="44" y="-44" width="28" height="8" fill="#334155"/>`;
@@ -170,7 +175,7 @@ function station(a) {
     ? `<g class="phone">${pbox(-68, -24, 16, 20, '#475569')}<rect x="-64" y="-20" width="8" height="12" fill="#0f172a"/><rect class="phone-glow" x="-64" y="-16" width="8" height="4" fill="${a.color}"/></g>`
     : '';
   return `
-  <g class="st st-${a.key}" transform="translate(${a.x} ${DESK_Y})">
+  <g class="st st-${a.key}" transform="translate(${a.x} ${DESK_Y}) scale(${SCALE})">
     <rect x="-116" y="72" width="232" height="8" fill="#000" opacity=".3"/>
     <rect x="-108" y="80" width="216" height="4" fill="#000" opacity=".18"/>
     <!-- Stuhl -->
@@ -276,7 +281,7 @@ function scene() {
     <rect x="760" y="208" width="8" height="12" fill="#2f3750"/>
 
     ${plant()}
-    ${[270, 510, 750].map(lamp).join('')}
+    ${[200, 400, 600, 800].map(lamp).join('')}
 
     ${AGENTS.map(station).join('')}
   </svg>`;
@@ -290,7 +295,7 @@ function overlays() {
       <div class="bubble ${align}" role="status"></div>
       <div class="zzz" aria-hidden="true">z<span>z</span><span>z</span></div>
     </div>
-    <div class="ag-tag st-${a.key}" style="left:${pct(a.x, W)};top:${pct(DESK_Y + 26, H)}">
+    <div class="ag-tag st-${a.key}" style="left:${pct(a.x, W)};top:${pct(DESK_Y + Math.round(26 * SCALE), H)}">
       <span class="ag-name" style="color:${a.color}">${a.name}</span><span class="ag-role">${a.role}</span>
     </div>`;
   }).join('');
@@ -490,6 +495,7 @@ export function agentProposal(evt) {
 export function runDemo() {
   const script = [
     ['fundamental', null, 'Fundamental-Stand: 31 Pairs gespeichert; aligned short: GBPUSD, EURAUD'],
+    ['news', null, 'AUD ▼ · Australia employment unexpectedly slides (GNews AUD)'],
     ['technik', 'NZDJPY', 'BITR 4H Limit short: 4H Abwärtstrend, Liquidität über BITR geholt — Ampel gelb'],
     ['risk', 'NZDJPY', 'Alle Risk-Checks bestanden: 1/3 belegt, keine High-Impact-News in 2 h'],
     [null, 'NZDJPY', null],

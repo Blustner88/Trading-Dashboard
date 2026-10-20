@@ -73,6 +73,7 @@
 .src.technik { color: var(--amber); }
 .src.risk { color: var(--loss); }
 .src.boss { color: var(--profit); }
+.src.news { color: #38bdf8; }
 .src.system { color: var(--text-faint); }
 .sq.new { animation: flash 1.5s ease-out; }
 @keyframes flash { from { background: rgba(99,102,241,0.18); } to { background: transparent; } }
@@ -169,7 +170,7 @@
 
 /* Namensschilder an den Tischfronten */
 .ag-tag {
-  position: absolute; transform: translateX(-50%); width: 19%;
+  position: absolute; transform: translateX(-50%); width: 17%;
   display: flex; flex-direction: column; align-items: center; gap: .2cqw; text-align: center; pointer-events: none;
 }
 .ag-name { font-family: var(--font-display); font-weight: 600; font-size: clamp(9px, 1.55cqw, 15px); }
@@ -214,7 +215,7 @@
 .flying-doc b { font-family: var(--font-mono); font-size: 10.5px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
 
 /* Team-Leiste unter dem Büro: Status + letzte Meldung je Agent */
-.team-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.team-bar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
 .tb-item {
   display: flex; gap: 9px; align-items: flex-start; min-width: 0;
   background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 10px; padding: 9px 11px;
@@ -246,5 +247,23 @@
 @media (prefers-reduced-motion: reduce) {
   .office *, .office { animation: none !important; transition: none !important; }
 }
+/* News: Schlagzeilen mit Währungs-Tags (grün = stärker, rot = schwächer) */
+.news-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.news-chip {
+  font: 600 11.5px var(--font-mono); padding: 4px 9px; border-radius: 999px; cursor: pointer;
+  background: var(--surface-2); color: var(--text-muted); border: 1px solid var(--border-soft);
+}
+.news-chip.on { color: var(--text); border-color: #38bdf8; background: color-mix(in srgb, #38bdf8 14%, transparent); }
+.news-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.news-card { background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+.news-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 5px; }
+.news-tags { display: flex; gap: 6px; font-family: var(--font-mono); font-weight: 700; letter-spacing: 0; }
+.news-tag.up { color: var(--profit); } .news-tag.down { color: var(--loss); }
+.news-card a { color: var(--text); font-weight: 600; font-size: 13px; line-height: 1.35; text-decoration: none; overflow-wrap: anywhere; }
+.news-card a:hover { text-decoration: underline; }
+.news-card p { font-size: 12px; color: var(--text-muted); margin: 5px 0 0; line-height: 1.4; }
+.news-card.strong { border-color: color-mix(in srgb, #38bdf8 45%, var(--border-soft)); }
+@media (max-width: 900px) { .news-grid { grid-template-columns: 1fr; } }
+
 .setup-tag { font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; margin-left: 8px; padding: 2px 6px; border-radius: 4px; background: var(--border-soft); color: var(--text-muted); }
 .level .s.warn { color: var(--amber); }

@@ -13,7 +13,8 @@ const STATUS_LABEL = {
   taken: 'Genommen', dismissed: 'Verworfen', expired: 'Abgelaufen', blocked: 'Blockiert',
   pending: 'Offen', watching: 'Wartet', analysed: 'Neu',
 };
-const SOURCE_LABEL = { fundamental: 'Fundamental', technik: 'Technik', risk: 'Risk', boss: 'Boss', system: 'System' };
+const SOURCE_LABEL = { fundamental: 'Fundamental', news: 'News', technik: 'Technik', risk: 'Risk', boss: 'Boss', system: 'System' };
+const AMPEL_ICON = { 'grün': '🟢', gelb: '🟡', rot: '🔴' };
 
 function dirTag(d) {
   return `<span class="dir ${d === 'short' ? 'short' : 'long'}">${d === 'short' ? '▼ SHORT' : '▲ LONG'}</span>`;
@@ -51,7 +52,7 @@ function renderPending(rows) {
         <span class="valid">bis ${hhmm(p.valid_until)} · ${minutesLeft(p.valid_until)}</span>
       </div>
       <div class="levels">
-        <div class="level"><span class="kpi-label">Entry</span><span class="v">${esc(p.entry_price)}</span></div>
+        <div class="level"><span class="kpi-label">${p.setup_type === 'BITR Limit' ? (p.direction === 'short' ? 'Sell Limit' : 'Buy Limit') : 'Entry'}</span><span class="v">${esc(p.entry_price)}</span></div>
         <div class="level"><span class="kpi-label">SL</span><span class="v">${esc(p.stop_loss)}</span><span class="s">${esc(p.sl_pips)} Pips</span></div>
         <div class="level"><span class="kpi-label">TP ${fmtR1(rr)}</span><span class="v">${esc(p.take_profit)}</span><span class="s${warn ? ' warn' : ''}">${esc(tpNote)}</span></div>
         <div class="level"><span class="kpi-label">Lots</span><span class="v">${esc(p.lots)}</span><span class="s">${esc(p.risk_percent)} % Risiko</span></div>
@@ -59,8 +60,9 @@ function renderPending(rows) {
       <p class="why"><b>Technik:</b> ${esc(p.tech_notes)}</p>
       <p class="why"><b>Risk:</b> ${esc(p.risk_notes)}</p>
       <p class="why"><b>Confidence ${esc(p.confidence)}:</b> ${esc(p.confidence_reasoning)}</p>
-      <p class="why"><b>Fundamental:</b> Score ${esc(p.score)} · ${esc(p.conviction)} — ${esc(p.fundamental_notes)}</p>
+      ${p.ampel || p.fundamental_notes ? `<p class="why"><b>Fundamental:</b> ${p.ampel ? `${AMPEL_ICON[p.ampel] || ''} Ampel ${esc(p.ampel)} (nur Info)` : ''}${p.score != null ? ` · Score ${esc(p.score)}` : ''}${p.fundamental_notes ? ` — ${esc(p.fundamental_notes)}` : ''}</p>` : ''}
       ${p.event_risks ? `<p class="why"><b>⚠ Events:</b> ${esc(p.event_risks)}</p>` : ''}
+      ${p.news_notes ? `<p class="why"><b>📰 News (48 h):</b><br>${p.news_notes.split('\n').map(esc).join('<br>')}</p>` : ''}
     </div>`;
   }).join('') : '<p class="desk-empty">Keine offenen Vorschläge.</p>';
 }
@@ -170,6 +172,50 @@ async function loadShadow() {
     ${closed.length < 30 ? `<p class="desk-hint">Erst ${closed.length} abgeschlossene Vorschläge — unter ~30 ist das statistisch noch nicht belastbar.</p>` : ''}`;
 }
 
+// News: relevante Schlagzeilen (fb_news) mit Einordnung je Währung (fb_news_impacts)
+const NEWS_CCYS = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD', 'NZD', 'NOK', 'SEK'];
+let newsRows = [];
+let newsFilter = null;   // null = alle Währungen
+
+function ago(ts) {
+  const m = Math.round((Date.now() - new Date(ts)) / 60000);
+  return m < 60 ? `vor ${Math.max(m, 1)} min` : m < 1440 ? `vor ${Math.round(m / 60)} h` : `vor ${Math.round(m / 1440)} T`;
+}
+
+function renderNews() {
+  $('newsFilter').innerHTML = [null, ...NEWS_CCYS].map(c =>
+    `<button class="news-chip${newsFilter === c ? ' on' : ''}" data-ccy="${c ?? ''}">${c ?? 'Alle'}</button>`).join('');
+  const rows = newsRows.filter(n => !newsFilter || n.fb_news_impacts.some(i => i.currency === newsFilter)).slice(0, 24);
+  $('newsList').innerHTML = rows.length ? rows.map(n => {
+    const strong = n.fb_news_impacts.some(i => Number(i.strength) >= 0.67);
+    const tags = n.fb_news_impacts.map(i =>
+      `<span class="news-tag ${i.direction > 0 ? 'up' : 'down'}" title="Stärke ${Math.round(i.strength * 100)} %">${esc(i.currency)} ${i.direction > 0 ? '▲' : '▼'}</span>`).join('');
+    return `
+      <div class="news-card${strong ? ' strong' : ''}">
+        <div class="news-meta"><span>${esc(n.source)} · ${ago(n.published_at)}</span><span class="news-tags">${tags}</span></div>
+        <a href="${/^https?:\/\//i.test(n.url || '') ? esc(n.url) : '#'}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a>
+        ${n.summary ? `<p>${esc(n.summary)}</p>` : ''}
+      </div>`;
+  }).join('') : '<p class="desk-empty">Keine eingeordneten Schlagzeilen in den letzten 48 h.</p>';
+}
+
+async function loadNews() {
+  const since = new Date(Date.now() - 48 * 3600000).toISOString();
+  const { data } = await supabase.from('fb_news')
+    .select('id, title, url, source, published_at, summary, fb_news_impacts!inner(currency, direction, strength)')
+    .eq('relevant', true).gte('published_at', since)
+    .order('published_at', { ascending: false }).limit(150);
+  newsRows = data || [];
+  renderNews();
+}
+
+$('newsFilter').addEventListener('click', (e) => {
+  const btn = e.target.closest('.news-chip');
+  if (!btn) return;
+  newsFilter = btn.dataset.ccy || null;
+  renderNews();
+});
+
 function squawkRow(s, isNew = false) {
   return `
     <div class="sq${isNew ? ' new' : ''}">
@@ -215,14 +261,16 @@ function subscribe() {
       if (feed.querySelector('.desk-empty')) feed.innerHTML = '';
       feed.insertAdjacentHTML('afterbegin', squawkRow(s, true));
       agentSquawk(s);
+      if (s.source === 'news') loadNews();   // neue starke Schlagzeile -> Liste aktualisieren
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'trade_proposals' }, (evt) => { agentProposal(evt); loadProposals(); })
     .subscribe((status) => $('liveDot').classList.toggle('on', status === 'SUBSCRIBED'));
 }
 
 initAgents($('agentOffice'));
-await Promise.all([loadProposals(), loadSquawk()]);
+await Promise.all([loadProposals(), loadSquawk(), loadNews()]);
 if (new URLSearchParams(location.search).has('demo')) runDemo();
 subscribe();
 // Fallback, falls Realtime hängt, und damit die Restlaufzeiten aktuell bleiben
 setInterval(loadProposals, 60000);
+setInterval(loadNews, 5 * 60000);   // schwächere Schlagzeilen kommen ohne Squawk
