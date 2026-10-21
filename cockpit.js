@@ -133,7 +133,7 @@ async function loadFundamentals() {
   $('pairTiles').innerHTML = pairBias.map(p => {
     const dir = p.bias.endsWith('long') ? 'long' : p.bias.endsWith('short') ? 'short' : 'neutral';
     return `<button class="ck-pair ${dir}${p.bias.startsWith('strong') ? ' strong' : ''}" data-pair="${esc(p.pair)}" title="${esc(p.confluence || '')}">
-      <span class="p">${esc(p.pair)}</span><span class="d">${dir === 'long' ? '▲' : dir === 'short' ? '▼' : '•'} ${signed(p.diff)}</span></button>`;
+      <span class="p">${esc(p.pair)}</span><span class="d">${dir === 'long' ? '▲' : dir === 'short' ? '▼' : '•'} ${signed(p.score, 0)}</span></button>`;
   }).join('');
 }
 
@@ -161,7 +161,7 @@ async function showPair(pair) {
 
   el.hidden = false;
   el.innerHTML = `
-    <div class="ck-detail-head"><b>${esc(pair)}</b> · ${esc(BIAS_LABEL[p.bias] || p.bias)} · Differenz ${signed(p.diff)}
+    <div class="ck-detail-head"><b>${esc(pair)}</b> · ${esc(BIAS_LABEL[p.bias] || p.bias)} · Score ${signed(p.score, 0)} <span class="desk-hint">(−100…+100 · ab ±20 Richtung, ab ±50 stark)</span>
       <span class="desk-hint">${esc(p.confluence || '')}</span></div>
     <table class="ck-ftable"><thead><tr><th>Faktor</th><th>${esc(b)}</th><th>${esc(q)}</th><th>Differenz</th></tr></thead><tbody>${rows}</tbody></table>
     ${evs.length ? `<p class="ck-mini"><b>⚠ Termine:</b> ${evs.map(e => `${hhmm(e.time)} ${esc(e.currency)} ${esc(e.name)}`).join(' · ')}</p>` : ''}
@@ -217,7 +217,7 @@ async function saveWatch(row) {
     watchlist_status: row.querySelector('select').value,
     notes: row.querySelector('input').value.trim() || null,
     bias: p ? (p.bias.endsWith('long') ? 'long' : p.bias.endsWith('short') ? 'short' : 'neutral') : 'neutral',
-    score: p ? Number(Number(p.diff).toFixed(2)) : null,
+    score: p ? p.score : null,
     confluence: p?.confluence || null,
   };
   try {
