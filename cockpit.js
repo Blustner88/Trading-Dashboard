@@ -121,13 +121,13 @@ async function loadFundamentals() {
     $('strengthStand').textContent = `eigenes Fundamental-Tool · Stand ${new Date(last[0].as_of).toLocaleDateString('de-DE')}`;
   }
 
-  const sc = (scores || []).map(s => ({ c: s.currency, v: Number(s.total_score) })).sort((a, b) => b.v - a.v);
-  const max = Math.max(1, ...sc.map(s => Math.abs(s.v)));
+  // Score −100..+100; Balken auf dieselbe Skala, Mitte = 0
+  const sc = (scores || []).map(s => ({ c: s.currency, v: Number(s.score) })).sort((a, b) => b.v - a.v);
   $('strength').innerHTML = sc.map(s => `
     <div class="ck-str">
       <span class="c">${esc(s.c)}</span>
-      <span class="track"><i class="${s.v >= 0 ? 'pos' : 'neg'}" style="--w:${(Math.abs(s.v) / max * 50).toFixed(1)}%"></i></span>
-      <span class="v ${s.v >= 0 ? 'pos' : 'neg'}">${signed(s.v)}</span>
+      <span class="track"><i class="${s.v >= 0 ? 'pos' : 'neg'}" style="--w:${(Math.abs(s.v) / 100 * 50).toFixed(1)}%"></i></span>
+      <span class="v ${s.v >= 0 ? 'pos' : 'neg'}">${signed(s.v, 0)}</span>
     </div>`).join('');
 
   $('pairTiles').innerHTML = pairBias.map(p => {
