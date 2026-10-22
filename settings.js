@@ -1,5 +1,5 @@
 import { supabase, initAccountSwitcher, getAccounts, openManager } from './accounts.js';
-import { toast, themeChoice, applyTheme, viewState, setView, PLANS, pushSupported, pushSubscription, pushEnable, pushDisable, isIOS, standalone } from './nav.js';
+import { toast, confirmDialog, themeChoice, applyTheme, viewState, setView, PLANS, pushSupported, pushSubscription, pushEnable, pushDisable, isIOS, standalone } from './nav.js';
 
 // Einstellungen: Darstellung, Benachrichtigungen (je Gerät), Trading-Standards,
 // Konten, Produkt-Ansicht mit Paketen, App (Installation, Neu laden, Abmelden).
@@ -147,7 +147,7 @@ async function loadMfa() {
 }
 $('mfaToggle').onclick = async () => {
   if (mfaFactor) {
-    if (!confirm('Zwei-Faktor-Anmeldung wirklich ausschalten? Dann reicht wieder das Passwort.')) return;
+    if (!await confirmDialog({ title: 'Zwei-Faktor ausschalten?', text: 'Dann reicht zum Anmelden wieder das Passwort allein.', ok: 'Ausschalten' })) return;
     const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactor.id });
     if (error) { toast('Ausschalten fehlgeschlagen: ' + error.message); return; }
     toast('Zwei-Faktor-Anmeldung ausgeschaltet.');
@@ -189,7 +189,7 @@ $('pwSave').onclick = async () => {
   toast('Passwort geändert.');
 };
 $('logoutAll').onclick = async () => {
-  if (!confirm('Auf allen Geräten abmelden, auch auf diesem?')) return;
+  if (!await confirmDialog({ title: 'Überall abmelden?', text: 'Alle Geräte werden abgemeldet, auch dieses.', ok: 'Abmelden', danger: false })) return;
   await supabase.auth.signOut({ scope: 'global' });
   location.href = 'cockpit.html';
 };

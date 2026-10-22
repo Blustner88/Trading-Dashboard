@@ -1,4 +1,6 @@
-import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts, getAccountById, drawdownOf } from './accounts.js';
+import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts, drawdownOf } from './accounts.js';
+import { toastError } from './nav.js';
+import { computeLevel, XP_PER_LEVEL, isDocumented, hasOwnRisk, riskOnTarget, isPlanned } from './level-core.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -6,48 +8,92 @@ let allTrades = [];
 let allPayouts = [];
 let allExpenses = [];
 let allPlanDates = [];
-let currentRange = '30';
+let allIdeas = [];
+let riskTarget = 0.8;   // Standard-Risiko aus den Einstellungen
+
+// Zeitraum und Einheit bleiben über Besuche hinweg erhalten
+const store = {
+  get(k, d) { try { return localStorage.getItem(k) || d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch { /* privates Fenster */ } },
+};
+let currentRange = store.get('td_dash_range', 'all');
+let unitChoice = store.get('td_dash_unit', 'auto');   // auto | r | usd
+let unit = 'r';                                        // tatsächlich genutzte Einheit
 
 async function init() {
   await initAccountSwitcher();
-  bindRangePicker();
+  bindPicker('rangePicker', 'range', () => currentRange, v => { currentRange = v; store.set('td_dash_range', v); });
+  bindPicker('unitPicker', 'unit', () => unitChoice, v => { unitChoice = v; store.set('td_dash_unit', v); });
   window.addEventListener('account-changed', render);
   await loadTrades();
 }
 
-function bindRangePicker() {
-  document.querySelectorAll('#rangePicker .chip').forEach(btn => {
-    btn.onclick = () => {
-      currentRange = btn.dataset.range;
-      document.querySelectorAll('#rangePicker .chip').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      render();
-    };
+function bindPicker(id, attr, get, set) {
+  const btns = document.querySelectorAll(`#${id} .chip`);
+  const mark = () => btns.forEach(b => {
+    const on = b.dataset[attr] === get();
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on);
   });
+  if (![...btns].some(b => b.dataset[attr] === get())) set(btns[btns.length - 1].dataset[attr]);
+  btns.forEach(btn => btn.onclick = () => { set(btn.dataset[attr]); mark(); render(); });
+  mark();
 }
 
 async function loadTrades() {
-  const { data, error } = await supabase
-    .from('trades')
-    .select('*')
-    .order('entry_date', { ascending: true });
-
-  if (error) {
-    console.error(error);
+  const [tr, pay, exp, plans, rs, ideas] = await Promise.all([
+    supabase.from('trades').select('*').order('entry_date', { ascending: true }),
+    supabase.from('payouts').select('*'),
+    supabase.from('business_expenses').select('*'),
+    supabase.from('daily_plans').select('plan_date'),
+    supabase.from('user_settings').select('value').eq('key', 'default_risk_pct').maybeSingle(),
+    supabase.from('trade_ideas').select('id, trade_id'),
+  ]);
+  if (tr.error) {
+    toastError('Trades nicht geladen', tr.error);
+    $('equityChartWrap').innerHTML = `<div class="dash-empty">Trades konnten nicht geladen werden. Bitte Seite neu laden.</div>`;
     return;
   }
-  allTrades = data || [];
-
-  const { data: payouts } = await supabase.from('payouts').select('*');
-  allPayouts = payouts || [];
-
-  const { data: expenses } = await supabase.from('business_expenses').select('*');
-  allExpenses = expenses || [];
-
-  const { data: plans } = await supabase.from('daily_plans').select('plan_date');
-  allPlanDates = (plans || []).map(p => p.plan_date);
+  allTrades = tr.data || [];
+  allPayouts = pay.data || [];
+  allExpenses = exp.data || [];
+  allPlanDates = (plans.data || []).map(p => p.plan_date);
+  allIdeas = ideas.data || [];
+  if (Number(rs.data?.value) > 0) riskTarget = Number(rs.data.value);
 
   render();
+}
+
+// ---------- Einheit: R-Vielfache oder Betrag ----------
+const hasR = (t) => t.r_multiple !== null && t.r_multiple !== undefined;
+const val = (t) => unit === 'r' ? Number(t.r_multiple) : (Number(t.profit_amount) || 0);
+function fmt(v, signed = true) {
+  const s = signed && v > 0 ? '+' : '';
+  if (unit === 'r') return `${s}${v.toFixed(2)}R`;
+  return `${s}${money(v)} $`;
+}
+function money(v) { return Number(v).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function axis(v) {
+  const n = (x) => x.toLocaleString('de-DE', { maximumFractionDigits: 1 });
+  return unit === 'r' ? `${n(v)}R` : Math.abs(v) >= 1000 ? `${n(v / 1000)}k` : v.toFixed(0);
+}
+
+function chooseUnit(closedAll) {
+  const withR = closedAll.filter(hasR).length;
+  if (unitChoice === 'r' || unitChoice === 'usd') return unitChoice;
+  return closedAll.length && withR / closedAll.length >= 0.5 ? 'r' : 'usd';
+}
+
+function applyUnitLabels(closedAll, used) {
+  const L = unit === 'r'
+    ? { total: 'Total R', avg: 'Ø R pro Trade', equity: 'Equity-Kurve (kumulierte R)', week: 'R pro Woche', avgcol: 'Ø R', totcol: 'Total R' }
+    : { total: 'Ergebnis', avg: 'Ø pro Trade', equity: 'Equity-Kurve (Betrag)', week: 'Ergebnis pro Woche', avgcol: 'Ø', totcol: 'Summe' };
+  document.querySelectorAll('[data-l]').forEach(el => { if (L[el.dataset.l]) el.textContent = L[el.dataset.l]; });
+  const missing = closedAll.length - used.length;
+  let note = '';
+  if (unit === 'r' && missing > 0) note = `${missing} Trade${missing === 1 ? '' : 's'} ohne R-Wert nicht enthalten`;
+  else if (unitChoice === 'auto' && unit === 'usd' && closedAll.length) note = 'Betrag, weil die meisten Trades keinen R-Wert haben';
+  $('unitNote').textContent = note;
 }
 
 function getFilteredTrades() {
@@ -62,7 +108,10 @@ function getFilteredTrades() {
 
 function render() {
   const trades = getFilteredTrades();
-  const closed = trades.filter(t => t.status === 'closed' && t.r_multiple !== null && t.r_multiple !== undefined);
+  const closedAll = trades.filter(t => t.status === 'closed');
+  unit = chooseUnit(closedAll);
+  const closed = unit === 'r' ? closedAll.filter(hasR) : closedAll;
+  applyUnitLabels(closedAll, closed);
 
   renderKPIs(closed);
   renderEquityCurve(closed);
@@ -200,7 +249,7 @@ function renderChallengeProgress() {
         <span class="risk-card-status ${progressPct >= 100 ? 'ok' : 'warn'}">${accountTypeLabelLocal(acc.account_type)}</span>
       </div>
       <div class="challenge-progress-label">
-        <span>${totalProfit.toFixed(2)} ${acc.currency} von ${target.toFixed(2)} ${acc.currency} Ziel</span>
+        <span>${money(totalProfit)} ${acc.currency} von ${money(target)} ${acc.currency} Ziel</span>
         <span style="font-family:var(--font-mono); font-weight:600;">${progressPct.toFixed(0)}%</span>
       </div>
       <div class="challenge-bar"><div class="challenge-bar-fill" style="width:${progressPct}%"></div></div>
@@ -224,24 +273,26 @@ function renderOverallBalance() {
   const tbody = document.querySelector('#overallBalanceTable tbody');
   tbody.innerHTML = '';
 
-  let grandStart = 0, grandProfit = 0, grandR = 0, grandPayouts = 0;
+  let grandActive = 0, grandProfit = 0, grandR = 0, grandPayouts = 0;
 
-  const rows = accounts.map(acc => {
+  const rows = [...accounts].sort((a, b) => (a.status === 'active' ? 0 : 1) - (b.status === 'active' ? 0 : 1)).map(acc => {
     const accTrades = allTrades.filter(t => t.account_id === acc.id);
-    const closed = accTrades.filter(t => t.status === 'closed' && t.r_multiple !== null && t.r_multiple !== undefined);
-    const totalR = closed.reduce((s, t) => s + Number(t.r_multiple), 0);
+    const closed = accTrades.filter(t => t.status === 'closed');
+    const totalR = closed.filter(hasR).reduce((s, t) => s + Number(t.r_multiple), 0);
     const totalProfit = accTrades.reduce((s, t) => s + (Number(t.profit_amount) || 0), 0);
     const totalPayouts = allPayouts.filter(p => p.account_id === acc.id).reduce((s, p) => s + Number(p.amount_eur), 0);
-    const wins = closed.filter(t => t.r_multiple > 0).length;
+    // Gewinner nach Betrag, wenn vorhanden, sonst nach R
+    const wins = closed.filter(t => (t.profit_amount !== null && t.profit_amount !== undefined ? Number(t.profit_amount) : Number(t.r_multiple)) > 0).length;
     const winrate = closed.length ? Math.round((wins / closed.length) * 100) : null;
     const currentBalance = Number(acc.starting_balance) + totalProfit;
 
-    grandStart += Number(acc.starting_balance);
+    // Beendete Challenges zählen nicht zum Kontostand, sonst steht dort Geld, das es nicht gibt
+    if (acc.status === 'active') grandActive += currentBalance;
     grandProfit += totalProfit;
     grandR += totalR;
     grandPayouts += totalPayouts;
 
-    return { acc, totalR, totalProfit, totalPayouts, winrate, currentBalance, count: closed.length };
+    return { acc, totalR, withR: closed.some(hasR), totalProfit, totalPayouts, winrate, currentBalance, count: closed.length };
   });
 
   if (rows.length === 0) {
@@ -251,23 +302,23 @@ function renderOverallBalance() {
   rows.forEach(r => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><span class="acc-dot-inline" style="background:${r.acc.color}"></span>${escapeHtml(r.acc.name)}</td>
+      <td><span class="acc-dot-inline" style="background:${r.acc.color}"></span>${escapeHtml(r.acc.name)}${r.acc.status !== 'active' ? ` <span class="acc-state">${({ passed: 'bestanden', breached: 'verloren', closed: 'geschlossen' })[r.acc.status] || escapeHtml(r.acc.status)}</span>` : ''}</td>
       <td>${r.count}</td>
       <td>${r.winrate !== null ? r.winrate + '%' : '–'}</td>
-      <td class="${r.totalR >= 0 ? 'pos' : 'neg'}">${r.totalR >= 0 ? '+' : ''}${r.totalR.toFixed(2)}R</td>
-      <td class="${r.totalProfit >= 0 ? 'pos' : 'neg'}">${r.totalProfit >= 0 ? '+' : ''}${r.totalProfit.toFixed(2)} ${r.acc.currency}</td>
-      <td class="pos">${r.totalPayouts.toFixed(2)} €</td>
-      <td>${r.currentBalance.toFixed(2)} ${r.acc.currency}</td>
+      <td class="${r.withR ? (r.totalR >= 0 ? 'pos' : 'neg') : ''}">${r.withR ? `${r.totalR >= 0 ? '+' : ''}${r.totalR.toFixed(2)}R` : '–'}</td>
+      <td class="${r.totalProfit >= 0 ? 'pos' : 'neg'}">${r.totalProfit >= 0 ? '+' : ''}${money(r.totalProfit)} ${r.acc.currency}</td>
+      <td class="${r.totalPayouts ? 'pos' : ''}">${money(r.totalPayouts)} €</td>
+      <td>${money(r.currentBalance)} ${r.acc.currency}</td>
     `;
     tbody.appendChild(tr);
   });
 
   document.getElementById('grandTotalR').textContent = `${grandR >= 0 ? '+' : ''}${grandR.toFixed(2)}R`;
   document.getElementById('grandTotalR').className = `kpi-value ${grandR >= 0 ? 'pos' : 'neg'}`;
-  document.getElementById('grandTotalProfit').textContent = `${grandProfit >= 0 ? '+' : ''}${grandProfit.toFixed(2)}`;
+  document.getElementById('grandTotalProfit').textContent = `${grandProfit >= 0 ? '+' : ''}${money(grandProfit)}`;
   document.getElementById('grandTotalProfit').className = `kpi-value ${grandProfit >= 0 ? 'pos' : 'neg'}`;
-  document.getElementById('grandTotalPayouts').textContent = `${grandPayouts.toFixed(2)} €`;
-  document.getElementById('grandTotalBalance').textContent = (grandStart + grandProfit).toFixed(2);
+  document.getElementById('grandTotalPayouts').textContent = `${money(grandPayouts)} €`;
+  document.getElementById('grandTotalBalance').textContent = money(grandActive);
 }
 
 // ---------- KPIs ----------
@@ -276,7 +327,7 @@ function renderKPIs(closed) {
     ['kpiTotalR', 'kpiWinrate', 'kpiPF', 'kpiAvgR', 'kpiBest', 'kpiWorst'].forEach(id => $(id).textContent = '–');
     return;
   }
-  const rValues = closed.map(t => Number(t.r_multiple));
+  const rValues = closed.map(val);
   const totalR = rValues.reduce((a, b) => a + b, 0);
   const wins = rValues.filter(r => r > 0);
   const losses = rValues.filter(r => r < 0);
@@ -288,14 +339,14 @@ function renderKPIs(closed) {
   const best = Math.max(...rValues);
   const worst = Math.min(...rValues);
 
-  $('kpiTotalR').textContent = `${totalR >= 0 ? '+' : ''}${totalR.toFixed(2)}R`;
+  $('kpiTotalR').textContent = fmt(totalR);
   $('kpiTotalR').className = `kpi-value ${totalR >= 0 ? 'pos' : 'neg'}`;
   $('kpiWinrate').textContent = `${winrate}%`;
   $('kpiPF').textContent = pf;
-  $('kpiAvgR').textContent = `${avgR >= 0 ? '+' : ''}${avgR.toFixed(2)}R`;
+  $('kpiAvgR').textContent = fmt(avgR);
   $('kpiAvgR').className = `kpi-value ${avgR >= 0 ? 'pos' : 'neg'}`;
-  $('kpiBest').textContent = `+${best.toFixed(2)}R`;
-  $('kpiWorst').textContent = `${worst.toFixed(2)}R`;
+  $('kpiBest').textContent = fmt(best);
+  $('kpiWorst').textContent = fmt(worst);
 }
 
 // ---------- Equity curve (pure SVG, no external library) ----------
@@ -310,11 +361,12 @@ function renderEquityCurve(closed) {
 
   let cum = 0;
   const points = sorted.map(t => {
-    cum += Number(t.r_multiple);
+    cum += val(t);
     return { date: new Date(t.entry_date), y: Math.round(cum * 100) / 100 };
   });
 
-  const W = 900, H = 260, padL = 46, padR = 16, padT = 16, padB = 28;
+  // Echte Pixelgröße statt Verzerren: Schrift bleibt auf dem Handy lesbar
+  const W = Math.max(wrap.clientWidth, 280), H = wrap.clientHeight || 260, padL = 46, padR = 12, padT = 12, padB = 24;
   const innerW = W - padL - padR, innerH = H - padT - padB;
 
   const yMin = Math.min(0, ...points.map(p => p.y));
@@ -338,7 +390,7 @@ function renderEquityCurve(closed) {
     const v = yLo + (yHi - yLo) * (i / 4);
     const y = yFor(v);
     gridLines.push(`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" style="stroke:var(--border-soft)" stroke-width="1" />`);
-    gridLines.push(`<text x="${padL - 8}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="10" font-family="JetBrains Mono, monospace" style="fill:var(--text-faint)">${v.toFixed(1)}R</text>`);
+    gridLines.push(`<text x="${padL - 8}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="10" font-family="JetBrains Mono, monospace" style="fill:var(--text-faint)">${axis(v)}</text>`);
   }
 
   // X-axis labels (first, middle, last date)
@@ -349,7 +401,7 @@ function renderEquityCurve(closed) {
   }).join('');
 
   wrap.innerHTML = `
-    <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible;">
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" style="overflow:visible;display:block">
       ${gridLines.join('')}
       <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W - padR}" y2="${zeroY.toFixed(1)}" style="stroke:var(--border)" stroke-width="1" stroke-dasharray="3,3" />
       <path d="${areaPath}" style="fill:${lineColor}" fill-opacity="0.12" stroke="none" />
@@ -366,7 +418,7 @@ function renderWeeklyChart(closed) {
   closed.forEach(t => {
     const d = new Date(t.entry_date);
     const weekKey = isoWeekKey(d);
-    weekMap[weekKey] = (weekMap[weekKey] || 0) + Number(t.r_multiple);
+    weekMap[weekKey] = (weekMap[weekKey] || 0) + val(t);
   });
   const labels = Object.keys(weekMap).sort();
   const values = labels.map(l => Math.round(weekMap[l] * 100) / 100);
@@ -376,7 +428,7 @@ function renderWeeklyChart(closed) {
     return;
   }
 
-  const W = 700, H = 200, padL = 40, padR = 12, padT = 10, padB = 20;
+  const W = Math.max(wrap.clientWidth, 280), H = wrap.clientHeight || 200, padL = 12, padR = 12, padT = 10, padB = 20;
   const innerW = W - padL - padR, innerH = H - padT - padB;
 
   const yMin = Math.min(0, ...values);
@@ -398,16 +450,24 @@ function renderWeeklyChart(closed) {
     return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${Math.max(h, 1).toFixed(1)}" style="fill:${color}" rx="2" />`;
   }).join('');
 
+  // Höchstens ~10 Beschriftungen, sonst überlappen sie
+  const every = Math.ceil(labels.length / Math.max(3, Math.floor(innerW / 60)));
   const xLabels = labels.map((l, i) => {
+    if (i % every && i !== labels.length - 1) return '';
     const x = padL + i * barSlot + barSlot / 2;
-    return `<text x="${x.toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="9.5" font-family="Inter, sans-serif" style="fill:var(--text-faint)">${l}</text>`;
+    return `<text x="${x.toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="9.5" font-family="Inter, sans-serif" style="fill:var(--text-faint)">${l.slice(5)}</text>`;
+  }).join('');
+  const tips = labels.map((l, i) => {
+    const x = padL + i * barSlot;
+    return `<rect x="${x.toFixed(1)}" y="${padT}" width="${barSlot.toFixed(1)}" height="${innerH}" fill="transparent"><title>${l.replace('-', ' ')}: ${fmt(values[i])}</title></rect>`;
   }).join('');
 
   wrap.innerHTML = `
-    <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible;">
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" style="overflow:visible;display:block">
       <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W - padR}" y2="${zeroY.toFixed(1)}" style="stroke:var(--border)" stroke-width="1" />
       ${bars}
       ${xLabels}
+      ${tips}
     </svg>
   `;
 }
@@ -418,7 +478,7 @@ function isoWeekKey(date) {
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-  return `KW${String(weekNo).padStart(2, '0')}`;
+  return `${d.getUTCFullYear()}-KW${String(weekNo).padStart(2, '0')}`;
 }
 
 // ---------- Consistency check ----------
@@ -431,20 +491,16 @@ function renderConsistency(trades) {
     return;
   }
 
-  const withRisk = trades.filter(t => t.risk_percent !== null && t.risk_percent !== undefined);
-  const onTarget = withRisk.filter(t => Math.abs(Number(t.risk_percent) - 0.8) <= 0.1);
-  const riskPct = withRisk.length ? Math.round((onTarget.length / withRisk.length) * 100) : 0;
-
-  const splitTP = trades.filter(t => t.tp1 !== null && t.tp2 !== null);
-  const splitPct = Math.round((splitTP.length / trades.length) * 100);
-
-  const withNotes = trades.filter(t => t.notes && t.notes.trim().length > 0);
-  const notesPct = Math.round((withNotes.length / trades.length) * 100);
+  // Nur echte Angaben: Import-Notizen und das beim Import gesetzte Standard-Risiko zählen nicht
+  const closed = trades.filter(t => t.status === 'closed');
+  const base = closed.length ? closed : trades;
+  const withRisk = base.filter(hasOwnRisk);
+  const pct = (n, d) => d ? Math.round((n / d) * 100) : 0;
 
   const items = [
-    { label: `Risk-Konsistenz (Ziel: 0.8%)`, pct: riskPct },
-    { label: `Split-TP genutzt (TP1 + TP2)`, pct: splitPct },
-    { label: `Trades mit Entry-Notiz dokumentiert`, pct: notesPct },
+    { label: `Risiko wie geplant (Ziel ${riskTarget.toLocaleString('de-DE')} % ± 0,1)`, pct: pct(withRisk.filter(t => riskOnTarget(t, riskTarget)).length, withRisk.length), none: !withRisk.length },
+    { label: 'Stop und Ziel vorab eingetragen', pct: pct(base.filter(isPlanned).length, base.length) },
+    { label: 'Trades mit eigener Notiz', pct: pct(base.filter(isDocumented).length, base.length) },
   ];
 
   items.forEach(item => {
@@ -454,7 +510,7 @@ function renderConsistency(trades) {
     div.innerHTML = `
       <div class="consistency-top">
         <span class="consistency-label">${item.label}</span>
-        <span class="consistency-value ${good ? 'good' : 'warn'}">${item.pct}%</span>
+        <span class="consistency-value ${item.none ? '' : good ? 'good' : 'warn'}">${item.none ? 'keine eigenen Angaben' : item.pct + ' %'}</span>
       </div>
       <div class="consistency-bar"><div class="consistency-bar-fill ${good ? '' : 'warn'}" style="width:${item.pct}%"></div></div>
     `;
@@ -471,7 +527,7 @@ function renderBreakdown(tableId, closed, keyFn) {
   closed.forEach(t => {
     const key = keyFn(t);
     if (!groups[key]) groups[key] = [];
-    groups[key].push(Number(t.r_multiple));
+    groups[key].push(val(t));
   });
 
   const rows = Object.entries(groups).map(([key, rValues]) => {
@@ -494,8 +550,8 @@ function renderBreakdown(tableId, closed, keyFn) {
       <td>${escapeHtml(r.key)}</td>
       <td>${r.count}</td>
       <td>${r.winrate}%</td>
-      <td class="${r.avg >= 0 ? 'pos' : 'neg'}">${r.avg >= 0 ? '+' : ''}${r.avg.toFixed(2)}</td>
-      <td class="${r.total >= 0 ? 'pos' : 'neg'}">${r.total >= 0 ? '+' : ''}${r.total.toFixed(2)}R</td>
+      <td class="${r.avg >= 0 ? 'pos' : 'neg'}">${fmt(r.avg)}</td>
+      <td class="${r.total >= 0 ? 'pos' : 'neg'}">${fmt(r.total)}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -535,62 +591,30 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// ---------- Trader-Level (Gamification) — Dashboard-Kurzübersicht ----------
-const XP_PER_LEVEL = 150;
-const TIERS = [
-  { min: 1, max: 2, name: 'Bronze' },
-  { min: 3, max: 5, name: 'Silber' },
-  { min: 6, max: 9, name: 'Gold' },
-  { min: 10, max: 14, name: 'Platin' },
-  { min: 15, max: Infinity, name: 'Diamant' },
-];
-
-function tierName(level) {
-  return (TIERS.find(t => level >= t.min && level <= t.max) || TIERS[0]).name;
-}
-
+// ---------- Trader-Level — Kurzübersicht (Rechnung in level-core.js) ----------
 function renderLevelPanel() {
-  const closedTrades = allTrades.filter(t => t.status === 'closed');
-  const documented = closedTrades.filter(t => t.notes && t.notes.trim().length > 0);
-  const splitTp = closedTrades.filter(t => t.tp1 !== null && t.tp1 !== undefined && t.tp2 !== null && t.tp2 !== undefined);
-  const riskDisciplined = closedTrades.filter(t => t.risk_percent !== null && Math.abs(Number(t.risk_percent) - 0.8) <= 0.1);
-  const withScreenshot = closedTrades.filter(t => t.chart_entry_url);
-
-  const cutoff30 = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const recentTrades = closedTrades.filter(t => new Date(t.entry_date).getTime() >= cutoff30);
-  const recentDocumented = recentTrades.filter(t => t.notes && t.notes.trim().length > 0);
-
-  const positiveXp =
-    documented.length * 10 +
-    splitTp.length * 15 +
-    riskDisciplined.length * 10 +
-    withScreenshot.length * 5 +
-    allPlanDates.length * 20 +
-    allPayouts.length * 50;
-
-  // Same continuity penalties as the full Level page, so the number matches
-  let penaltyXp = 0;
-  if (allPlanDates.length > 0) {
-    const sortedDates = [...allPlanDates].sort().reverse();
-    const lastPlan = new Date(sortedDates[0] + 'T00:00:00');
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    const daysSincePlan = Math.floor((today - lastPlan) / (24 * 60 * 60 * 1000));
-    if (daysSincePlan > 3) penaltyXp -= Math.min((daysSincePlan - 3) * 10, 150);
-  }
-  if (recentTrades.length >= 3) {
-    const docRate = recentDocumented.length / recentTrades.length;
-    if (docRate < 0.5) penaltyXp -= 30;
-  }
-
-  const xp = Math.max(0, positiveXp + penaltyXp);
-  const level = Math.floor(xp / XP_PER_LEVEL) + 1;
-  const xpIntoLevel = xp % XP_PER_LEVEL;
-  const progressPct = (xpIntoLevel / XP_PER_LEVEL) * 100;
-
-  $('levelBadgeCircle').textContent = level;
-  $('levelTierBadge').textContent = tierName(level) + '-Trader';
-  $('levelXpLabel').textContent = `${xpIntoLevel} / ${XP_PER_LEVEL} XP`;
-  $('levelBarFill').style.width = `${progressPct}%`;
+  const L = computeLevel({
+    closed: allTrades.filter(t => t.status === 'closed'),
+    payouts: allPayouts.length,
+    noteDates: allPlanDates,
+    ideas: allIdeas.length,
+    fromIdea: allIdeas.filter(i => i.trade_id).length,
+    riskTarget,
+  });
+  $('levelBadgeCircle').textContent = L.level;
+  $('levelTierBadge').textContent = L.tier + '-Trader';
+  $('levelXpLabel').textContent = `${L.xpIntoLevel} / ${XP_PER_LEVEL} XP`;
+  $('levelBarFill').style.width = `${L.progressPct}%`;
 }
+
+// Diagramme an neue Breite anpassen (Drehen, Fenstergröße)
+let resizeTimer, lastWidth = 0;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const w = $('equityChartWrap').clientWidth;
+    if (w !== lastWidth) { lastWidth = w; render(); }
+  }, 150);
+});
 
 init();

@@ -1,4 +1,5 @@
 import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts } from './accounts.js';
+import { toast, confirmDialog, deleteWithUndo, busy } from './nav.js';
 
 const BUCKET = 'trade-screenshots';
 const ALL_PAIRS = [
@@ -299,6 +300,7 @@ async function handleSave(e) {
   const pair = $('f_pair').value.trim().toUpperCase();
 
   const saveBtn = $('saveBtn');
+  if (saveBtn.disabled) return;   // läuft schon (Doppelklick)
   saveBtn.disabled = true;
   saveBtn.textContent = 'Speichern…';
 
@@ -359,7 +361,7 @@ async function handleSave(e) {
     await loadTrades();
   } catch (err) {
     console.error(err);
-    showToast('Fehler beim Speichern: ' + err.message);
+    showToast('Fehler beim Speichern: ' + (navigator.onLine ? err.message : 'keine Internetverbindung'), { error: true });
   } finally {
     saveBtn.disabled = false;
     saveBtn.textContent = 'Speichern';
@@ -368,12 +370,18 @@ async function handleSave(e) {
 
 async function handleDelete() {
   if (!editingId) return;
-  if (!confirm('Diesen Trade wirklich löschen?')) return;
-  const { error } = await supabase.from('trades').delete().eq('id', editingId);
-  if (error) return showToast('Fehler beim Löschen: ' + error.message);
-  showToast('Trade gelöscht.');
+  const id = editingId;
+  const t = trades.find(x => x.id === id);
+  if (!await confirmDialog({ title: 'Trade löschen?', text: t ? `${t.pair} vom ${new Date(t.entry_date).toLocaleDateString('de-DE')}` : '' })) return;
   closeModal();
-  await loadTrades();
+  const before = trades;
+  deleteWithUndo({
+    label: 'Trade',
+    hide: () => { trades = trades.filter(x => x.id !== id); renderStats(); renderTrades(); },
+    restore: () => { trades = before; renderStats(); renderTrades(); },
+    commit: () => supabase.from('trades').delete().eq('id', id),
+    onDone: loadTrades,
+  });
 }
 
 function calcRMultiple(direction, entry, sl, exit) {
@@ -401,7 +409,7 @@ async function loadTrades() {
   const { data, error } = await query;
 
   if (error) {
-    showToast('Fehler beim Laden: ' + error.message);
+    showToast('Fehler beim Laden: ' + (navigator.onLine ? error.message : 'keine Internetverbindung'), { error: true });
     return;
   }
   trades = data || [];
@@ -414,10 +422,13 @@ function renderStats() {
   const openCount = trades.filter(t => t.status === 'open').length;
   const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
   const last30 = trades.filter(t => new Date(t.entry_date).getTime() >= cutoff);
-  const closed30 = last30.filter(t => t.status === 'closed' && t.r_multiple !== null);
-  const wins = closed30.filter(t => t.r_multiple > 0).length;
+  // Win-Rate über alle geschlossenen Trades (Betrag, sonst R); Ø R nur über Trades mit R-Wert
+  const closed30 = last30.filter(t => t.status === 'closed');
+  const result = (t) => t.profit_amount !== null && t.profit_amount !== undefined ? Number(t.profit_amount) : Number(t.r_multiple ?? 0);
+  const wins = closed30.filter(t => result(t) > 0).length;
   const winrate = closed30.length ? Math.round((wins / closed30.length) * 100) : null;
-  const avgR = closed30.length ? (closed30.reduce((s, t) => s + Number(t.r_multiple), 0) / closed30.length) : null;
+  const withR = closed30.filter(t => t.r_multiple !== null && t.r_multiple !== undefined);
+  const avgR = withR.length ? (withR.reduce((s, t) => s + Number(t.r_multiple), 0) / withR.length) : null;
 
   $('statOpen').textContent = openCount;
   $('statCount').textContent = last30.length;
@@ -527,12 +538,7 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-function showToast(msg) {
-  const toast = $('toast');
-  toast.textContent = msg;
-  toast.classList.add('visible');
-  setTimeout(() => toast.classList.remove('visible'), 3200);
-}
+function showToast(msg, opts) { toast(msg, opts); }
 
 init();
 

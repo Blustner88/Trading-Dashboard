@@ -1,4 +1,5 @@
 import { supabase } from './accounts.js';
+import { toast, toastError, confirmDialog, deleteWithUndo, busy } from './nav.js';
 
 // Backtesting: eigene Tabelle `backtest_trades`, völlig getrennt von Live-Trades.
 // Die Checkliste lebt hier im Code — Punkte ändern = nur dieses Array anpassen.
@@ -28,7 +29,8 @@ const num = (v) => (v === '' || v == null ? null : Number(v));
 const fmtR = (r) => r == null ? '–' : `${r > 0 ? '+' : ''}${r.toFixed(2)}R`;
 
 let rows = [];
-let series = localStorage.getItem('td_bt_series') || '';
+const keep = (v) => { try { localStorage.setItem('td_bt_series', v); } catch { /* privates Fenster */ } };
+let series = (() => { try { return localStorage.getItem('td_bt_series') || ''; } catch { return ''; } })();
 let gradeFilter = null;
 let editingId = null;
 let direction = null;
@@ -44,7 +46,7 @@ function gradeFor(score) {
 // ---------- Daten ----------
 async function load() {
   const { data, error } = await supabase.from('backtest_trades').select('*').order('setup_date');
-  if (error) { toast('Laden fehlgeschlagen: ' + error.message); return; }
+  if (error) { toastError('Laden fehlgeschlagen', error); return; }
   rows = data || [];
   const all = [...new Set(rows.map(r => r.test_series))];
   if (!all.includes(series)) series = all[all.length - 1] || 'BITR v1';
@@ -92,6 +94,9 @@ function render() {
   $('progressLabel').textContent = `${allInSeries} / ${TARGET} Trades`;
   $('progressFill').style.width = `${Math.min(100, allInSeries / TARGET * 100)}%`;
   $('progressHint').textContent = allInSeries >= TARGET ? 'Stichprobe erreicht — jetzt auswerten' : `noch ${TARGET - allInSeries} bis zur Auswertung`;
+
+  // Leere Reihe: Kennzahlen ausblenden statt lauter Striche
+  document.querySelectorAll('[data-stats]').forEach(el => { el.hidden = !list.length; });
 
   $('kCount').textContent = s.n;
   $('kWin').textContent = s.win == null ? '–' : `${Math.round(s.win * 100)} %`;
@@ -152,7 +157,7 @@ function renderBreakdown(id, list, keyFn, order) {
 function renderList(list) {
   const el = $('btList');
   if (!list.length) {
-    el.innerHTML = '<p class="bt-empty">Noch keine Trades in dieser Testreihe. Tipp: TradingView Bar-Replay starten, Setup suchen, Checkliste abhaken, dann Replay weiterlaufen lassen.</p>';
+    el.innerHTML = `<div class="bt-empty">${gradeFilter ? `Keine ${esc(gradeFilter)}-Trades in dieser Testreihe.` : `<b>Noch keine Trades in dieser Testreihe.</b><br>So geht's: in TradingView Bar-Replay starten, Setup suchen, Checkliste abhaken, Replay weiterlaufen lassen und das Ergebnis hier eintragen.`}</div>`;
     return;
   }
   el.innerHTML = [...list].reverse().map(r => {
@@ -281,6 +286,10 @@ function computeR(result, entry, sl, exit, targetR) {
 
 async function save(e) {
   e.preventDefault();
+  return busy(e.submitter || $('btForm').querySelector('[type=submit]'), () => saveNow());
+}
+
+async function saveNow() {
   if (!direction) { toast('Bitte Richtung wählen.'); return; }
   const checklist = checkedMap();
   const score = Object.values(checklist).filter(Boolean).length;
@@ -314,9 +323,9 @@ async function save(e) {
     ? supabase.from('backtest_trades').update(payload).eq('id', editingId)
     : supabase.from('backtest_trades').insert(payload);
   const { error } = await q;
-  if (error) { toast('Speichern fehlgeschlagen: ' + error.message); return; }
+  if (error) { toastError('Speichern fehlgeschlagen', error); return; }
   series = payload.test_series;
-  localStorage.setItem('td_bt_series', series);
+  keep(series);
   if (r == null && result !== 'open') toast('Gespeichert — R bitte manuell nachtragen (Preise fehlen).');
   else toast(editingId ? 'Aktualisiert' : `Gespeichert · ${payload.grade}`);
   closeModal();
@@ -324,11 +333,17 @@ async function save(e) {
 }
 
 async function remove() {
-  if (!editingId || !confirm('Diesen Backtest-Trade löschen?')) return;
-  const { error } = await supabase.from('backtest_trades').delete().eq('id', editingId);
-  if (error) { toast('Löschen fehlgeschlagen: ' + error.message); return; }
+  if (!editingId) return;
+  const id = editingId;
+  if (!await confirmDialog({ title: 'Backtest-Trade löschen?' })) return;
   closeModal();
-  await load();
+  const before = rows;
+  deleteWithUndo({
+    label: 'Backtest-Trade',
+    hide: () => { rows = rows.filter(r => r.id !== id); render(); },
+    restore: () => { rows = before; render(); },
+    commit: () => supabase.from('backtest_trades').delete().eq('id', id),
+  });
 }
 
 function buildGradeFilter() {
@@ -345,12 +360,6 @@ function buildGradeFilter() {
   });
 }
 
-function toast(msg) {
-  const t = $('toast');
-  t.textContent = msg;
-  t.classList.add('visible');
-  setTimeout(() => t.classList.remove('visible'), 3200);
-}
 
 function init() {
   buildChecklist();
@@ -365,7 +374,7 @@ function init() {
   $('f_setup').onchange = () => applySetupRule(true);
   ['f_entry', 'f_sl', 'f_target'].forEach(id => $(id).addEventListener('input', syncTp));
   $('f_tp1').addEventListener('input', () => { tpManual = $('f_tp1').value !== ''; });
-  $('seriesSelect').onchange = (e) => { series = e.target.value; localStorage.setItem('td_bt_series', series); render(); };
+  $('seriesSelect').onchange = (e) => { series = e.target.value; keep(series); render(); };
   load();
 }
 

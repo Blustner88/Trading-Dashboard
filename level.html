@@ -33,15 +33,7 @@
       <span class="brand-mark">◈</span>
       <span class="brand-text">Trading Journal</span>
     </div>
-    <nav class="tabnav">
-      <a href="dashboard.html" class="tab-link">Dashboard</a>
-      <a href="desk.html" class="tab-link">Desk</a>
-      <a href="index.html" class="tab-link">Journal</a>
-      <a href="backtest.html" class="tab-link">Backtest</a>
-      <a href="accounting.html" class="tab-link">Steuer</a>
-      <a href="invoices.html" class="tab-link">Rechnungen</a>
-      <a href="level.html" class="tab-link active">Level</a>
-    </nav>
+    <nav class="tabnav"></nav>
   </header>
 
   <main class="dash-main">
@@ -59,10 +51,10 @@
             <span id="levelXpLabel">0 / 150 XP</span>
             <span id="levelNextLabel">bis Level 2</span>
           </div>
-          <div class="level-bar"><div class="level-bar-fill" id="levelBarFill" style="width:0%"></div></div>
+          <div class="level-bar" id="levelBar" role="progressbar" aria-label="Fortschritt bis zum nächsten Level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="level-bar-fill" id="levelBarFill" style="width:0%"></div></div>
         </div>
       </div>
-      <p class="level-hint">XP kommt aus Disziplin, nicht aus Trade-Anzahl oder Gewinn: dokumentierte Trades, Split-TP-Nutzung, korrekte Risk-Größe, Tagespläne und Payouts. Nachlassende Kontinuität zieht Punkte ab.</p>
+      <p class="level-hint">XP gibt es für Disziplin, nicht für Gewinn: Trades vorab planen (Idee, Stop, Ziel), eigenes Risiko einhalten, Notizen schreiben. Importierte Trades zählen erst, wenn du selbst etwas ergänzt.</p>
     </section>
 
     <!-- XP-Aufschlüsselung -->
@@ -72,8 +64,8 @@
     </section>
 
     <!-- Abzüge -->
-    <section class="panel" id="penaltyPanel">
-      <div class="panel-header"><h3>Kontinuitäts-Abzüge</h3></div>
+    <section class="panel" id="penaltyPanel" hidden>
+      <div class="panel-header"><h3>Abzüge</h3></div>
       <div class="xp-source-list" id="penaltyList"></div>
     </section>
 
@@ -81,12 +73,12 @@
     <section class="panel">
       <div class="panel-header"><h3>Statistiken</h3></div>
       <div class="level-stats-row">
-        <div class="level-stat"><span class="kpi-label">Dokumentierte Trades</span><span class="kpi-value" id="statDocumented">–</span></div>
-        <div class="level-stat"><span class="kpi-label">Split-TP genutzt</span><span class="kpi-value" id="statSplitTp">–</span></div>
-        <div class="level-stat"><span class="kpi-label">Risk-Diszipliniert</span><span class="kpi-value" id="statRiskDisc">–</span></div>
-        <div class="level-stat"><span class="kpi-label">Planungstage (30T)</span><span class="kpi-value" id="statPlanDays">–</span></div>
-        <div class="level-stat"><span class="kpi-label">Tage seit letztem Plan</span><span class="kpi-value" id="statDaysSincePlan">–</span></div>
-        <div class="level-stat"><span class="kpi-label">Payouts gesamt</span><span class="kpi-value" id="statPayoutCount">–</span></div>
+        <div class="level-stat"><span class="kpi-label">Mit eigener Notiz</span><span class="kpi-value" id="statDocumented">–</span></div>
+        <div class="level-stat"><span class="kpi-label">Stop + Ziel geplant</span><span class="kpi-value" id="statPlanned">–</span></div>
+        <div class="level-stat"><span class="kpi-label">Risiko eingehalten</span><span class="kpi-value" id="statRiskDisc">–</span></div>
+        <div class="level-stat"><span class="kpi-label">Tagesnotizen (30 T)</span><span class="kpi-value" id="statNotes">–</span></div>
+        <div class="level-stat"><span class="kpi-label">Trade-Ideen</span><span class="kpi-value" id="statIdeas">–</span></div>
+        <div class="level-stat"><span class="kpi-label">Auszahlungen</span><span class="kpi-value" id="statPayoutCount">–</span></div>
       </div>
     </section>
 

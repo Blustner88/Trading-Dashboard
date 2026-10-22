@@ -1,5 +1,5 @@
 import { createClient } from './vendor/supabase-js-2.118.0.js';
-import { renderNav, LOGOUT_ICON } from './nav.js';
+import { renderNav, LOGOUT_ICON, toast, toastError, confirmDialog } from './nav.js';
 
 renderNav();   // Navigation steht schon hinter der Anmeldemaske
 
@@ -495,8 +495,15 @@ async function handleAccSave(e) {
 async function handleAccDelete() {
   const id = document.getElementById('acc_id').value;
   if (!id) return;
-  if (!confirm('Konto löschen? Alle zugehörigen Trades werden ebenfalls gelöscht.')) return;
-  await supabase.from('accounts').delete().eq('id', id);
+  const n = (await supabase.from('trades').select('id', { count: 'exact', head: true }).eq('account_id', id)).count || 0;
+  if (!await confirmDialog({
+    title: 'Konto endgültig löschen?',
+    text: n ? `Damit werden auch ${n} Trades dieses Kontos gelöscht. Das lässt sich nicht rückgängig machen. Für beendete Konten besser den Status auf „Geschlossen“ setzen.` : 'Das lässt sich nicht rückgängig machen.',
+    ok: n ? `Konto + ${n} Trades löschen` : 'Löschen',
+  })) return;
+  const { error } = await supabase.from('accounts').delete().eq('id', id);
+  if (error) { toastError('Löschen fehlgeschlagen', error); return; }
+  toast('Konto gelöscht');
   await fetchAccounts();
   if (selectedId === id) setSelected('all');
   renderManagerList();

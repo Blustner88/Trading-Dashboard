@@ -176,6 +176,8 @@ async function loadShadow() {
 const NEWS_CCYS = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD', 'NZD', 'NOK', 'SEK'];
 let newsRows = [];
 let newsFilter = null;   // null = alle Währungen
+const NEWS_STEP = 8;
+let newsLimit = NEWS_STEP;
 
 function ago(ts) {
   const m = Math.round((Date.now() - new Date(ts)) / 60000);
@@ -184,8 +186,12 @@ function ago(ts) {
 
 function renderNews() {
   $('newsFilter').innerHTML = [null, ...NEWS_CCYS].map(c =>
-    `<button class="news-chip${newsFilter === c ? ' on' : ''}" data-ccy="${c ?? ''}">${c ?? 'Alle'}</button>`).join('');
-  const rows = newsRows.filter(n => !newsFilter || n.fb_news_impacts.some(i => i.currency === newsFilter)).slice(0, 24);
+    `<button class="news-chip${newsFilter === c ? ' on' : ''}" data-ccy="${c ?? ''}" aria-pressed="${newsFilter === c}">${c ?? 'Alle'}</button>`).join('');
+  const all = newsRows.filter(n => !newsFilter || n.fb_news_impacts.some(i => i.currency === newsFilter));
+  const rows = all.slice(0, newsLimit);
+  const rest = all.length - rows.length;
+  $('newsMore').hidden = rest <= 0;
+  $('newsMore').textContent = `Weitere ${Math.min(rest, NEWS_STEP)} anzeigen (${rest} übrig)`;
   $('newsList').innerHTML = rows.length ? rows.map(n => {
     const imp = Math.max(...n.fb_news_impacts.map(i => Number(i.importance) || 1));
     const strong = imp >= 4;
@@ -215,8 +221,10 @@ $('newsFilter').addEventListener('click', (e) => {
   const btn = e.target.closest('.news-chip');
   if (!btn) return;
   newsFilter = btn.dataset.ccy || null;
+  newsLimit = NEWS_STEP;
   renderNews();
 });
+$('newsMore').addEventListener('click', () => { newsLimit += NEWS_STEP; renderNews(); });
 
 function squawkRow(s, isNew = false) {
   return `
@@ -243,6 +251,7 @@ async function loadProposals() {
   renderHistory(history || []);
   $('kpiWatching').textContent = watching.length;
   $('kpiPending').textContent = pending.length;
+  $('tabPending').textContent = pending.length || '';
   $('kpiTaken').textContent = (today || []).filter(r => r.status === 'taken').length;
   $('kpiBlocked').textContent = (today || []).filter(r => r.status === 'blocked').length;
   await loadShadow();
@@ -270,6 +279,28 @@ function subscribe() {
 }
 
 initAgents($('agentOffice'));
+
+// Bereichs-Reiter (nur schmale Bildschirme): gemerkt pro Sitzung, per #news usw. direkt ansteuerbar
+const TABS = ['vorschlaege', 'news', 'squawk', 'bilanz', 'buero'];
+function showTab(tab) {
+  if (!TABS.includes(tab)) tab = 'vorschlaege';
+  document.querySelectorAll('[data-pane]').forEach(el => el.classList.toggle('pane-on', el.dataset.pane === tab));
+  document.querySelectorAll('#deskTabs .chip').forEach(b => {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+  try { sessionStorage.setItem('td_desk_tab', tab); } catch { /* privat-Modus */ }
+}
+$('deskTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tab]');
+  if (!b) return;
+  showTab(b.dataset.tab);
+  $('deskTabs').scrollIntoView({ block: 'start', behavior: 'smooth' });
+});
+let startTab = location.hash.slice(1);
+if (!TABS.includes(startTab)) { try { startTab = sessionStorage.getItem('td_desk_tab'); } catch { startTab = null; } }
+showTab(startTab);
 
 // Büro einklappbar: zu = nur Team-Leiste (Status + letzte Meldung je Agent)
 const OFFICE_KEY = 'td_office_open';

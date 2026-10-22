@@ -1,4 +1,5 @@
 import { supabase, initAccountSwitcher, getAccounts } from './accounts.js';
+import { toast, toastError, confirmDialog, deleteWithUndo } from './nav.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -120,21 +121,24 @@ function previewFileInto(file, targetId) {
 }
 
 async function loadData() {
-  const { data: trades } = await supabase.from('trades').select('account_id, entry_date, status, profit_amount').eq('status', 'closed');
-  allTrades = trades || [];
-
-  const { data: recurring } = await supabase.from('recurring_expenses').select('*');
-  allRecurring = recurring || [];
+  // Parallel laden; Ausgaben erst nach dem Erzeugen fälliger Daueraufträge
+  const [tr, rec, pay, inv] = await Promise.all([
+    supabase.from('trades').select('account_id, entry_date, status, profit_amount').eq('status', 'closed'),
+    supabase.from('recurring_expenses').select('*'),
+    supabase.from('payouts').select('*').order('payout_date', { ascending: false }),
+    supabase.from('invoices').select('*, clients(name)').order('invoice_date'),
+  ]);
+  const failed = [tr, rec, pay, inv].find(r => r.error);
+  if (failed) toastError('Daten unvollständig geladen', failed.error);
+  allTrades = tr.data || [];
+  allRecurring = rec.data || [];
+  allPayouts = pay.data || [];
+  allInvoices = inv.data || [];
   await generateDueRecurringExpenses();
 
-  const { data: expenses } = await supabase.from('business_expenses').select('*').order('expense_date', { ascending: false });
+  const { data: expenses, error: expErr } = await supabase.from('business_expenses').select('*').order('expense_date', { ascending: false });
+  if (expErr) toastError('Ausgaben nicht geladen', expErr);
   allExpenses = expenses || [];
-
-  const { data: payouts } = await supabase.from('payouts').select('*').order('payout_date', { ascending: false });
-  allPayouts = payouts || [];
-
-  const { data: invoicesData } = await supabase.from('invoices').select('*, clients(name)').order('invoice_date');
-  allInvoices = invoicesData || [];
 
   populatePayoutAccountSelect();
   renderRecurringTable();
@@ -287,9 +291,11 @@ async function saveRecurring(e) {
 async function deleteRecurring() {
   const id = $('rec_id').value;
   if (!id) return;
-  if (!confirm('Vorlage löschen? Bereits erzeugte Ausgaben bleiben erhalten, es werden nur keine neuen mehr generiert.')) return;
-  await supabase.from('recurring_expenses').delete().eq('id', id);
+  if (!await confirmDialog({ title: 'Vorlage löschen?', text: 'Bereits erzeugte Ausgaben bleiben erhalten, es werden nur keine neuen mehr erzeugt.' })) return;
+  const { error } = await supabase.from('recurring_expenses').delete().eq('id', id);
+  if (error) { toastError('Löschen fehlgeschlagen', error); return; }
   closeRecurringModal();
+  toast('Vorlage gelöscht');
   await loadData();
 }
 
@@ -465,10 +471,15 @@ async function handleExpenseSave(e) {
 async function handleExpenseDelete() {
   const id = $('exp_id').value;
   if (!id) return;
-  if (!confirm('Diese Ausgabe wirklich löschen?')) return;
-  await supabase.from('business_expenses').delete().eq('id', id);
+  if (!await confirmDialog({ title: 'Ausgabe löschen?' })) return;
   closeExpenseModal();
-  await loadData();
+  const before = allExpenses;
+  deleteWithUndo({
+    label: 'Ausgabe',
+    hide: () => { allExpenses = allExpenses.filter(x => x.id !== id); render(); },
+    restore: () => { allExpenses = before; render(); },
+    commit: () => supabase.from('business_expenses').delete().eq('id', id),
+  });
 }
 
 // ---------- Payout modal ----------
@@ -555,10 +566,15 @@ async function handlePayoutSave(e) {
 async function handlePayoutDelete() {
   const id = $('po_id').value;
   if (!id) return;
-  if (!confirm('Diesen Payout wirklich löschen?')) return;
-  await supabase.from('payouts').delete().eq('id', id);
+  if (!await confirmDialog({ title: 'Auszahlung löschen?' })) return;
   closePayoutModal();
-  await loadData();
+  const before = allPayouts;
+  deleteWithUndo({
+    label: 'Auszahlung',
+    hide: () => { allPayouts = allPayouts.filter(x => x.id !== id); render(); },
+    restore: () => { allPayouts = before; render(); },
+    commit: () => supabase.from('payouts').delete().eq('id', id),
+  });
 }
 
 // ---------- CSV export ----------

@@ -1,4 +1,5 @@
 import { supabase, getSelectedAccountId, getAccounts } from './accounts.js';
+import { toast, toastError } from './nav.js';
 import { loadTrades } from './app.js';
 
 const $ = (id) => document.getElementById(id);
@@ -74,14 +75,14 @@ $('csvFileInput').onchange = async (e) => {
   const mt5Result = tryParseMt5Report(text);
   if (mt5Result) {
     const targetAccountId = $('importAccountSelect').value;
-    if (!targetAccountId) { alert('Bitte ein Konto für den Import auswählen.'); return; }
+    if (!targetAccountId) { toast('Bitte ein Konto für den Import auswählen.', { error: true }); return; }
     await finalizeMt5Import(mt5Result, targetAccountId);
     return;
   }
 
   parseCsv(text);
   if (csvHeaders.length === 0) {
-    alert('Konnte keine Spalten in der Datei erkennen.');
+    toast('Keine Spalten in der Datei erkannt. Ist es eine CSV-Datei?', { error: true });
     return;
   }
   buildMappingUI();
@@ -317,13 +318,13 @@ async function analyzeAndGoToConfirm() {
 
   const targetAccountId = $('importAccountSelect').value;
   if (!targetAccountId) {
-    alert('Bitte ein Konto für den Import auswählen.');
+    toast('Bitte ein Konto für den Import auswählen.', { error: true });
     return;
   }
 
   const missingRequired = FIELDS.filter(f => f.required && (mapping[f.key] === null || mapping[f.key] === undefined));
   if (missingRequired.length > 0) {
-    alert('Bitte Pflichtfelder zuordnen: ' + missingRequired.map(f => f.label).join(', '));
+    toast('Bitte Pflichtfelder zuordnen: ' + missingRequired.map(f => f.label).join(', '), { error: true });
     return;
   }
 
@@ -404,7 +405,7 @@ $('importConfirmBtn').onclick = async () => {
   btn.textContent = 'Trades importieren';
 
   if (error) {
-    alert('Fehler beim Import: ' + error.message);
+    toastError('Fehler beim Import', error);
     return;
   }
   closeImport();

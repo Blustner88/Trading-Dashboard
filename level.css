@@ -9,5 +9,7 @@
 .xp-source-row .value.neg { color: var(--loss); }
 .xp-source-row .count { color: var(--text-faint); font-size: 11.5px; margin-left: 6px; }
 
-#penaltyPanel { border: 1px solid rgba(244,63,94,0.15); }
+#penaltyPanel { border: 1px solid color-mix(in srgb, var(--loss) 25%, transparent); }
 .penalty-empty { color: var(--text-faint); font-size: 12.5px; text-align: center; padding: 10px 0; }
+.xp-source-row.zero { opacity: .6; }
+.xp-source-row .label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 0; }

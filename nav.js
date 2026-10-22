@@ -64,20 +64,131 @@ function currentPage() {
 // ---------------------------------------------------------------------------
 // Kurze Meldung unten (für Seiten ohne eigenes #toast)
 // ---------------------------------------------------------------------------
-export function toast(msg) {
+// opts: { error: true } rot und länger sichtbar; { action: 'Rückgängig', onAction } mit Knopf
+export function toast(msg, opts = {}) {
   let el = document.getElementById('toast');
   if (!el) {
     el = document.createElement('div');
     el.id = 'toast';
     el.className = 'toast';
-    el.setAttribute('role', 'status');
     document.body.appendChild(el);
   }
   el.textContent = msg;
+  el.classList.toggle('error', !!opts.error);
+  el.setAttribute('role', opts.error ? 'alert' : 'status');
+  if (opts.action) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'toast-action';
+    b.textContent = opts.action;
+    b.onclick = () => { el.classList.remove('visible'); opts.onAction?.(); };
+    el.append(b);
+  }
+  el.classList.toggle('has-action', !!opts.action);
   el.classList.add('visible');
   clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('visible'), 3600);
+  el._t = setTimeout(() => el.classList.remove('visible'), opts.ms || (opts.error || opts.action ? 6500 : 3600));
 }
+
+// Fehler aus Supabase o. ä. verständlich melden statt alert()
+export function toastError(prefix, error) {
+  const detail = !navigator.onLine ? 'keine Internetverbindung' : (error?.message || String(error || 'unbekannter Fehler'));
+  toast(`${prefix}: ${detail}`, { error: true });
+}
+
+// ---------------------------------------------------------------------------
+// Rückfrage im App-Design statt confirm(); liefert true/false
+// ---------------------------------------------------------------------------
+export function confirmDialog({ title, text = '', ok = 'Löschen', cancel = 'Abbrechen', danger = true } = {}) {
+  return new Promise((resolve) => {
+    const dlg = document.createElement('dialog');
+    dlg.className = 'app-dialog';
+    dlg.innerHTML = `
+      <h2></h2>${text ? '<p></p>' : ''}
+      <div class="app-dialog-actions">
+        <button type="button" class="btn-ghost" data-r="0"></button>
+        <button type="button" class="${danger ? 'btn-danger' : 'btn-primary'}" data-r="1"></button>
+      </div>`;
+    dlg.querySelector('h2').textContent = title;
+    if (text) dlg.querySelector('p').textContent = text;
+    dlg.querySelector('[data-r="0"]').textContent = cancel;
+    dlg.querySelector('[data-r="1"]').textContent = ok;
+    let result = false;
+    dlg.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-r]');
+      if (b) { result = b.dataset.r === '1'; dlg.close(); }
+      else if (e.target === dlg) dlg.close();   // Klick neben das Fenster = abbrechen
+    });
+    dlg.addEventListener('close', () => { dlg.remove(); resolve(result); });
+    document.body.append(dlg);
+    dlg.showModal();
+    dlg.querySelector('[data-r="0"]').focus();   // sicherer Standard: Abbrechen
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Löschen mit "Rückgängig": Eintrag sofort ausblenden, erst nach ein paar
+// Sekunden wirklich löschen. Verlässt man die Seite vorher, wird sofort gelöscht.
+// hide() blendet aus, restore() zeigt wieder an, commit() löscht (Promise mit { error }).
+// ---------------------------------------------------------------------------
+export function deleteWithUndo({ label, hide, restore, commit, onDone }) {
+  let done = false;
+  const run = async () => {
+    if (done) return;
+    done = true;
+    window.removeEventListener('pagehide', run);
+    const res = await commit();
+    if (res?.error) { restore?.(); toastError('Löschen fehlgeschlagen', res.error); return; }
+    onDone?.();
+  };
+  hide?.();
+  window.addEventListener('pagehide', run);
+  const timer = setTimeout(run, 6000);
+  toast(`${label} gelöscht`, {
+    action: 'Rückgängig', ms: 6000,
+    onAction: () => { if (done) return; done = true; clearTimeout(timer); window.removeEventListener('pagehide', run); restore?.(); },
+  });
+}
+
+// Knopf während einer Aktion sperren (kein doppeltes Speichern)
+export async function busy(btn, fn) {
+  if (!btn) return fn();
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.setAttribute('aria-busy', 'true');
+  try { return await fn(); }
+  finally { btn.disabled = false; btn.removeAttribute('aria-busy'); }
+}
+
+// ---------------------------------------------------------------------------
+// Verlässlichkeit: Netz weg -> Hinweisleiste; unerwartete Fehler -> Meldung
+// ---------------------------------------------------------------------------
+function netBanner() {
+  let el = document.getElementById('netBanner');
+  if (navigator.onLine) { el?.remove(); return; }
+  if (el) return;
+  el = document.createElement('div');
+  el.id = 'netBanner';
+  el.className = 'net-banner';
+  el.setAttribute('role', 'status');
+  el.textContent = 'Offline – Änderungen werden erst mit Verbindung gespeichert.';
+  document.body.prepend(el);
+}
+window.addEventListener('online', () => { netBanner(); toast('Wieder online'); });
+window.addEventListener('offline', netBanner);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', netBanner); else netBanner();
+
+let lastErr = 0;
+function reportUnexpected(err) {
+  const msg = String(err?.message || err || '');
+  if (/ResizeObserver|AbortError/i.test(msg)) return;
+  console.error(err);
+  if (Date.now() - lastErr < 5000) return;
+  lastErr = Date.now();
+  toast(navigator.onLine ? 'Etwas ist schiefgelaufen. Falls etwas fehlt, Seite neu laden.' : 'Keine Internetverbindung.', { error: true });
+}
+window.addEventListener('unhandledrejection', (e) => reportUnexpected(e.reason));
+window.addEventListener('error', (e) => { if (e.error) reportUnexpected(e.error); });
 
 // ---------------------------------------------------------------------------
 // Hell / Dunkel: ohne Wahl gilt die Systemeinstellung

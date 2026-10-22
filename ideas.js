@@ -1,5 +1,5 @@
 import { supabase } from './accounts.js';
-import { toast } from './nav.js';
+import { toast, confirmDialog, deleteWithUndo } from './nav.js';
 
 // Trade-Ideen: Planung vor dem Trade. Liste + Editor (Sheet) für Cockpit und Tagesplan.
 // Status: idea → order → taken (verknüpft mit dem Journal-Trade) oder discarded.
@@ -245,11 +245,14 @@ export async function openIdeaEditor(idea = null, defaults = {}, onChange = () =
     if (saved) location.href = `index.html#idee=${saved.id}`;
   });
   sheet.querySelector('[data-act=delete]')?.addEventListener('click', async () => {
-    if (!confirm('Diese Idee löschen?')) return;
-    const { error } = await supabase.from('trade_ideas').delete().eq('id', idea.id);
-    if (error) { toast('Löschen fehlgeschlagen: ' + error.message); return; }
-    toast('Idee gelöscht.');
+    if (!await confirmDialog({ title: 'Idee löschen?', text: `${idea.pair || ''} ${idea.direction === 'short' ? 'Short' : idea.direction === 'long' ? 'Long' : ''}`.trim() })) return;
     close();
-    onChange(null);
+    deleteWithUndo({
+      label: 'Idee',
+      hide: () => document.querySelectorAll(`[data-idea="${idea.id}"]`).forEach(el => { el.hidden = true; }),
+      restore: () => document.querySelectorAll(`[data-idea="${idea.id}"]`).forEach(el => { el.hidden = false; }),
+      commit: () => supabase.from('trade_ideas').delete().eq('id', idea.id),
+      onDone: () => onChange(null),
+    });
   });
 }

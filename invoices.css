@@ -68,3 +68,17 @@
   body { background: #fff; }
   .invoice-page { padding: 15mm 18mm; }
 }
+
+/* Handy: Tabellenzeilen als Karten statt seitlich scrollen */
+@media (max-width: 560px) {
+  #invoicesTable thead, #clientsTable thead { display: none; }
+  #invoicesTable tr, #clientsTable tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px;
+    padding: 12px 0; border-bottom: 1px solid var(--border-soft);
+  }
+  #invoicesTable tr:last-child, #clientsTable tr:last-child { border-bottom: 0; }
+  #invoicesTable td, #clientsTable td { border: 0; padding: 0; text-align: left !important; }
+  #invoicesTable td:nth-child(even), #clientsTable td:nth-child(even) { text-align: right !important; color: var(--text-muted); }
+  #invoicesTable td:last-child, #clientsTable td:last-child { grid-column: 1 / -1; text-align: left !important; margin-top: 4px; }
+  #invoicesTable td[colspan], #clientsTable td[colspan] { grid-column: 1 / -1; text-align: center !important; }
+}

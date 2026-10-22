@@ -1,4 +1,5 @@
 import { supabase, initAccountSwitcher } from './accounts.js';
+import { toastError } from './nav.js';
 import { esc, eur, signedEur, dmy, yearOf, COUNTED, MONTHS, TYPE, STATUS, income, sum, loadBiz, yearOptions, todos, todoList } from './biz.js';
 
 // Business-Überblick: Jahresbilanz, offene Aufgaben, Monate (Diagramm + Tabelle),
@@ -131,7 +132,7 @@ $('feeForm').addEventListener('submit', async (e) => {
     expense_date: f.date.value, category: 'propfirm_fees', description: f.description.value.trim(),
     amount: Number(f.amount.value), account_id: f.dataset.account,
   });
-  if (error) { alert('Speichern fehlgeschlagen: ' + error.message); return; }
+  if (error) { toastError('Speichern fehlgeschlagen', error); return; }
   f.hidden = true;
   await loadAll();
 });

@@ -1,4 +1,5 @@
 import { supabase } from './accounts.js';
+import { toast, toastError, confirmDialog, busy } from './nav.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -121,7 +122,7 @@ async function saveSettings(e) {
   saveBtn.textContent = 'Speichern';
 
   if (error) {
-    alert('Fehler beim Speichern der Firmendaten: ' + error.message);
+    toastError('Firmendaten nicht gespeichert', error);
     return;
   }
 
@@ -213,7 +214,7 @@ async function saveClient(e) {
   saveBtn.textContent = 'Speichern';
 
   if (error) {
-    alert('Fehler beim Speichern des Kunden: ' + error.message);
+    toastError('Kunde nicht gespeichert', error);
     return;
   }
 
@@ -224,8 +225,10 @@ async function saveClient(e) {
 async function deleteClient() {
   const id = $('cl_id').value;
   if (!id) return;
-  if (!confirm('Kunde löschen?')) return;
-  await supabase.from('clients').delete().eq('id', id);
+  if (!await confirmDialog({ title: 'Kunde löschen?', text: 'Bestehende Rechnungen an diesen Kunden bleiben erhalten.' })) return;
+  const { error } = await supabase.from('clients').delete().eq('id', id);
+  if (error) { toastError('Löschen fehlgeschlagen', error); return; }
+  toast('Kunde gelöscht');
   closeClientModal();
   await loadAll();
 }
@@ -247,8 +250,8 @@ function renderInvoicesTable() {
       <td>${escapeHtml(inv.clients ? inv.clients.name : '—')}</td>
       <td>${formatDe(Number(inv.unit_price) * Number(inv.quantity))} ${escapeHtml(inv.currency)}</td>
       <td class="client-row-actions">
-        <button class="icon-btn" data-action="view" data-id="${inv.id}">📄 Ansehen</button>
-        <button class="icon-btn" data-action="delete" data-id="${inv.id}" title="Löschen">🗑</button>
+        <button class="icon-btn" data-action="view" data-id="${inv.id}">Ansehen</button>
+        <button class="icon-btn" data-action="delete" data-id="${inv.id}" title="Löschen" aria-label="Rechnung ${escapeHtml(inv.invoice_number)} löschen">🗑</button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -264,9 +267,13 @@ function renderInvoicesTable() {
 async function deleteInvoice(id) {
   const inv = invoices.find(i => i.id === id);
   if (!inv) return;
-  if (!confirm(`Rechnung ${inv.invoice_number} wirklich löschen? Der zugehörige Payout wird wieder als "nicht fakturiert" markiert.`)) return;
+  if (!await confirmDialog({
+    title: `Rechnung ${inv.invoice_number} löschen?`,
+    text: 'Nur für fehlerhafte Entwürfe gedacht. Eine bereits verschickte Rechnung nicht löschen, sondern mit einer Gutschrift korrigieren. Die Auszahlung gilt danach wieder als „nicht fakturiert“.',
+  })) return;
   const { error } = await supabase.from('invoices').delete().eq('id', id);
-  if (error) { alert('Fehler beim Löschen: ' + error.message); return; }
+  if (error) { toastError('Löschen fehlgeschlagen', error); return; }
+  toast('Rechnung gelöscht');
   await loadAll();
 }
 
@@ -335,9 +342,14 @@ function closeInvoiceModal() {
 
 async function createInvoice(e) {
   e.preventDefault();
+  // Gesperrt, solange gespeichert wird: sonst entstehen doppelte Rechnungsnummern
+  return busy(e.submitter || $('invoiceForm')?.querySelector('[type=submit]'), () => createInvoiceNow());
+}
+
+async function createInvoiceNow() {
   const clientId = $('inv_client').value;
   const client = clients.find(c => c.id === clientId);
-  if (!client) { alert('Bitte einen Kunden wählen.'); return; }
+  if (!client) { toast('Bitte einen Kunden wählen.', { error: true }); return; }
 
   const payload = {
     invoice_number: $('inv_number').value.trim(),
@@ -355,7 +367,7 @@ async function createInvoice(e) {
   };
 
   const { data, error } = await supabase.from('invoices').insert(payload).select('*, clients(*)').single();
-  if (error) { alert('Fehler: ' + error.message); return; }
+  if (error) { toastError('Rechnung nicht erstellt', error); return; }
 
   // Increment next invoice number counter
   if (companySettings) {
