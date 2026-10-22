@@ -158,11 +158,12 @@ async function requireLogin() {
   // Rückkehr aus der "Passwort vergessen"-Mail: supabase-js liest das Token aus der URL
   const recovery = /type=recovery/.test(location.hash);
   const { data: { session } } = await supabase.auth.getSession();
-  if (recovery && session) await showLogin('recovery');
-  else if (!session) await showLogin('login');
-  // Mit eingerichteter 2FA: ohne Code gibt die Datenbank nichts heraus (is_owner verlangt aal2)
+  if (!session) await showLogin('login');
+  // Mit eingerichteter 2FA: ohne Code gibt die Datenbank nichts heraus (is_owner verlangt aal2).
+  // Auch vor dem neuen Passwort nötig: Supabase ändert es mit 2FA nur nach Code-Bestätigung.
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (aal?.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') await showMfa();
+  if (recovery && session) await showLogin('recovery');
   injectLoginStyles();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addLogoutButton);
   else addLogoutButton();
