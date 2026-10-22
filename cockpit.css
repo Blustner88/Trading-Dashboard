@@ -77,6 +77,10 @@
 .ck-row.neutral .s { color: var(--text-muted); }
 .ck-row .badge { font-family: var(--font-body); font-size: 10px; padding: 1px 6px; }
 
+/* ---------- Notiz zum Tag ---------- */
+.ck-daynote { width: 100%; resize: vertical; min-height: 76px; background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 10px; padding: 10px 12px; color: var(--text); font: 13.5px/1.45 var(--font-body); }
+.ck-daynote:focus { outline: none; border-color: var(--indigo-bright); box-shadow: 0 0 0 3px var(--accent-soft); }
+
 /* ---------- Währungsstärke ---------- */
 .ck-strength { display: flex; flex-direction: column; gap: 8px; }
 .ck-str { display: grid; grid-template-columns: 38px minmax(0, 1fr) 40px; gap: 10px; align-items: center; font-family: var(--font-mono); font-size: 12.5px; }

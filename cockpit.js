@@ -388,11 +388,31 @@ async function openPair(pair) {
 // Watchlist-Status / Notiz -> Tagesplan von heute
 // ---------------------------------------------------------------------------
 async function loadPlan() {
-  const { data } = await supabase.from('daily_plans').select('id, daily_plan_pairs(*)').eq('plan_date', localDate()).maybeSingle();
+  const { data } = await supabase.from('daily_plans').select('id, general_notes, daily_plan_pairs(*)').eq('plan_date', localDate()).maybeSingle();
   plan = data;
   planPairs = {};
   (data?.daily_plan_pairs || []).forEach(r => { planPairs[r.pair] = r; });
+  $('dayNote').value = data?.general_notes || '';
 }
+
+// Notiz zum Tag: speichert 1 s nach der letzten Eingabe in daily_plans.general_notes
+let noteTimer = null;
+$('dayNote').addEventListener('input', () => {
+  $('dayNoteState').textContent = 'wird gespeichert …';
+  clearTimeout(noteTimer);
+  noteTimer = setTimeout(async () => {
+    try {
+      const { id } = await ensurePlan();
+      const { error } = await supabase.from('daily_plans').update({ general_notes: $('dayNote').value.trim() || null }).eq('id', id);
+      if (error) throw error;
+      $('dayNoteState').textContent = `gespeichert ${hhmm(new Date())}`;
+    } catch (err) {
+      console.error(err);
+      $('dayNoteState').textContent = 'nicht gespeichert';
+      toast('Notiz konnte nicht gespeichert werden: ' + (err.message || err));
+    }
+  }, 1000);
+});
 
 async function ensurePlan() {
   if (plan) return plan;

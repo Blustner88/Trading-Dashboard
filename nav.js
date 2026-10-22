@@ -19,7 +19,6 @@ export const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="curr
 const AREAS = [
   { key: 'cockpit', label: 'Cockpit', pages: [
     { href: 'cockpit.html', label: 'Überblick' },
-    { href: 'planning.html', label: 'Tagesplan' },
   ] },
   { key: 'desk', label: 'Desk', pages: [
     { href: 'desk.html', label: 'Live' },
@@ -170,7 +169,7 @@ function plusMenu(e) {
   sheet.className = 'sheet sheet-small';
   sheet.setAttribute('role', 'dialog');
   sheet.setAttribute('aria-label', 'Neu anlegen');
-  const ideaHref = /planning\.html$/.test(location.pathname) ? 'planning.html#idee' : 'cockpit.html#idee';
+  const ideaHref = 'cockpit.html#idee';
   sheet.innerHTML = `<button class="sheet-handle" aria-label="Schließen"></button>
     <div class="modal-header"><h2>Neu</h2><button class="modal-close" aria-label="Schließen">✕</button></div>
     <div class="plus-menu">
