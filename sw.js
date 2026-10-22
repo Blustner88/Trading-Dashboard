@@ -1,8 +1,13 @@
 // Service Worker: eigene Dateien immer zuerst frisch vom Server (kein 10-Minuten-
-// Cache von GitHub Pages mehr), bei fehlendem Netz aus dem Zwischenspeicher.
+// Cache von GitHub Pages mehr), bei fehlendem oder sehr langsamem Netz aus dem
+// Zwischenspeicher. Bibliothek und Icons (versioniert) kommen direkt aus dem Speicher.
 // Daten (Supabase), Schriften und Bibliotheken laufen am Service Worker vorbei.
 // Außerdem: Push-Benachrichtigungen anzeigen und beim Antippen die Seite öffnen.
-const CACHE = 'td-shell-v1';
+const CACHE = 'td-shell-v2';
+// Dateien mit Version im Namen ändern sich nie -> sofort aus dem Speicher
+const IMMUTABLE = /\/(vendor|icons)\//;
+// Bei langsamem Netz nicht ewig warten: nach 3 s die gespeicherte Fassung zeigen
+const NET_TIMEOUT = 3000;
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => {
@@ -12,20 +17,34 @@ self.addEventListener('activate', (e) => {
   })());
 });
 
+async function fromNetwork(req) {
+  const res = await fetch(req, { cache: 'no-cache' });
+  if (res.ok) {
+    const copy = res.clone();
+    caches.open(CACHE).then(c => c.put(req, copy));
+  }
+  return res;
+}
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
   e.respondWith((async () => {
+    if (IMMUTABLE.test(url.pathname)) {
+      const hit = await caches.match(req);
+      if (hit) return hit;
+      return fromNetwork(req);
+    }
+    const net = fromNetwork(req);
+    const cached = caches.match(req, { ignoreSearch: true });
+    const timeout = new Promise(r => setTimeout(r, NET_TIMEOUT));
     try {
-      const res = await fetch(req, { cache: 'no-cache' });
-      if (res.ok) {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy));
-      }
+      // Netz gewinnt fast immer; nur bei Funkloch/Zug kommt nach 3 s der Speicher
+      const res = await Promise.race([net, timeout.then(() => cached.then(c => c || net))]);
       return res;
     } catch {
-      const hit = await caches.match(req, { ignoreSearch: true });
+      const hit = await cached;
       return hit || Response.error();
     }
   })());

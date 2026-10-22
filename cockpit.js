@@ -190,29 +190,23 @@ function reasonFor(p) {
 }
 
 async function loadFundamentals() {
-  const [{ data: scores }, { data: bias }, { data: w }, { data: last }] = await Promise.all([
+  // Alles in einer Runde: aktuelle Scores, Faktor-Werte und der Stand vor einer Woche
+  const [{ data: scores }, { data: bias }, { data: w }, { data: fz }, { data: prevRows }] = await Promise.all([
     supabase.from('fb_latest_currency_scores').select('*'),
     supabase.from('fb_latest_pair_bias').select('*'),
     supabase.from('fb_factor_weights').select('factor, label, weight, enabled').order('sort_order'),
-    supabase.from('fb_factor_scores').select('as_of').order('as_of', { ascending: false }).limit(1),
+    supabase.from('fb_latest_factor_scores').select('currency, factor, z_score'),
+    supabase.from('fb_pair_bias_prev_week').select('pair, score'),
   ]);
   weights = (w || []).filter(x => x.enabled);
-  if (last?.length) {
-    const { data: fz } = await supabase.from('fb_factor_scores').select('currency, factor, z_score').eq('as_of', last[0].as_of);
-    factorZ = {};
-    (fz || []).forEach(r => { (factorZ[r.currency] ||= {})[r.factor] = r.z_score == null ? null : Number(r.z_score); });
-  }
+  factorZ = {};
+  (fz || []).forEach(r => { (factorZ[r.currency] ||= {})[r.factor] = r.z_score == null ? null : Number(r.z_score); });
 
   // Stand vor einer Woche für die Veränderung
   const asOf = bias?.[0]?.as_of;
-  let prev = {};
+  const prev = {};
+  (prevRows || []).forEach(r => { prev[r.pair] = Number(r.score); });
   if (asOf) {
-    const weekAgo = new Date(asOf); weekAgo.setDate(weekAgo.getDate() - 7);
-    const { data: pd } = await supabase.from('fb_pair_bias').select('as_of').lte('as_of', weekAgo.toISOString().slice(0, 10)).order('as_of', { ascending: false }).limit(1);
-    if (pd?.length) {
-      const { data: rows } = await supabase.from('fb_pair_bias').select('pair, score').eq('as_of', pd[0].as_of);
-      (rows || []).forEach(r => { prev[r.pair] = Number(r.score); });
-    }
     $('pairsStand').textContent = `Stand ${new Date(asOf).toLocaleDateString('de-DE')} · ▲▼ zur Vorwoche`;
     $('strengthStand').textContent = `Stand ${new Date(asOf).toLocaleDateString('de-DE')}`;
   }
