@@ -11,8 +11,8 @@
   --border-soft: #1c202a;
   --text: #e8eaef;
   --text-muted: #9097a8;
-  --text-faint: #5f6678;
-  --indigo: #6366f1;
+  --text-faint: #808799;
+  --indigo: #5b5ef0;
   --indigo-bright: #8b93fa;
   --accent-soft: rgba(99,102,241,0.14);
   --profit: #22c55e;
@@ -47,7 +47,7 @@
   --border-soft: #e8ebf1;
   --text: #141821;
   --text-muted: #566075;
-  --text-faint: #8a92a4;
+  --text-faint: #646c7e;
   --indigo: #5458e8;
   --indigo-bright: #4b4fd9;
   --accent-soft: rgba(84,88,232,0.10);
@@ -74,7 +74,7 @@
     --border-soft: #e8ebf1;
     --text: #141821;
     --text-muted: #566075;
-    --text-faint: #8a92a4;
+    --text-faint: #646c7e;
     --indigo: #5458e8;
     --indigo-bright: #4b4fd9;
     --accent-soft: rgba(84,88,232,0.10);
@@ -560,3 +560,12 @@ button[aria-busy="true"] { cursor: wait; opacity: .7; }
 
 /* Nur für Screenreader */
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Sprung-Link: nur sichtbar, wenn per Tastatur angesteuert */
+.skip-link {
+  position: fixed; left: 12px; top: -60px; z-index: 2000; background: var(--indigo); color: #fff;
+  padding: 10px 16px; border-radius: 10px; font-weight: 600; text-decoration: none; transition: top .15s;
+}
+.skip-link:focus { top: 12px; }
+main:focus { outline: none; }
+[role="button"]:not(button) { cursor: pointer; }

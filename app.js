@@ -468,6 +468,9 @@ function renderTrades() {
 function renderTradeCard(trade) {
   const card = document.createElement('div');
   card.className = 'trade-card';
+  card.setAttribute('role', 'button');
+  card.tabIndex = 0;
+  card.setAttribute('aria-label', `${trade.pair} ${trade.direction === 'short' ? 'Short' : 'Long'}, ${new Date(trade.entry_date).toLocaleDateString('de-DE')} – bearbeiten`);
   card.onclick = () => openModal(trade);
 
   const dir = document.createElement('div');

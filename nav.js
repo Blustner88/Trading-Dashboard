@@ -491,3 +491,105 @@ export const LOGOUT_ICON = icon('logout');
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service Worker', err));
 }
+
+// ---------------------------------------------------------------------------
+// Bedienbarkeit für alle Seiten, ohne dass jede Seite es selbst können muss:
+// - Fenster (.modal-overlay.visible): als Dialog markieren, Fokus hinein, Tab
+//   bleibt im Fenster, Esc schließt, danach Fokus zurück auf den Auslöser
+// - Klickbare Karten mit role="button": Enter/Leertaste lösen aus
+// - "Zum Inhalt springen" als erster Tab-Halt
+// ---------------------------------------------------------------------------
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const openStack = [];
+
+function visibleFocusables(root) {
+  return [...root.querySelectorAll(FOCUSABLE)].filter(el => el.offsetParent !== null || el === document.activeElement);
+}
+
+function onModalShown(overlay) {
+  if (openStack.some(m => m.overlay === overlay)) return;
+  const box = overlay.querySelector('.modal') || overlay;
+  box.setAttribute('role', 'dialog');
+  box.setAttribute('aria-modal', 'true');
+  const title = box.querySelector('h2, h3');
+  if (title) { title.id ||= `dlg-${Math.random().toString(36).slice(2, 8)}`; box.setAttribute('aria-labelledby', title.id); }
+  box.querySelectorAll('.modal-close:not([aria-label])').forEach(b => b.setAttribute('aria-label', 'Schließen'));
+  linkLabels(overlay);
+  openStack.push({ overlay, back: document.activeElement });
+  // Erstes Eingabefeld, sonst erster Knopf (nicht das ✕)
+  setTimeout(() => {
+    const els = visibleFocusables(box);
+    (els.find(el => el.matches('input, select, textarea')) || els.find(el => !el.matches('.modal-close')) || els[0])?.focus({ preventScroll: true });
+  }, 30);
+}
+
+function onModalHidden(overlay) {
+  const i = openStack.findIndex(m => m.overlay === overlay);
+  if (i < 0) return;
+  const [{ back }] = openStack.splice(i, 1);
+  if (back && document.contains(back)) back.focus({ preventScroll: true });
+}
+
+function watchModals() {
+  const check = (el) => {
+    if (!el.classList?.contains('modal-overlay')) return;
+    if (el.classList.contains('visible')) onModalShown(el); else onModalHidden(el);
+  };
+  new MutationObserver((muts) => muts.forEach(m => {
+    if (m.type === 'attributes') check(m.target);
+    m.removedNodes?.forEach(n => { if (n.classList?.contains('modal-overlay')) onModalHidden(n); });
+  })).observe(document.body, { attributes: true, attributeFilter: ['class'], subtree: true, childList: true });
+  document.querySelectorAll('.modal-overlay.visible').forEach(onModalShown);
+}
+
+document.addEventListener('keydown', (e) => {
+  const top = openStack[openStack.length - 1];
+  if (top && document.contains(top.overlay) && !document.querySelector('dialog[open]')) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      (top.overlay.querySelector('.modal-close') || top.overlay).click();
+      return;
+    }
+    if (e.key === 'Tab') {
+      const els = visibleFocusables(top.overlay.querySelector('.modal') || top.overlay);
+      if (!els.length) return;
+      const first = els[0], last = els[els.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      else if (!top.overlay.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    }
+  }
+  // Karten, die wie Knöpfe funktionieren
+  const t = e.target;
+  if ((e.key === 'Enter' || e.key === ' ') && t?.getAttribute?.('role') === 'button' && !t.matches('button, a, input, select, textarea')) {
+    e.preventDefault();
+    t.click();
+  }
+});
+
+function skipLink() {
+  const main = document.querySelector('main');
+  if (!main || document.querySelector('.skip-link')) return;
+  main.id ||= 'inhalt';
+  main.setAttribute('tabindex', '-1');
+  const a = document.createElement('a');
+  a.className = 'skip-link';
+  a.href = `#${main.id}`;
+  a.textContent = 'Zum Inhalt springen';
+  a.addEventListener('click', (e) => { e.preventDefault(); main.focus(); });
+  document.body.prepend(a);
+}
+
+// Beschriftungen mit ihren Feldern verbinden (<label> ohne for -> Bildschirmleser liest nur "Eingabefeld")
+export function linkLabels(root = document) {
+  root.querySelectorAll('.field > label:not([for])').forEach(label => {
+    if (label.querySelector('input, select, textarea')) return;
+    const ctl = label.parentElement.querySelector('input, select, textarea');
+    if (!ctl) return;
+    ctl.id ||= `fld-${Math.random().toString(36).slice(2, 8)}`;
+    label.htmlFor = ctl.id;
+  });
+}
+
+const a11yInit = () => { watchModals(); skipLink(); linkLabels(); };
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', a11yInit); else a11yInit();

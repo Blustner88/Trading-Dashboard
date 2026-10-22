@@ -163,7 +163,7 @@ function renderList(list) {
   el.innerHTML = [...list].reverse().map(r => {
     const rv = r.r_multiple == null ? null : Number(r.r_multiple);
     const d = new Date(r.setup_date).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-    return `<div class="trade-card bt-card" data-id="${r.id}">
+    return `<div class="trade-card bt-card" data-id="${r.id}" role="button" tabindex="0" aria-label="${esc(r.pair)} ${d} – bearbeiten">
       <div class="tc-main">
         <div class="tc-pair-row">
           <span class="tc-pair">${esc(r.pair)}</span>

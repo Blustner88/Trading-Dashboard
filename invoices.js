@@ -146,7 +146,7 @@ function renderClientsTable() {
       <td>${escapeHtml(c.name)}</td>
       <td>${escapeHtml(c.country || '—')}</td>
       <td>${categoryLabel(c.country_category)}</td>
-      <td class="client-row-actions"><button class="icon-btn" data-id="${c.id}">✎</button></td>
+      <td class="client-row-actions"><button class="icon-btn" data-id="${c.id}" aria-label="Kunde bearbeiten">✎</button></td>
     `;
     tbody.appendChild(tr);
   });
@@ -405,7 +405,7 @@ function openPrintView(invoice) {
   $('invoicePrintArea').innerHTML = `
     <div class="invoice-page">
       <div class="invoice-logo-row">
-        <img src="logo.png" class="invoice-logo" />
+        <img src="logo.png" class="invoice-logo" alt="Firmenlogo" />
       </div>
 
       <div class="invoice-sender-line">${escapeHtml(s.company_name || '')} &nbsp;-&nbsp; ${escapeHtml(s.address_line1 || '')} &nbsp;-&nbsp; ${escapeHtml(s.address_line2 || '')}</div>

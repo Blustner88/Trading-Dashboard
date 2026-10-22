@@ -227,7 +227,7 @@ function renderRecurringTable() {
       <td class="neg">${Number(rec.amount).toFixed(2)} €</td>
       <td>${rec.frequency === 'monthly' ? 'Monatlich' : 'Jährlich'} (Tag ${rec.day_of_month})</td>
       <td>${rec.active ? '<span style="color:var(--profit);">Aktiv</span>' : '<span style="color:var(--text-faint);">Pausiert</span>'}</td>
-      <td class="expense-row-actions"><button class="icon-btn" data-id="${rec.id}">✎</button></td>
+      <td class="expense-row-actions"><button class="icon-btn" data-id="${rec.id}" aria-label="Vorlage bearbeiten">✎</button></td>
     `;
     tbody.appendChild(tr);
   });

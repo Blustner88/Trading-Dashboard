@@ -288,30 +288,38 @@ function renderSwitcher() {
   const current = selectedId === 'all' ? null : getAccountById(selectedId);
 
   el.innerHTML = `
-    <button class="acc-pill" id="accPillBtn">
+    <button class="acc-pill" id="accPillBtn" aria-haspopup="true" aria-expanded="false" aria-controls="accDropdown">
       <span class="acc-dot" style="background:${current ? current.color : '#6366f1'}"></span>
       <span>${current ? escapeHtml(current.name) : 'Alle Accounts'}</span>
       <span class="acc-caret">▾</span>
     </button>
     <div class="acc-dropdown" id="accDropdown">
-      <div class="acc-option ${selectedId === 'all' ? 'active' : ''}" data-id="all">
+      <div class="acc-option ${selectedId === 'all' ? 'active' : ''}" data-id="all" role="button" tabindex="0">
         <span class="acc-dot" style="background:#6366f1"></span> Alle Accounts
       </div>
       ${accounts.map(a => `
-        <div class="acc-option ${selectedId === a.id ? 'active' : ''}" data-id="${a.id}">
+        <div class="acc-option ${selectedId === a.id ? 'active' : ''}" data-id="${a.id}" role="button" tabindex="0">
           <span class="acc-dot" style="background:${a.color}"></span> ${escapeHtml(a.name)}
           ${a.status !== 'active' ? `<span class="acc-status-badge">${statusLabel(a.status)}</span>` : ''}
         </div>
       `).join('')}
       <div class="acc-divider"></div>
-      <div class="acc-option acc-manage" id="accManageBtn">⚙ Konten verwalten</div>
+      <div class="acc-option acc-manage" id="accManageBtn" role="button" tabindex="0">⚙ Konten verwalten</div>
     </div>
   `;
 
   document.getElementById('accPillBtn').onclick = (e) => {
     e.stopPropagation();
-    document.getElementById('accDropdown').classList.toggle('open');
+    const open = document.getElementById('accDropdown').classList.toggle('open');
+    e.currentTarget.setAttribute('aria-expanded', String(open));
+    if (open) document.querySelector('#accDropdown .acc-option.active, #accDropdown .acc-option')?.focus();
   };
+  document.getElementById('accDropdown').addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    document.getElementById('accDropdown').classList.remove('open');
+    document.getElementById('accPillBtn').setAttribute('aria-expanded', 'false');
+    document.getElementById('accPillBtn').focus();
+  });
   el.querySelectorAll('.acc-option[data-id]').forEach(opt => {
     opt.onclick = () => { setSelected(opt.dataset.id); document.getElementById('accDropdown').classList.remove('open'); };
   });
@@ -334,7 +342,7 @@ function buildManagerModal() {
     <div class="modal">
       <div class="modal-header">
         <h2>Konten verwalten</h2>
-        <button class="modal-close" id="accManagerClose">✕</button>
+        <button class="modal-close" id="accManagerClose" aria-label="Schließen">✕</button>
       </div>
       <div class="acc-list" id="accManagerList"></div>
       <button class="btn-ghost" id="accAddNewBtn" style="width:100%; margin-top:12px;">+ Neues Konto</button>
