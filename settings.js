@@ -134,6 +134,67 @@ $('planCards').onclick = (e) => {
 window.addEventListener('view-changed', paintView);
 
 // ---------------------------------------------------------------------------
+// Anmeldung & Sicherheit: Zwei-Faktor (TOTP), Passwort, überall abmelden
+// ---------------------------------------------------------------------------
+let mfaFactor = null, pendingFactor = null;
+async function loadMfa() {
+  const { data } = await supabase.auth.mfa.listFactors();
+  mfaFactor = data?.totp?.find(f => f.status === 'verified') || null;
+  $('mfaState').textContent = mfaFactor ? 'aktiv' : 'aus';
+  $('mfaState').className = `st-badge${mfaFactor ? ' on' : ''}`;
+  $('mfaToggle').textContent = mfaFactor ? 'Ausschalten' : 'Einrichten';
+  $('mfaToggle').className = mfaFactor ? 'btn-ghost sm' : 'btn-primary sm';
+}
+$('mfaToggle').onclick = async () => {
+  if (mfaFactor) {
+    if (!confirm('Zwei-Faktor-Anmeldung wirklich ausschalten? Dann reicht wieder das Passwort.')) return;
+    const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaFactor.id });
+    if (error) { toast('Ausschalten fehlgeschlagen: ' + error.message); return; }
+    toast('Zwei-Faktor-Anmeldung ausgeschaltet.');
+    await supabase.auth.refreshSession();
+    return loadMfa();
+  }
+  // Halb fertige frühere Versuche aufräumen, dann neu einrichten
+  const { data: all } = await supabase.auth.mfa.listFactors();
+  for (const f of (all?.all || []).filter(f => f.status !== 'verified')) await supabase.auth.mfa.unenroll({ factorId: f.id });
+  const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: `Authenticator ${new Date().toLocaleDateString('de-DE')}` });
+  if (error) { toast('Einrichten fehlgeschlagen: ' + error.message); return; }
+  pendingFactor = data;
+  $('mfaQr').src = data.totp.qr_code;
+  $('mfaSecret').textContent = data.totp.secret;
+  $('mfaSetup').hidden = false;
+  $('mfaCode').value = '';
+  $('mfaCode').focus();
+};
+$('mfaVerify').onclick = async () => {
+  if (!pendingFactor) return;
+  const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: pendingFactor.id, code: $('mfaCode').value.trim() });
+  if (error) { toast('Code falsch oder abgelaufen – bitte den aktuellen Code eingeben.'); $('mfaCode').select(); return; }
+  pendingFactor = null;
+  $('mfaSetup').hidden = true;
+  toast('Zwei-Faktor-Anmeldung ist aktiv. Beim nächsten Login fragt die App nach dem Code.');
+  await loadMfa();
+};
+$('mfaCancel').onclick = async () => {
+  if (pendingFactor) await supabase.auth.mfa.unenroll({ factorId: pendingFactor.id });
+  pendingFactor = null;
+  $('mfaSetup').hidden = true;
+};
+$('pwSave').onclick = async () => {
+  const pw = $('newPw').value;
+  if (pw.length < 12) { toast('Bitte mindestens 12 Zeichen verwenden.'); return; }
+  const { error } = await supabase.auth.updateUser({ password: pw });
+  if (error) { toast('Passwort nicht geändert: ' + error.message); return; }
+  $('newPw').value = '';
+  toast('Passwort geändert.');
+};
+$('logoutAll').onclick = async () => {
+  if (!confirm('Auf allen Geräten abmelden, auch auf diesem?')) return;
+  await supabase.auth.signOut({ scope: 'global' });
+  location.href = 'cockpit.html';
+};
+
+// ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
 $('installHint').textContent = standalone()
@@ -154,4 +215,4 @@ paintTheme();
 paintView();
 await initAccountSwitcher();
 renderAccounts();
-await Promise.all([loadPush(), loadTrading()]);
+await Promise.all([loadPush(), loadTrading(), loadMfa()]);

@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3lSuu7BhWmWHBsCg/ASPbvs2z48JfANPqTuP2HNud9s='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://rabbtdooayruveribarq.supabase.co; connect-src 'self' https://rabbtdooayruveribarq.supabase.co wss://rabbtdooayruveribarq.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <!-- app-head -->
 <meta name="theme-color" content="#0b0d12">
 <link rel="manifest" href="manifest.webmanifest">
@@ -75,6 +77,24 @@
       <div class="st-row"><div><b>Produkt-Vorschau</b><small>Zeigt die App so, wie ein zahlender Nutzer sie im gewählten Paket sähe. Deine Daten bleiben unverändert.</small></div>
         <div class="segmented st-seg" id="viewSeg"><button type="button" class="seg-btn" data-value="owner">Meine Ansicht</button><button type="button" class="seg-btn" data-value="product">Produkt</button></div></div>
       <div class="st-plans" id="planCards"></div>
+    </section>
+
+    <section class="panel" id="sec-sicherheit">
+      <div class="panel-header"><h3>Anmeldung & Sicherheit</h3><span class="st-badge" id="mfaState">–</span></div>
+      <div class="st-row"><div><b>Zwei-Faktor-Anmeldung</b><small>Zusätzlich zum Passwort ein 6-stelliger Code aus einer Authenticator-App (z. B. Google Authenticator, Microsoft Authenticator, 1Password). Ohne Code gibt die Datenbank dann keine Daten heraus.</small></div>
+        <button class="btn-primary sm" id="mfaToggle">Einrichten</button></div>
+      <div class="st-mfa" id="mfaSetup" hidden>
+        <ol>
+          <li>Authenticator-App öffnen und den QR-Code scannen.</li>
+          <li>Den angezeigten 6-stelligen Code unten eingeben.</li>
+        </ol>
+        <div class="st-qr"><img id="mfaQr" alt="QR-Code für die Authenticator-App"><div><small>Kein Scannen möglich? Schlüssel von Hand eingeben:</small><code id="mfaSecret"></code></div></div>
+        <div class="st-row"><div><b>Code</b></div><div class="st-actions"><input id="mfaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" aria-label="Code aus der App"><button class="btn-primary sm" id="mfaVerify">Bestätigen</button><button class="btn-ghost sm" id="mfaCancel">Abbrechen</button></div></div>
+      </div>
+      <div class="st-row"><div><b>Passwort ändern</b><small>Mindestens 12 Zeichen. Am besten einen Passwort-Manager nutzen.</small></div>
+        <div class="st-actions"><input id="newPw" type="password" autocomplete="new-password" minlength="12" placeholder="Neues Passwort" aria-label="Neues Passwort"><button class="btn-ghost sm" id="pwSave">Speichern</button></div></div>
+      <div class="st-row"><div><b>Überall abmelden</b><small>Beendet die Anmeldung auf allen Geräten, z. B. nach Verlust des Handys.</small></div>
+        <button class="btn-ghost sm" id="logoutAll">Alle Geräte abmelden</button></div>
     </section>
 
     <section class="panel" id="sec-app">

@@ -40,3 +40,12 @@
   .st-plans { grid-template-columns: 1fr; }
   .st-seg { min-width: 0; width: 100%; }
 }
+
+/* Zwei-Faktor einrichten */
+.st-mfa { background: var(--surface-2); border-radius: var(--radius); padding: 14px 16px; margin: 4px 0 8px; }
+.st-mfa ol { margin: 0 0 10px; padding-left: 20px; font-size: 13px; color: var(--text-muted); }
+.st-qr { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.st-qr img { width: 168px; height: 168px; background: #fff; border-radius: 10px; padding: 8px; }
+.st-qr code { display: block; margin-top: 4px; font-family: var(--font-mono); font-size: 12.5px; word-break: break-all; color: var(--text); }
+.st-actions input { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 8px 10px; font: 14px var(--font-mono); width: 150px; }
+#newPw { width: 200px; font-family: var(--font-body); }

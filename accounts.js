@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from './vendor/supabase-js-2.118.0.js';
 import { renderNav, LOGOUT_ICON } from './nav.js';
 
 renderNav();   // Navigation steht schon hinter der Anmeldemaske
@@ -106,6 +106,42 @@ function showLogin(mode = 'login') {
   });
 }
 
+// Zweiter Schritt (2FA): 6-stelliger Code aus der Authenticator-App
+function showMfa() {
+  injectLoginStyles();
+  return new Promise((resolve) => {
+    const box = document.createElement('div');
+    box.className = 'td-login';
+    box.innerHTML = `<form autocomplete="off">
+      <h1><span>◈</span> Bestätigungscode</h1>
+      <p>Gib den 6-stelligen Code aus deiner Authenticator-App ein.</p>
+      <label>Code<input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>
+      <button type="submit">Bestätigen</button>
+      <button type="button" class="td-link" data-act="logout">Abmelden</button>
+      <div class="td-msg" role="status"></div>
+    </form>`;
+    document.body.appendChild(box);
+    const form = box.querySelector('form');
+    const msg = box.querySelector('.td-msg');
+    const btn = form.querySelector('button[type=submit]');
+    form.code.focus();
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btn.disabled = true;
+      msg.textContent = '';
+      const { data: f } = await supabase.auth.mfa.listFactors();
+      const factor = f?.totp?.[0];
+      if (!factor) { btn.disabled = false; msg.textContent = 'Kein Faktor gefunden.'; msg.className = 'td-msg err'; return; }
+      const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code: form.code.value.trim() });
+      btn.disabled = false;
+      if (error) { msg.textContent = 'Code falsch oder abgelaufen – bitte den aktuellen Code eingeben.'; msg.className = 'td-msg err'; form.code.select(); return; }
+      box.remove();
+      resolve();
+    });
+    box.querySelector('[data-act=logout]').onclick = async () => { await supabase.auth.signOut(); location.reload(); };
+  });
+}
+
 function addLogoutButton() {
   const bar = document.querySelector('.topbar');
   if (!bar || bar.querySelector('.td-logout')) return;
@@ -124,6 +160,9 @@ async function requireLogin() {
   const { data: { session } } = await supabase.auth.getSession();
   if (recovery && session) await showLogin('recovery');
   else if (!session) await showLogin('login');
+  // Mit eingerichteter 2FA: ohne Code gibt die Datenbank nichts heraus (is_owner verlangt aal2)
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal?.nextLevel === 'aal2' && aal.currentLevel !== 'aal2') await showMfa();
   injectLoginStyles();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addLogoutButton);
   else addLogoutButton();
