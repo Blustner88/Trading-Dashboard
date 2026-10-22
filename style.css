@@ -453,6 +453,23 @@ a { color: var(--indigo-bright); }
 .hint.warn { color: var(--amber); font-size: 12px; margin: -4px 0 0; }
 .field .hint .pos { color: var(--profit); } .field .hint .neg { color: var(--loss); }
 .idea-sheet .modal-header { margin-bottom: 12px; }
+.idea-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.idea-shot-empty { display: grid; place-items: center; min-height: 120px; margin-top: 6px; border: 1px dashed var(--border); border-radius: 10px; color: var(--text-faint); font-size: 12.5px; }
+/* PC: Idee als großes Fenster in der Mitte, zwei Spalten (links Werte, rechts Begründung + Screenshot) */
+@media (min-width: 701px) {
+  .sheet.idea-sheet {
+    inset: 0; margin: auto; width: min(960px, calc(100vw - 48px)); height: fit-content; max-height: calc(100vh - 48px);
+    padding: 22px 26px 22px; animation: pop-in .22s var(--ease) both;
+  }
+  .idea-form { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 14px 28px; align-items: start; }
+  .idea-form .form-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .idea-form .form-row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .idea-form input, .idea-form select { width: 100%; }
+  .idea-form .modal-actions { grid-column: 1 / -1; margin-top: 4px; }
+  .idea-form textarea#iWhy { min-height: 150px; }
+  .idea-shot img { max-height: 420px; width: 100%; object-fit: contain; background: var(--surface-2); }
+  .idea-shot-empty { min-height: 220px; }
+}
 
 /* Auswahl hinter dem "+" der unteren Leiste */
 .plus-menu { display: grid; gap: 8px; padding-top: 4px; }

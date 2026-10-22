@@ -119,7 +119,8 @@ export async function openIdeaEditor(idea = null, defaults = {}, onChange = () =
   sheet.innerHTML = `
     <button class="sheet-handle" aria-label="Schließen"></button>
     <div class="modal-header"><h2>${idea ? 'Trade-Idee' : 'Neue Trade-Idee'}</h2><button class="modal-close" aria-label="Schließen">✕</button></div>
-    <form class="trade-form" novalidate>
+    <form class="trade-form idea-form" novalidate>
+      <div class="idea-col">
       <div class="form-row">
         <div class="field"><label for="iPair">Pair / Symbol</label>
           <input id="iPair" list="iPairs" autocomplete="off" autocapitalize="characters" placeholder="EURUSD" value="${esc(i.pair)}">
@@ -144,15 +145,18 @@ export async function openIdeaEditor(idea = null, defaults = {}, onChange = () =
         <input id="iSetup" list="iSetups" value="${esc(i.setup_type || '')}" placeholder="BITR, ORB, Sweep …">
         <datalist id="iSetups"><option>BITR</option><option>ORB</option><option>BITR-Sweep</option><option>Liquidity Grab</option><option>OB Retest</option></datalist>
       </div>
-      <div class="field"><label for="iWhy">Begründung</label><textarea id="iWhy" rows="3" placeholder="Warum dieser Trade? Bias, Struktur, Zone, Trigger, Einwände …">${esc(i.reasoning || '')}</textarea></div>
-      <div class="field"><label for="iShot">Screenshot</label>
-        <input id="iShot" type="file" accept="image/*">
-        <div class="idea-shot" id="iShotPrev">${shotUrl ? `<a href="${esc(shotUrl)}" target="_blank" rel="noopener"><img src="${esc(shotUrl)}" alt="Chart-Screenshot"></a>` : ''}</div>
-      </div>
       <div class="field"><label>Status</label>
         <div class="segmented idea-status" id="iStatus">${IDEA_STATUS.map(([v, l]) => `<button type="button" class="seg-btn" data-value="${v}">${l}</button>`).join('')}</div>
       </div>
       <div class="field"><label for="iDate">Für den Tag</label><input id="iDate" type="date" value="${esc(i.idea_date || localDate())}"></div>
+      </div>
+      <div class="idea-col">
+      <div class="field"><label for="iWhy">Begründung</label><textarea id="iWhy" rows="5" placeholder="Warum dieser Trade? Bias, Struktur, Zone, Trigger, Einwände …">${esc(i.reasoning || '')}</textarea></div>
+      <div class="field"><label for="iShot">Screenshot</label>
+        <input id="iShot" type="file" accept="image/*">
+        <div class="idea-shot" id="iShotPrev">${shotUrl ? `<a href="${esc(shotUrl)}" target="_blank" rel="noopener"><img src="${esc(shotUrl)}" alt="Chart-Screenshot"></a>` : '<span class="idea-shot-empty">Noch kein Screenshot</span>'}</div>
+      </div>
+      </div>
       <div class="modal-actions">
         ${idea ? '<button type="button" class="btn-ghost" data-act="delete">Löschen</button>' : ''}
         <div class="modal-actions-right">
