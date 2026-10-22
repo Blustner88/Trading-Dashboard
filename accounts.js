@@ -174,6 +174,17 @@ new MutationObserver((muts) => {
 }).observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['src', 'href'] });
 scanMedia(document.body);   // was beim Laden schon im HTML steht
 
+// Drawdown eines Kontos aus den geschlossenen Trades (sortiert nach Datum).
+// statisch: Verlust unter das Startkapital (FundedNext Stellar, FTMO) — trailing: vom Höchststand.
+export function drawdownOf(acc, closedTrades) {
+  const start = Number(acc.starting_balance) || 0;
+  let run = start, peak = start;
+  closedTrades.forEach(t => { run += Number(t.profit_amount) || 0; peak = Math.max(peak, run); });
+  const trailing = acc.drawdown_mode === 'trailing';
+  const dd = trailing ? peak - run : Math.max(0, start - run);
+  return { ddPct: start ? dd / start * 100 : 0, balance: run, label: trailing ? 'Max Drawdown (vom Höchststand)' : 'Max Drawdown (ab Startkapital)' };
+}
+
 let clientsCache = [];
 async function fetchClientsCache() {
   const { data } = await supabase.from('clients').select('id, name').order('name');
@@ -327,6 +338,12 @@ function buildManagerModal() {
           <div class="field"><label>Max Drawdown (%)</label><input type="number" step="0.1" id="acc_max_dd" placeholder="z.B. 10" /></div>
           <div class="field"><label>Profit Target (%)</label><input type="number" step="0.1" id="acc_profit_target" placeholder="z.B. 8" /></div>
         </div>
+        <div class="field"><label>Drawdown-Art</label>
+          <select id="acc_dd_mode">
+            <option value="static">Statisch – ab Startkapital (FundedNext Stellar, FTMO)</option>
+            <option value="trailing">Trailing – vom Höchststand</option>
+          </select>
+        </div>
         <div class="modal-actions">
           <button type="button" class="btn-ghost" id="accDeleteBtn" style="display:none;">Löschen</button>
           <div class="modal-actions-right">
@@ -401,6 +418,7 @@ function showAccForm(account, hide = false) {
   document.getElementById('acc_daily_loss').value = account && account.daily_loss_limit_pct !== null ? account.daily_loss_limit_pct : '';
   document.getElementById('acc_max_dd').value = account && account.max_drawdown_pct !== null ? account.max_drawdown_pct : '';
   document.getElementById('acc_profit_target').value = account && account.profit_target_pct !== null ? account.profit_target_pct : '';
+  document.getElementById('acc_dd_mode').value = account?.drawdown_mode || 'static';
   document.getElementById('accDeleteBtn').style.display = account ? 'block' : 'none';
 }
 
@@ -419,6 +437,7 @@ async function handleAccSave(e) {
     daily_loss_limit_pct: document.getElementById('acc_daily_loss').value ? parseFloat(document.getElementById('acc_daily_loss').value) : null,
     max_drawdown_pct: document.getElementById('acc_max_dd').value ? parseFloat(document.getElementById('acc_max_dd').value) : null,
     profit_target_pct: document.getElementById('acc_profit_target').value ? parseFloat(document.getElementById('acc_profit_target').value) : null,
+    drawdown_mode: document.getElementById('acc_dd_mode').value,
   };
 
   if (id) {

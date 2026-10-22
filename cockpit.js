@@ -1,4 +1,4 @@
-import { supabase } from './accounts.js';
+import { supabase, drawdownOf } from './accounts.js';
 import { toast } from './nav.js';
 
 // Cockpit: Tagesstatus, Pairs mit Score (−100…+100), Währungsstärke, Termine, News.
@@ -117,17 +117,16 @@ async function loadAccounts() {
   const { data: accounts } = await supabase.from('accounts').select('*').eq('status', 'active');
   const acc = (accounts || []).filter(a => a.daily_loss_limit_pct || a.max_drawdown_pct);
   if (!acc.length) { $('stAcc').textContent = '–'; $('stAccSub').textContent = 'keine Limits hinterlegt'; $('accDetails').hidden = true; return; }
-  const { data: trades } = await supabase.from('trades').select('account_id, entry_date, profit_amount')
+  const { data: trades } = await supabase.from('trades').select('account_id, entry_date, exit_date, profit_amount')
     .eq('status', 'closed').in('account_id', acc.map(a => a.id)).order('entry_date');
   const today = localDate();
   let worst = 0, minBuffer = Infinity;
   $('accountsBars').innerHTML = acc.map(a => {
     const ts = (trades || []).filter(t => t.account_id === a.id);
     const start = Number(a.starting_balance);
-    let run = start, peak = start;
-    ts.forEach(t => { run += Number(t.profit_amount) || 0; peak = Math.max(peak, run); });
-    const ddPct = (peak - run) / start * 100;
-    const dayPL = ts.filter(t => t.entry_date.slice(0, 10) === today).reduce((s, t) => s + (Number(t.profit_amount) || 0), 0);
+    const { ddPct } = drawdownOf(a, ts);
+    // Tagesverlust: Tag des Schließens zählt
+    const dayPL = ts.filter(t => localDate(t.exit_date || t.entry_date) === today).reduce((s, t) => s + (Number(t.profit_amount) || 0), 0);
     const dayPct = dayPL < 0 ? -dayPL / start * 100 : 0;
     if (a.max_drawdown_pct) minBuffer = Math.min(minBuffer, a.max_drawdown_pct - ddPct);
     const bar = (label, v, lim) => {
@@ -142,7 +141,7 @@ async function loadAccounts() {
   accLabel = worst >= .9 ? 'Limit fast erreicht' : worst >= .6 ? 'Limit zu ' + Math.round(worst * 100) + ' % genutzt' : '';
   $('stAcc').textContent = Number.isFinite(minBuffer) ? `${minBuffer.toFixed(1)} %` : '–';
   $('stAcc').className = `v ${worst >= .9 ? 'neg' : worst >= .6 ? 'warn' : 'pos'}`;
-  $('stAccSub').textContent = `bis Max-Drawdown · ${acc.length} Konto${acc.length > 1 ? 'en' : ''}`;
+  $('stAccSub').textContent = `Rest bis Max-Verlust · ${acc.length} Konto${acc.length > 1 ? 'en' : ''}`;
 }
 
 function renderStatus() {

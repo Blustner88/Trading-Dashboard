@@ -1,4 +1,4 @@
-import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts, getAccountById } from './accounts.js';
+import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts, getAccountById, drawdownOf } from './accounts.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -120,21 +120,12 @@ function renderDrawdownTracker() {
       .filter(t => t.account_id === acc.id && t.status === 'closed')
       .sort((a, b) => new Date(a.entry_date) - new Date(b.entry_date));
 
-    // Equity curve to find peak balance
-    let running = Number(acc.starting_balance);
-    let peak = running;
-    accTrades.forEach(t => {
-      running += Number(t.profit_amount) || 0;
-      if (running > peak) peak = running;
-    });
-    const currentEquity = running;
-    const drawdownFromPeak = peak - currentEquity;
-    const drawdownPct = peak > 0 ? (drawdownFromPeak / Number(acc.starting_balance)) * 100 : 0;
+    const { ddPct: drawdownPct, label: ddLabel } = drawdownOf(acc, accTrades);
 
-    // Today's P/L
+    // Today's P/L (Tag des Schließens zählt, wie bei den Prop-Firmen)
     const todayStr = new Date().toISOString().slice(0, 10);
     const todayPL = accTrades
-      .filter(t => t.entry_date.slice(0, 10) === todayStr)
+      .filter(t => (t.exit_date || t.entry_date).slice(0, 10) === todayStr)
       .reduce((s, t) => s + (Number(t.profit_amount) || 0), 0);
     const todayLossPct = todayPL < 0 ? (Math.abs(todayPL) / Number(acc.starting_balance)) * 100 : 0;
 
@@ -159,7 +150,7 @@ function renderDrawdownTracker() {
       const level = usedPct >= 90 ? 'danger' : usedPct >= 60 ? 'warn' : 'ok';
       metricsHtml += `
         <div class="risk-metric">
-          <div class="risk-metric-top"><span>Max Drawdown (vom Peak)</span><span class="val">${drawdownPct.toFixed(2)}% / ${acc.max_drawdown_pct}%</span></div>
+          <div class="risk-metric-top"><span>${ddLabel}</span><span class="val">${drawdownPct.toFixed(2)}% / ${acc.max_drawdown_pct}%</span></div>
           <div class="risk-bar"><div class="risk-bar-fill ${level}" style="width:${usedPct}%"></div></div>
         </div>
       `;
