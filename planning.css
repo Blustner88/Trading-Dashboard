@@ -222,3 +222,7 @@
   .trade-plan-row-top { grid-template-columns: 1fr; }
   .trade-plan-row-bottom { grid-template-columns: 1fr; }
 }
+
+/* Hinweis im Kopf der Pair-Tabelle */
+.ph-hint { font-size: 11.5px; color: var(--text-faint); margin: 0 auto 0 10px; }
+@media (max-width: 700px) { .ph-hint { display: none; } }

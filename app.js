@@ -1,12 +1,20 @@
 import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts } from './accounts.js';
 
 const BUCKET = 'trade-screenshots';
-const PAIRS = ['GBPAUD', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'EURAUD'];
+const ALL_PAIRS = [
+  'EURUSD', 'GBPUSD', 'AUDUSD', 'NZDUSD', 'USDJPY', 'USDCHF', 'USDCAD', 'USDNOK', 'USDSEK',
+  'EURJPY', 'EURGBP', 'EURAUD', 'EURCAD', 'EURCHF', 'EURNZD', 'EURNOK', 'EURSEK',
+  'GBPJPY', 'GBPAUD', 'GBPCAD', 'GBPCHF', 'GBPNZD', 'GBPNOK',
+  'AUDJPY', 'AUDCAD', 'AUDCHF', 'AUDNZD', 'NZDJPY', 'NZDCAD', 'NZDCHF', 'CADJPY', 'CADCHF', 'CHFJPY',
+  'XAUUSD', 'XAGUSD', 'NDX100', 'SPX500', 'GER30', 'EUSTX50', 'USOUSD',
+];
 
 let trades = [];
 let activeFilters = { pair: null, status: null, search: '' };
 let currentDirection = null;
 let editingId = null;
+let editingTrade = null;
+let currentStep = 1;
 let pendingEntryFile = null;
 let pendingExitFile = null;
 
@@ -16,15 +24,19 @@ const $ = (id) => document.getElementById(id);
 async function init() {
   await initAccountSwitcher();
   populateAccountSelect();
+  $('pairList').innerHTML = ALL_PAIRS.map(p => `<option value="${p}"></option>`).join('');
   buildFilterChips();
   bindEvents();
   window.addEventListener('account-changed', () => { populateAccountSelect(); loadTrades(); });
   await loadTrades();
-  // "+ Trade" aus der Navigation anderer Seiten (nav.js) öffnet direkt den Dialog
-  if (location.hash === '#neu') {
+  // "+ Trade" aus der Navigation (nav.js) öffnet direkt den Dialog — auch wenn das Journal schon offen ist
+  const openFromHash = () => {
+    if (location.hash !== '#neu') return;
     history.replaceState(null, '', location.pathname);
     $('openAddTrade').click();
-  }
+  };
+  window.addEventListener('hashchange', openFromHash);
+  openFromHash();
 }
 
 function populateAccountSelect() {
@@ -33,11 +45,16 @@ function populateAccountSelect() {
   sel.innerHTML = accounts.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
   const current = getSelectedAccountId();
   if (current !== 'all' && accounts.find(a => a.id === current)) sel.value = current;
+  else { const active = accounts.find(a => a.status === 'active'); if (active) sel.value = active.id; }
 }
 
-function buildFilterChips() {
+// Pair-Chips: die meistgehandelten Pairs aus dem Journal
+function buildPairChips() {
   const pairGroup = $('filterPair');
-  PAIRS.forEach(p => {
+  pairGroup.querySelectorAll('.chip').forEach(c => c.remove());
+  const counts = {};
+  trades.forEach(t => { counts[t.pair] = (counts[t.pair] || 0) + 1; });
+  Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10).forEach(([p]) => {
     const chip = document.createElement('button');
     chip.className = 'chip';
     chip.textContent = p;
@@ -49,7 +66,10 @@ function buildFilterChips() {
     };
     pairGroup.appendChild(chip);
   });
+  renderChips();
+}
 
+function buildFilterChips() {
   const statusGroup = $('filterStatus');
   [['open', 'Offen'], ['closed', 'Geschlossen'], ['cancelled', 'Storniert']].forEach(([val, label]) => {
     const chip = document.createElement('button');
@@ -80,12 +100,12 @@ function bindEvents() {
     openModal();
   };
   $('modalClose').onclick = closeModal;
-  $('cancelBtn').onclick = closeModal;
   $('modalOverlay').onclick = (e) => { if (e.target.id === 'modalOverlay') closeModal(); };
 
-  $('f_pair').onchange = (e) => {
-    $('f_pair_other').style.display = e.target.value === '__other' ? 'block' : 'none';
-  };
+  $('f_pair').oninput = (e) => { e.target.value = e.target.value.toUpperCase(); };
+  document.querySelectorAll('.step-tab').forEach(t => { t.onclick = () => { if (Number(t.dataset.step) < currentStep || validateStep(currentStep)) showStep(Number(t.dataset.step)); }; });
+  $('nextStepBtn').onclick = () => { if (validateStep(currentStep)) showStep(currentStep + 1); };
+  $('prevStepBtn').onclick = () => showStep(currentStep - 1);
 
   document.querySelectorAll('#f_direction .seg-btn').forEach(btn => {
     btn.onclick = () => {
@@ -118,10 +138,59 @@ function previewFile(file, targetId) {
   target.appendChild(img);
 }
 
+// ---------- Schritte ----------
+function showStep(n) {
+  currentStep = Math.max(1, Math.min(3, n));
+  document.querySelectorAll('.wizard-step').forEach(s => { s.hidden = Number(s.dataset.step) !== currentStep; });
+  document.querySelectorAll('.step-tab').forEach(t => {
+    const s = Number(t.dataset.step);
+    t.classList.toggle('active', s === currentStep);
+    t.classList.toggle('done', s < currentStep);
+    t.setAttribute('aria-selected', String(s === currentStep));
+  });
+  $('prevStepBtn').hidden = currentStep === 1;
+  $('nextStepBtn').hidden = currentStep === 3;
+  $('modalOverlay').scrollTop = 0;
+}
+
+const isImported = () => editingTrade?.source === 'mt5_import';
+
+// Prüft nur, was für den jeweiligen Schritt nötig ist; meldet das erste fehlende Feld
+function validateStep(step) {
+  const need = (cond, msg, el) => { if (cond) return true; showToast(msg); el?.focus(); return false; };
+  if (step >= 1) {
+    if (!need($('f_account').value, 'Bitte ein Konto wählen.', $('f_account'))) return false;
+    if (!need($('f_pair').value.trim(), 'Bitte Pair angeben.', $('f_pair'))) return false;
+    if (!need(currentDirection, 'Bitte Long oder Short wählen.')) return false;
+    if (!need($('f_entry_date').value, 'Bitte den Einstiegszeitpunkt angeben.', $('f_entry_date'))) return false;
+  }
+  if (step >= 2) {
+    if (!need($('f_entry_price').value, 'Bitte den Entry-Preis angeben.', $('f_entry_price'))) return false;
+    if (!isImported() && !need($('f_stop_loss').value, 'Bitte den initialen Stop Loss angeben (für den R-Wert).', $('f_stop_loss'))) return false;
+  }
+  return true;
+}
+
+// Importierte Trades der letzten 14 Tage ohne Setup als Vorschläge zum Ergänzen
+function renderImportSuggest() {
+  const box = $('importSuggest');
+  const cutoff = Date.now() - 14 * 864e5;
+  const todo = trades.filter(t => t.source === 'mt5_import' && !t.setup_type && new Date(t.entry_date).getTime() >= cutoff).slice(0, 6);
+  box.hidden = !!editingId || !todo.length;
+  $('importSuggestList').innerHTML = todo.map(t => {
+    const pl = t.profit_amount != null ? ` · ${Number(t.profit_amount) >= 0 ? '+' : ''}${Number(t.profit_amount).toFixed(0)} $` : '';
+    return `<button type="button" class="chip" data-id="${t.id}">${escapeHtml(t.pair)} ${t.direction === 'long' ? '▲' : '▼'} ${new Date(t.entry_date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}${pl}</button>`;
+  }).join('');
+  $('importSuggestList').querySelectorAll('.chip').forEach(c => {
+    c.onclick = () => openModal(trades.find(t => t.id === c.dataset.id), 2);
+  });
+}
+
 // ---------- Modal ----------
-function openModal(trade = null) {
+function openModal(trade = null, startStep = 1) {
   editingId = trade ? trade.id : null;
-  $('modalTitle').textContent = trade ? 'Trade bearbeiten' : 'Trade erfassen';
+  editingTrade = trade;
+  $('modalTitle').textContent = trade ? (trade.source === 'mt5_import' && !trade.setup_type ? 'Import ergänzen' : 'Trade bearbeiten') : 'Trade erfassen';
   $('deleteTradeBtn').style.display = trade ? 'block' : 'none';
   $('tradeForm').reset();
   $('entryPreview').innerHTML = '';
@@ -130,14 +199,13 @@ function openModal(trade = null) {
   pendingExitFile = null;
   currentDirection = null;
   document.querySelectorAll('#f_direction .seg-btn').forEach(b => b.classList.remove('active'));
-  $('f_pair_other').style.display = 'none';
+  $('slHint').textContent = trade?.source === 'mt5_import'
+    ? 'Importierter Trade: SL ist optional. Mit SL wird der R-Wert berechnet.'
+    : 'Der initiale SL ist die Grundlage für den R-Wert.';
 
   if (trade) {
     $('f_account').value = trade.account_id;
-    const pairSelect = $('f_pair');
-    const isKnown = PAIRS.includes(trade.pair);
-    pairSelect.value = isKnown ? trade.pair : '__other';
-    if (!isKnown) { $('f_pair_other').style.display = 'block'; $('f_pair_other').value = trade.pair; }
+    $('f_pair').value = trade.pair;
 
     currentDirection = trade.direction;
     document.querySelector(`#f_direction .seg-btn[data-value="${trade.direction}"]`)?.classList.add('active');
@@ -146,12 +214,12 @@ function openModal(trade = null) {
     $('f_session').value = trade.session || '';
     $('f_setup_type').value = trade.setup_type || '';
     $('f_entry_price').value = trade.entry_price;
-    $('f_stop_loss').value = trade.stop_loss;
+    $('f_stop_loss').value = trade.stop_loss ?? '';
     $('f_trailed_sl').value = trade.trailed_stop_loss ?? '';
-    $('f_risk_percent').value = trade.risk_percent ?? 0.8;
+    $('f_risk_percent').value = trade.risk_percent ?? (trade.source === 'mt5_import' ? '' : 0.8);
     $('f_tp1').value = trade.tp1 ?? '';
     $('f_tp2').value = trade.tp2 ?? '';
-    $('f_notes').value = trade.notes || '';
+    $('f_notes').value = trade.notes === 'FundedNext-Import' ? '' : (trade.notes || '');
     $('f_exit_price').value = trade.exit_price ?? '';
     $('f_exit_date').value = trade.exit_date ? toLocalInput(trade.exit_date) : '';
     $('f_profit_amount').value = trade.profit_amount ?? '';
@@ -167,6 +235,8 @@ function openModal(trade = null) {
     $('f_entry_date').value = now.toISOString().slice(0, 16);
   }
 
+  renderImportSuggest();
+  showStep(startStep);
   $('modalOverlay').classList.add('visible');
 }
 
@@ -181,6 +251,7 @@ function previewFromUrl(url, targetId) {
 function closeModal() {
   $('modalOverlay').classList.remove('visible');
   editingId = null;
+  editingTrade = null;
 }
 
 function toLocalInput(isoString) {
@@ -193,12 +264,11 @@ function toLocalInput(isoString) {
 async function handleSave(e) {
   e.preventDefault();
 
-  if (!$('f_account').value) return showToast('Bitte Account wählen.');
-
-  let pair = $('f_pair').value;
-  if (pair === '__other') pair = $('f_pair_other').value.trim().toUpperCase();
-  if (!pair) return showToast('Bitte Pair angeben.');
-  if (!currentDirection) return showToast('Bitte Richtung (Long/Short) wählen.');
+  // Erst Schritt 1+2 prüfen; fehlt etwas, springt der Assistent dorthin
+  for (const s of [1, 2]) {
+    if (!validateStep(s)) { showStep(s); return; }
+  }
+  const pair = $('f_pair').value.trim().toUpperCase();
 
   const saveBtn = $('saveBtn');
   saveBtn.disabled = true;
@@ -212,7 +282,7 @@ async function handleSave(e) {
     if (pendingExitFile) chartExitUrl = await uploadScreenshot(pendingExitFile);
 
     const entryPrice = parseFloat($('f_entry_price').value);
-    const stopLoss = parseFloat($('f_stop_loss').value);
+    const stopLoss = $('f_stop_loss').value ? parseFloat($('f_stop_loss').value) : null;
     const exitPriceRaw = $('f_exit_price').value;
     const exitPrice = exitPriceRaw ? parseFloat(exitPriceRaw) : null;
 
@@ -228,8 +298,8 @@ async function handleSave(e) {
       trailed_stop_loss: $('f_trailed_sl').value ? parseFloat($('f_trailed_sl').value) : null,
       tp1: $('f_tp1').value ? parseFloat($('f_tp1').value) : null,
       tp2: $('f_tp2').value ? parseFloat($('f_tp2').value) : null,
-      risk_percent: $('f_risk_percent').value ? parseFloat($('f_risk_percent').value) : 0.8,
-      notes: $('f_notes').value || null,
+      risk_percent: $('f_risk_percent').value ? parseFloat($('f_risk_percent').value) : (isImported() ? null : 0.8),
+      notes: $('f_notes').value || (isImported() ? editingTrade.notes : null),
       exit_price: exitPrice,
       exit_date: $('f_exit_date').value ? new Date($('f_exit_date').value).toISOString() : null,
       mistake_tag: $('f_mistake_tag').value || null,
@@ -237,11 +307,7 @@ async function handleSave(e) {
       status: exitPrice ? 'closed' : 'open',
     };
 
-    if (exitPrice) {
-      payload.r_multiple = calcRMultiple(currentDirection, entryPrice, stopLoss, exitPrice);
-    } else {
-      payload.r_multiple = null;
-    }
+    payload.r_multiple = exitPrice && stopLoss != null ? calcRMultiple(currentDirection, entryPrice, stopLoss, exitPrice) : null;
 
     if (chartEntryUrl) payload.chart_entry_url = chartEntryUrl;
     if (chartExitUrl) payload.chart_exit_url = chartExitUrl;
@@ -306,6 +372,7 @@ async function loadTrades() {
     return;
   }
   trades = data || [];
+  buildPairChips();
   renderStats();
   renderTrades();
 }
@@ -373,6 +440,7 @@ function renderTradeCard(trade) {
     <div class="tc-pair-row">
       <span class="tc-pair">${trade.pair} · ${trade.direction === 'long' ? 'Long' : 'Short'}</span>
       <span class="tc-badge ${trade.status}">${statusLabel(trade.status)}</span>
+      ${trade.source === 'mt5_import' && !trade.setup_type ? '<span class="tc-badge todo">ergänzen</span>' : ''}
       ${getSelectedAccountId() === 'all' ? accountTagHtml(trade.account_id) : ''}
     </div>
     <div class="tc-meta"><span>${dateStr} · ${timeStr}</span>${trade.session ? `<span>${trade.session}</span>` : ''}</div>
@@ -384,7 +452,7 @@ function renderTradeCard(trade) {
   prices.className = 'tc-prices';
   prices.innerHTML = `
     <div><span class="lbl">E</span>${trade.entry_price}</div>
-    <div><span class="lbl">SL</span>${trade.stop_loss}${trade.trailed_stop_loss ? ` → ${trade.trailed_stop_loss}` : ''}</div>
+    ${trade.stop_loss != null ? `<div><span class="lbl">SL</span>${trade.stop_loss}${trade.trailed_stop_loss ? ` → ${trade.trailed_stop_loss}` : ''}</div>` : ''}
     ${trade.exit_price ? `<div><span class="lbl">X</span>${trade.exit_price}</div>` : ''}
   `;
   card.appendChild(prices);
@@ -399,6 +467,9 @@ function renderTradeCard(trade) {
       <span class="tc-r-value ${pos ? 'pos' : 'neg'}">${pos ? '+' : ''}${r.toFixed(2)}R</span>
       <div class="tc-r-bar"><div class="tc-r-bar-fill ${pos ? 'pos' : 'neg'}" style="width:${barWidth}%"></div></div>
     `;
+  } else if (trade.status === 'closed' && trade.profit_amount != null) {
+    const v = Number(trade.profit_amount);
+    rBox.innerHTML = `<span class="tc-r-value ${v >= 0 ? 'pos' : 'neg'}">${v >= 0 ? '+' : '−'}${Math.abs(v).toLocaleString('de-DE', { maximumFractionDigits: 0 })} $</span>`;
   } else {
     rBox.innerHTML = `<span class="tc-r-value pending">offen</span>`;
   }

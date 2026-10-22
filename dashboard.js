@@ -335,7 +335,7 @@ function renderEquityCurve(closed) {
   const xFor = (i) => padL + (points.length === 1 ? innerW / 2 : (i / (points.length - 1)) * innerW);
   const yFor = (v) => padT + innerH - ((v - yLo) / (yHi - yLo)) * innerH;
 
-  const lineColor = points[points.length - 1].y >= 0 ? '#22c55e' : '#f43f5e';
+  const lineColor = points[points.length - 1].y >= 0 ? 'var(--profit)' : 'var(--loss)';
   const zeroY = yFor(0);
 
   const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${xFor(i).toFixed(1)} ${yFor(p.y).toFixed(1)}`).join(' ');
@@ -346,23 +346,23 @@ function renderEquityCurve(closed) {
   for (let i = 0; i <= 4; i++) {
     const v = yLo + (yHi - yLo) * (i / 4);
     const y = yFor(v);
-    gridLines.push(`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" stroke="#1d212b" stroke-width="1" />`);
-    gridLines.push(`<text x="${padL - 8}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="10" font-family="JetBrains Mono, monospace" fill="#565d70">${v.toFixed(1)}R</text>`);
+    gridLines.push(`<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" style="stroke:var(--border-soft)" stroke-width="1" />`);
+    gridLines.push(`<text x="${padL - 8}" y="${(y + 3).toFixed(1)}" text-anchor="end" font-size="10" font-family="JetBrains Mono, monospace" style="fill:var(--text-faint)">${v.toFixed(1)}R</text>`);
   }
 
   // X-axis labels (first, middle, last date)
   const xLabelIdxs = points.length > 1 ? [0, Math.floor((points.length - 1) / 2), points.length - 1] : [0];
   const xLabels = [...new Set(xLabelIdxs)].map(i => {
     const label = points[i].date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
-    return `<text x="${xFor(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="10" font-family="JetBrains Mono, monospace" fill="#565d70">${label}</text>`;
+    return `<text x="${xFor(i).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="10" font-family="JetBrains Mono, monospace" style="fill:var(--text-faint)">${label}</text>`;
   }).join('');
 
   wrap.innerHTML = `
     <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible;">
       ${gridLines.join('')}
-      <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W - padR}" y2="${zeroY.toFixed(1)}" stroke="#262b38" stroke-width="1" stroke-dasharray="3,3" />
-      <path d="${areaPath}" fill="${lineColor}" fill-opacity="0.12" stroke="none" />
-      <path d="${linePath}" fill="none" stroke="${lineColor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+      <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W - padR}" y2="${zeroY.toFixed(1)}" style="stroke:var(--border)" stroke-width="1" stroke-dasharray="3,3" />
+      <path d="${areaPath}" style="fill:${lineColor}" fill-opacity="0.12" stroke="none" />
+      <path d="${linePath}" fill="none" style="stroke:${lineColor}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
       ${xLabels}
     </svg>
   `;
@@ -403,18 +403,18 @@ function renderWeeklyChart(closed) {
     const x = padL + i * barSlot + (barSlot - barWidth) / 2;
     const y = v >= 0 ? yFor(v) : zeroY;
     const h = Math.abs(yFor(v) - zeroY);
-    const color = v >= 0 ? '#22c55e' : '#f43f5e';
-    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${Math.max(h, 1).toFixed(1)}" fill="${color}" rx="2" />`;
+    const color = v >= 0 ? 'var(--profit)' : 'var(--loss)';
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${Math.max(h, 1).toFixed(1)}" style="fill:${color}" rx="2" />`;
   }).join('');
 
   const xLabels = labels.map((l, i) => {
     const x = padL + i * barSlot + barSlot / 2;
-    return `<text x="${x.toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="9.5" font-family="Inter, sans-serif" fill="#565d70">${l}</text>`;
+    return `<text x="${x.toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="9.5" font-family="Inter, sans-serif" style="fill:var(--text-faint)">${l}</text>`;
   }).join('');
 
   wrap.innerHTML = `
     <svg viewBox="0 0 ${W} ${H}" width="100%" height="100%" preserveAspectRatio="none" style="overflow:visible;">
-      <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W - padR}" y2="${zeroY.toFixed(1)}" stroke="#262b38" stroke-width="1" />
+      <line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W - padR}" y2="${zeroY.toFixed(1)}" style="stroke:var(--border)" stroke-width="1" />
       ${bars}
       ${xLabels}
     </svg>

@@ -108,6 +108,10 @@ async function loadPlan(dateStr) {
   $('calendarRows').innerHTML = '';
   $('tradePlanRows').innerHTML = '';
 
+  // Vorbelegung aus dem Fundamental-Tool und dem Kalender (nur für heute und künftige Tage)
+  const tool = dateStr >= todayStr() ? await toolDefaults(dateStr) : { pairs: {}, events: [] };
+  const toolRow = (pair) => tool.pairs[pair] || { pair, bias: 'neutral', watchlist_status: 'watching', notes: '' };
+
   if (plan) {
     currentPlanId = plan.id;
     riskSentiment = plan.risk_sentiment;
@@ -118,14 +122,12 @@ async function loadPlan(dateStr) {
     applySentimentColor();
 
     const calRows = (plan.daily_plan_calendar || []).sort((a, b) => (a.event_time || '').localeCompare(b.event_time || ''));
-    calRows.forEach(c => addCalendarRow(c));
+    (calRows.length ? calRows : tool.events).forEach(c => addCalendarRow(c));
 
-    const pairs = (plan.daily_plan_pairs || []).sort((a, b) => a.pair.localeCompare(b.pair));
-    if (pairs.length > 0) {
-      pairs.forEach(p => addPairRow(p));
-    } else {
-      DEFAULT_PAIRS.forEach(p => addPairRow({ pair: p, bias: 'neutral', watchlist_status: 'watching', notes: '' }));
-    }
+    // Gespeicherte Pairs (auch die aus dem Cockpit) gehen vor, der Rest kommt aus dem Tool
+    const saved = Object.fromEntries((plan.daily_plan_pairs || []).map(p => [p.pair, p]));
+    const order = [...new Set([...sortedToolPairs(tool), ...Object.keys(saved)])];
+    order.forEach(p => addPairRow(saved[p] || toolRow(p)));
 
     const tradeRows = (plan.daily_plan_trades || []).sort((a, b) => a.sort_order - b.sort_order);
     tradeRows.forEach(t => addTradeRow(t));
@@ -138,12 +140,39 @@ async function loadPlan(dateStr) {
     $('generalNotes').value = '';
     document.querySelectorAll('#riskSegmented .seg-btn').forEach(b => b.classList.remove('active'));
     applySentimentColor();
-    DEFAULT_PAIRS.forEach(p => addPairRow({ pair: p, bias: 'neutral', watchlist_status: 'watching', notes: '' }));
-    setSaveStatus('Noch kein Plan für diesen Tag.');
+    tool.events.forEach(c => addCalendarRow(c));
+    sortedToolPairs(tool).forEach(p => addPairRow(toolRow(p)));
+    setSaveStatus(Object.keys(tool.pairs).length ? 'Vorbelegt aus dem Fundamental-Tool – noch nicht gespeichert.' : 'Noch kein Plan für diesen Tag.');
   }
 
   updateGroupCounts();
   refreshBiasChecks();
+}
+
+// Pairs nach Stärke des Scores, unbekannte Pairs alphabetisch dahinter
+function sortedToolPairs(tool) {
+  const known = Object.values(tool.pairs).sort((a, b) => Math.abs(b.score) - Math.abs(a.score)).map(p => p.pair);
+  return [...new Set([...known, ...DEFAULT_PAIRS])];
+}
+
+async function toolDefaults(dateStr) {
+  const out = { pairs: {}, events: [] };
+  const [{ data: bias }, { data: evs }] = await Promise.all([
+    supabase.from('fb_latest_pair_bias').select('pair, bias, score'),
+    supabase.from('desk_events').select('time, currency, name').like('run_id', 'ffcal-%')
+      .gte('time', new Date(`${dateStr}T00:00:00`).toISOString()).lt('time', new Date(`${dateStr}T23:59:59`).toISOString()).order('time'),
+  ]);
+  (bias || []).forEach(b => {
+    const dir = b.bias.endsWith('long') ? 'long' : b.bias.endsWith('short') ? 'short' : 'neutral';
+    out.pairs[b.pair] = { pair: b.pair, bias: dir, score: Number(b.score), watchlist_status: 'watching', notes: '', confluence: null };
+  });
+  const seen = new Set();
+  (evs || []).forEach(e => {
+    const t = new Date(e.time).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const k = `${t}|${e.currency}|${e.name}`;
+    if (!seen.has(k)) { seen.add(k); out.events.push({ event_time: t, currency: e.currency, event_name: e.name, impact: 'high', notes: '' }); }
+  });
+  return out;
 }
 
 function clearAllGroups() {

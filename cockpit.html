@@ -2,7 +2,18 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<!-- app-head -->
+<meta name="theme-color" content="#0b0d12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trading">
+<script>try{var t=localStorage.getItem('td_theme');if(t){document.documentElement.dataset.theme=t;}var l=t?t==='light':matchMedia('(prefers-color-scheme: light)').matches;document.querySelector('meta[name=theme-color]').content=l?'#f5f6fa':'#0b0d12';}catch(e){}</script>
+<!-- /app-head -->
 <title>Cockpit — Trading Journal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,80 +32,75 @@
       <span class="brand-text">Trading Journal</span>
     </div>
     <nav class="tabnav"></nav>
-    <div class="ck-date" id="ckDate"></div>
   </header>
 
   <main class="dash-main cockpit">
 
-    <!-- Briefing: die vier Dinge, die vor jedem Trade zählen -->
-    <section class="ck-brief" aria-label="Briefing">
-      <div class="ck-tile" id="tileRisk">
-        <span class="kpi-label">Risikostimmung</span>
-        <span class="ck-big" id="riskLabel">–</span>
-        <span class="ck-sub" id="riskSub">VIX –</span>
+    <div class="ck-hello">
+      <h1 id="ckGreet">Hallo</h1>
+      <p id="ckDate"></p>
+    </div>
+
+    <!-- Tagesstatus: eine Antwort auf "kann ich heute handeln?" -->
+    <section class="panel ck-status" id="statusCard" data-level="">
+      <div class="ck-status-head">
+        <span class="ck-status-dot" aria-hidden="true"></span>
+        <div>
+          <span class="ck-kicker">Tagesstatus</span>
+          <span class="ck-state" id="ckState"><span class="skel big"></span></span>
+        </div>
       </div>
-      <div class="ck-tile" id="tileEvents">
-        <span class="kpi-label">High-Impact heute</span>
-        <span class="ck-big" id="eventsCount">–</span>
-        <span class="ck-sub" id="eventsNext">–</span>
+      <ul class="ck-reasons" id="ckReasons"></ul>
+      <div class="ck-stats">
+        <div class="ck-stat"><span class="l">Risikostimmung</span><span class="v" id="stRisk"><span class="skel line"></span></span><span class="s" id="stRiskSub"></span></div>
+        <div class="ck-stat"><span class="l">Nächster Termin</span><span class="v" id="stEvent"><span class="skel line"></span></span><span class="s" id="stEventSub"></span></div>
+        <div class="ck-stat"><span class="l">Konten-Puffer</span><span class="v" id="stAcc"><span class="skel line"></span></span><span class="s" id="stAccSub"></span></div>
+        <a class="ck-stat ck-link" href="desk.html" id="stProp"><span class="l">Vorschläge</span><span class="v" id="stPropV"><span class="skel line"></span></span><span class="s" id="stPropSub">Entscheidung per Telegram</span></a>
       </div>
-      <a class="ck-tile ck-link" href="desk.html" id="tileProposals">
-        <span class="kpi-label">Offene Vorschläge</span>
-        <span class="ck-big" id="proposalsCount">–</span>
-        <span class="ck-sub" id="proposalsSub">Entscheidung per Telegram</span>
-      </a>
-      <div class="ck-tile" id="tileAccounts">
-        <span class="kpi-label">Konten (Limits)</span>
-        <span class="ck-big" id="accountsLabel">–</span>
+      <details class="ck-acc-details" id="accDetails">
+        <summary>Konten-Limits im Detail</summary>
         <div id="accountsBars"></div>
-      </div>
+      </details>
     </section>
 
     <div class="ck-grid">
+      <section class="panel ck-pairs-panel">
+        <div class="panel-header">
+          <h3>Pairs</h3>
+          <span class="desk-hint" id="pairsStand">Score −100 bis +100 · antippen für Details</span>
+        </div>
+        <div class="chip-row" id="pairFilter" role="toolbar" aria-label="Pairs filtern"></div>
+        <div class="ck-list" id="pairList" aria-live="polite">
+          <span class="skel row"></span><span class="skel row"></span><span class="skel row"></span><span class="skel row"></span><span class="skel row"></span>
+        </div>
+      </section>
+
       <div class="ck-col">
         <section class="panel">
           <div class="panel-header">
             <h3>Währungsstärke</h3>
-            <span class="desk-hint" id="strengthStand">eigenes Fundamental-Tool</span>
+            <span class="desk-hint" id="strengthStand">−100 bis +100</span>
           </div>
-          <div id="strength" class="ck-strength"></div>
-        </section>
-
-        <section class="panel">
-          <div class="panel-header">
-            <h3>Pairs</h3>
-            <span class="desk-hint">sortiert nach Stärke des Bias · klicken für Details</span>
+          <div id="strength" class="ck-strength">
+            <span class="skel line"></span><span class="skel line"></span><span class="skel line"></span><span class="skel line"></span>
           </div>
-          <div id="pairTiles" class="ck-pairs"></div>
-          <div id="pairDetail" class="ck-detail" hidden></div>
-        </section>
-      </div>
-
-      <div class="ck-col">
-        <section class="panel">
-          <div class="panel-header">
-            <h3>Watchlist</h3>
-            <span class="desk-hint">automatisch aus dem Bias · Status & Notiz landen im Tagesplan</span>
-          </div>
-          <div id="watchlist" class="ck-watch"></div>
         </section>
 
         <section class="panel">
-          <div class="panel-header"><h3>Termine</h3><span class="desk-hint">High Impact · heute & morgen</span></div>
-          <div id="events" class="ck-events"></div>
+          <div class="panel-header"><h3>Termine</h3><span class="desk-hint">High Impact · heute und morgen</span></div>
+          <div id="events" class="ck-events"><span class="skel line"></span><span class="skel line"></span></div>
         </section>
 
         <section class="panel">
-          <div class="panel-header"><h3>Top-News</h3><a class="btn-ghost sm" href="desk.html">alle News →</a></div>
-          <div id="topNews" class="ck-news"></div>
+          <div class="panel-header"><h3>Top-News</h3><a class="btn-ghost sm" href="desk.html">Alle News</a></div>
+          <div id="topNews" class="ck-news"><span class="skel line"></span><span class="skel line"></span><span class="skel line"></span></div>
         </section>
       </div>
     </div>
 
-    <p class="desk-hint ck-foot">Der Fundamental-Bias ist eine Information, kein Signal: im Faktor-Test schlägt nur das Arbeitsmarkt-Momentum den Zufall, und auch das noch ohne Bestätigung auf neuen Daten.</p>
   </main>
 </div>
 
-<script type="module" src="cockpit.js?v=20261021c"></script>
+<script type="module" src="cockpit.js"></script>
 </body>
 </html>

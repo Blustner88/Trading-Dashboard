@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { renderNav } from './nav.js';
+import { renderNav, LOGOUT_ICON } from './nav.js';
 
 renderNav();   // Navigation steht schon hinter der Anmeldemaske
 
@@ -36,9 +36,7 @@ function injectLoginStyles() {
     .td-login .td-link { background: none; color: var(--text-muted, #9aa3b5); padding: 0; font-weight: 500; font-size: 12.5px; text-decoration: underline; align-self: flex-start; }
     .td-login .td-msg { font-size: 12.5px; min-height: 1em; }
     .td-login .td-msg.err { color: var(--loss, #fb7185); } .td-login .td-msg.ok { color: var(--profit, #4ade80); }
-    .td-logout { margin-left: 10px; font: 500 12px var(--font-body, system-ui); padding: 6px 10px; border-radius: 8px; cursor: pointer;
-      background: transparent; color: var(--text-muted, #9aa3b5); border: 1px solid var(--border-soft, #232838); }
-    .td-logout:hover { color: var(--text, #e7e9ee); }`;
+`;
   document.head.appendChild(st);
 }
 
@@ -112,10 +110,12 @@ function addLogoutButton() {
   const bar = document.querySelector('.topbar');
   if (!bar || bar.querySelector('.td-logout')) return;
   const b = document.createElement('button');
-  b.className = 'td-logout';
-  b.textContent = 'Abmelden';
+  b.className = 'icon-btn td-logout';
+  b.innerHTML = LOGOUT_ICON;
+  b.title = 'Abmelden';
+  b.setAttribute('aria-label', 'Abmelden');
   b.onclick = async () => { await supabase.auth.signOut(); location.reload(); };
-  bar.appendChild(b);
+  (bar.querySelector('.topbar-tools') || bar).appendChild(b);
 }
 
 async function requireLogin() {
