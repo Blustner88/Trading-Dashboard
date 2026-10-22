@@ -165,8 +165,9 @@ function renderStatus() {
   else if (toNext < 2 * 3600e3) { raise('caution'); reasons.push([`${next.currency} ${next.name} ${countdown(toNext)}`, true]); }
   if (riskState === 'off') { raise('caution'); reasons.push(['Risk-off (VIX erhöht)', true]); }
   if (session()[1]) { raise('caution'); reasons.push(['Markt geschlossen', false]); }
+  const product = document.documentElement.classList.contains('view-product');
   if (!reasons.length) reasons.push(['Keine Termine in den nächsten 2 h', false], ['Konten im grünen Bereich', false]);
-  if (propCount) reasons.push([`${propCount} Vorschlag${propCount > 1 ? 'e' : ''} wartet`, false]);
+  if (propCount && !product) reasons.push([`${propCount} Vorschlag${propCount > 1 ? 'e' : ''} wartet`, false]);
 
   $('statusCard').dataset.level = level;
   $('ckState').textContent = { go: 'Handelbar', caution: 'Vorsicht', stop: 'Finger weg' }[level];
@@ -315,7 +316,7 @@ async function openPair(pair) {
     const zb = factorZ[b]?.[w.factor], zq = factorZ[q]?.[w.factor];
     if (zb == null || zq == null) return '';
     const diff = zb - zq, on = Number(w.weight) > 0;
-    return `<div class="pd-f${on ? '' : ' obs'}"><span class="n">${esc(w.label)}<small>${on ? `Gewicht ${Number(w.weight)} · ${b} ${signed(zb, 1)} / ${q} ${signed(zq, 1)}` : 'nur beobachtet'}</small></span>${sbar(diff, 3)}<span class="v ${cls(diff)}">${signed(diff, 2)}</span></div>`;
+    return `<div class="pd-f${on ? '' : ' obs'}"><span class="n">${esc(w.label)}<small>${on ? `<span data-owner>Gewicht ${Number(w.weight)} · </span>${b} ${signed(zb, 1)} / ${q} ${signed(zq, 1)}` : 'nur beobachtet'}</small></span>${sbar(diff, 3)}<span class="v ${cls(diff)}">${signed(diff, 2)}</span></div>`;
   }).join('');
   const evs = events.filter(e => (e.currency === b || e.currency === q) && new Date(e.time) > new Date());
 
@@ -495,4 +496,5 @@ ideaFromHash();
 renderPairs();
 renderStatus();
 setInterval(() => { renderHello(); renderStatus(); }, 30000);
+window.addEventListener('view-changed', renderStatus);
 setInterval(() => { loadProposals().then(renderStatus); loadTopNews(); }, 5 * 60000);

@@ -33,141 +33,63 @@
       <span class="brand-mark">◈</span>
       <span class="brand-text">Trading Journal</span>
     </div>
-    <nav class="tabnav">
-      <a href="dashboard.html" class="tab-link">Dashboard</a>
-      <a href="desk.html" class="tab-link">Desk</a>
-      <a href="index.html" class="tab-link">Journal</a>
-      <a href="backtest.html" class="tab-link">Backtest</a>
-      <a href="accounting.html" class="tab-link active">Steuer</a>
-      <a href="invoices.html" class="tab-link">Rechnungen</a>
-      <a href="level.html" class="tab-link">Level</a>
-    </nav>
+    <nav class="tabnav"></nav>
     <div class="account-switcher" id="accountSwitcher"></div>
   </header>
 
-  <main class="dash-main">
+  <main class="dash-main bookings">
 
-    <div class="disclaimer-banner">
-      ⚠ Kein Ersatz für steuerliche Beratung. Diese Übersicht organisiert deine Zahlen (Kleinunternehmer §19 UStG, keine USt-Ausweisung) — die endgültige steuerliche Einordnung (v.a. bei Propfirm-Funded-Accounts: meist zählt erst der tatsächliche Payout, nicht der reine Buchgewinn) klärst du mit deinem Steuerberater.
-    </div>
-
-    <!-- Period selector -->
-    <section class="panel">
-      <div class="panel-header"><h3>Zeitraum</h3></div>
-      <div class="period-controls">
-        <select id="yearSelect"></select>
-        <div class="period-chips" id="periodChips">
-          <button class="chip active" data-period="year">Ganzes Jahr</button>
-          <button class="chip" data-period="q1">Q1</button>
-          <button class="chip" data-period="q2">Q2</button>
-          <button class="chip" data-period="q3">Q3</button>
-          <button class="chip" data-period="q4">Q4</button>
-          <button class="chip" data-period="month">Monat</button>
-        </div>
-        <select id="monthSelect" style="display:none;"></select>
+    <!-- Zeitraum + Summen -->
+    <section class="bk-bar" aria-label="Zeitraum">
+      <select id="yearSelect" aria-label="Jahr"></select>
+      <div class="chip-row" id="periodChips">
+        <button class="chip active" data-period="year">Ganzes Jahr</button>
+        <button class="chip" data-period="q1">Q1</button>
+        <button class="chip" data-period="q2">Q2</button>
+        <button class="chip" data-period="q3">Q3</button>
+        <button class="chip" data-period="q4">Q4</button>
+        <button class="chip" data-period="month">Monat</button>
       </div>
+      <select id="monthSelect" style="display:none;" aria-label="Monat"></select>
     </section>
 
-    <!-- Jahresabschluss-Export -->
-    <section class="panel year-end-panel">
-      <div class="panel-header">
-        <h3>Jahresabschluss</h3>
-      </div>
-      <p class="import-hint" style="margin-bottom:12px;">Bündelt alle Payouts, Betriebsausgaben und ausgestellten Rechnungen des gewählten Jahres zu einem Bericht — zum Ausdrucken/Speichern für deinen Steuerberater.</p>
-      <button class="btn-primary" id="generateYearEndBtn">Jahresabschluss <span id="yearEndYearLabel"></span> erstellen</button>
+    <section class="bk-sum" aria-label="Summen im Zeitraum">
+      <div><span class="kpi-label">Einnahmen</span><span class="kpi-value pos" id="sumIncome">–</span></div>
+      <div><span class="kpi-label">Ausgaben</span><span class="kpi-value neg" id="sumExpenses">–</span></div>
+      <div><span class="kpi-label">Ergebnis</span><span class="kpi-value" id="sumResult">–</span></div>
     </section>
 
-    <!-- Payouts -->
+    <!-- Eine Liste für Einnahmen und Ausgaben -->
     <section class="panel">
       <div class="panel-header">
-        <h3>Propfirm-Payouts (Krypto)</h3>
-        <button class="btn-primary sm" id="addPayoutBtn">+ Payout erfassen</button>
+        <h3>Buchungen</h3>
+        <div class="bk-actions">
+          <button class="btn-ghost sm" id="exportCsvBtn">CSV</button>
+          <button class="btn-ghost sm" id="addPayoutBtn">+ Einnahme</button>
+          <button class="btn-primary sm" id="addExpenseBtn">+ Ausgabe</button>
+        </div>
       </div>
-      <div class="table-scroll">
-<table class="breakdown-table" id="payoutTable">
-        <thead><tr><th>Datum</th><th>Account</th><th>Betrag Krypto</th><th>Kurs</th><th>EUR-Wert</th><th>Status</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table>
-      </div>
+      <div class="chip-row" id="bookingFilter" role="toolbar" aria-label="Buchungen filtern"></div>
+      <div class="bk-list" id="bookingList"><span class="skel row"></span><span class="skel row"></span><span class="skel row"></span></div>
+      <p class="bk-hint">Zeile antippen zum Bearbeiten · Belege (PDF oder Foto) im Bearbeiten-Fenster anhängen · Einnahmen = Payouts beim Zufluss in Euro</p>
     </section>
-
-    <!-- Ergebnis -->
-    <section class="panel">
-      <div class="panel-header"><h3>Ergebnisrechnung</h3></div>
-      <p class="import-hint" style="margin-bottom:14px;">Einnahmen = Summe der Payouts (EUR-Gegenwert bei Zufluss) im Zeitraum — nicht der reine Buchgewinn im Propfirm-Account.</p>
-      <div class="kpi-grid kpi-grid-3">
-        <div class="kpi-card">
-          <span class="kpi-label">Einnahmen (Payouts, EUR)</span>
-          <span class="kpi-value pos" id="sumIncome">–</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Betriebsausgaben</span>
-          <span class="kpi-value neg" id="sumExpenses">–</span>
-        </div>
-        <div class="kpi-card">
-          <span class="kpi-label">Ergebnis (Gewinn/Verlust)</span>
-          <span class="kpi-value" id="sumResult">–</span>
-        </div>
-      </div>
-    </section>
-
-    <div class="panel-row">
-      <!-- Einnahmen breakdown -->
-      <section class="panel">
-        <div class="panel-header"><h3>Buchgewinn nach Account (Referenz)</h3></div>
-        <p class="import-hint" style="margin-bottom:10px;">Trading-Ergebnis auf der Plattform — noch nicht ausgezahlt, daher nicht Teil der Ergebnisrechnung.</p>
-        <div class="table-scroll">
-<table class="breakdown-table" id="incomeTable">
-          <thead><tr><th>Account</th><th>Typ</th><th>Trading-Ergebnis</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      </section>
-
-      <!-- Expenses breakdown -->
-      <section class="panel">
-        <div class="panel-header"><h3>Ausgaben nach Kategorie</h3></div>
-        <div class="table-scroll">
-<table class="breakdown-table" id="expenseCategoryTable">
-          <thead><tr><th>Kategorie</th><th>Summe</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      </section>
-    </div>
 
     <!-- Wiederkehrende Ausgaben -->
-    <section class="panel">
-      <div class="panel-header">
-        <h3>Wiederkehrende Ausgaben</h3>
-        <button class="btn-primary sm" id="addRecurringBtn">+ Vorlage</button>
+    <details class="panel bk-recurring">
+      <summary><h3>Wiederkehrende Ausgaben</h3><span class="bk-hint" id="recurringCount"></span></summary>
+      <div class="panel-header" style="margin-top:12px">
+        <span class="bk-hint">Einmal anlegen (z. B. TradingView) – wird beim Öffnen dieser Seite automatisch als Ausgabe eingetragen, auch rückwirkend.</span>
+        <button class="btn-ghost sm" id="addRecurringBtn">+ Vorlage</button>
       </div>
-      <p class="import-hint" style="margin-bottom:12px;">Einmal anlegen (z.B. TradingView-Abo) — wird beim Öffnen dieser Seite automatisch als monatliche Ausgabe eingetragen, auch rückwirkend.</p>
       <div class="table-scroll">
         <table class="breakdown-table" id="recurringTable">
           <thead><tr><th>Beschreibung</th><th>Kategorie</th><th>Betrag</th><th>Rhythmus</th><th>Status</th><th></th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
-    </section>
+    </details>
 
-    <!-- Expenses list -->
-    <section class="panel">
-      <div class="panel-header">
-        <h3>Betriebsausgaben — Einzelposten</h3>
-        <div style="display:flex; gap:8px;">
-          <button class="btn-ghost sm" id="exportCsvBtn">CSV-Export</button>
-          <button class="btn-primary sm" id="addExpenseBtn">+ Ausgabe</button>
-        </div>
-      </div>
-      <div class="table-scroll">
-<table class="breakdown-table" id="expenseListTable">
-        <thead><tr><th>Datum</th><th>Kategorie</th><th>Beschreibung</th><th>Betrag</th><th></th></tr></thead>
-        <tbody></tbody>
-      </table>
-      </div>
-    </section>
-
+    <p class="bk-note">Kein Ersatz für steuerliche Beratung. Kleinunternehmer (§ 19 UStG): Beträge ohne Umsatzsteuer.</p>
   </main>
 </div>
 

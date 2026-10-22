@@ -38,25 +38,31 @@
 
   <main class="dash-main business">
 
-    <p class="bz-note">⚠ Kein Ersatz für steuerliche Beratung. Kleinunternehmer (§ 19 UStG): Beträge ohne Umsatzsteuer. Einnahmen zählen beim Zufluss (Payout erhalten), nicht beim Buchgewinn im Propfirm-Konto.</p>
-
-    <!-- Geschäftsbilanz des Jahres -->
-    <section class="bz-kpis" aria-label="Geschäftsbilanz">
-      <div class="bz-kpi"><span class="kpi-label">Einnahmen (Payouts)</span><span class="kpi-value pos" id="kIncome">–</span></div>
-      <div class="bz-kpi"><span class="kpi-label">Propfirm-Gebühren</span><span class="kpi-value neg" id="kFees">–</span></div>
-      <div class="bz-kpi"><span class="kpi-label">Sonstige Ausgaben</span><span class="kpi-value neg" id="kOther">–</span></div>
+    <!-- Jahresbilanz -->
+    <section class="bz-kpis" aria-label="Jahresbilanz">
+      <div class="bz-kpi"><span class="kpi-label">Einnahmen</span><span class="kpi-value pos" id="kIncome">–</span><span class="bz-sub">Auszahlungen beim Zufluss</span></div>
+      <div class="bz-kpi"><span class="kpi-label">Ausgaben</span><span class="kpi-value neg" id="kExpenses">–</span><span class="bz-sub" id="kExpSub"></span></div>
       <div class="bz-kpi"><span class="kpi-label">Ergebnis</span><span class="kpi-value" id="kResult">–</span><span class="bz-sub" id="kTotal"></span></div>
+      <a class="bz-kpi bz-link" href="#todo"><span class="kpi-label">Offene Aufgaben</span><span class="kpi-value" id="kTodo">–</span><span class="bz-sub">Belege, Status, Lücken</span></a>
+    </section>
+
+    <section class="panel" id="todo">
+      <div class="panel-header"><h3>Zu erledigen</h3><span class="bz-hint" id="todoYear"></span></div>
+      <div id="todoList"><span class="skel line"></span><span class="skel line"></span></div>
     </section>
 
     <section class="panel">
-      <div class="panel-header"><h3>Monate</h3><span class="bz-hint">Einnahmen, Ausgaben und Ergebnis je Monat · kumuliert rechts</span></div>
-      <div class="bz-scroll"><table class="bz-table" id="monthTable"></table></div>
+      <div class="panel-header"><h3>Monate</h3><span class="bz-hint">grün Einnahmen · rot Ausgaben · Linie kumuliertes Ergebnis</span></div>
+      <div class="bz-chart" id="monthChart"></div>
+      <details class="bz-details"><summary>Tabelle anzeigen</summary>
+        <div class="bz-scroll"><table class="bz-table" id="monthTable"></table></div>
+      </details>
     </section>
 
-    <section class="panel">
+    <section class="panel" id="konten" data-tier="prop">
       <div class="panel-header">
         <h3>Challenges & Konten</h3>
-        <span class="bz-hint">Gebühren hier erfassen, dann zählen sie je Konto und in der EÜR</span>
+        <span class="bz-hint">Gebühr gegen Auszahlung – hat sich das Konto gelohnt?</span>
       </div>
       <div class="bz-stats" id="challengeStats"></div>
       <div class="bz-scroll"><table class="bz-table" id="accountTable"></table></div>
@@ -68,19 +74,6 @@
         <button class="btn-primary sm" type="submit">Gebühr speichern</button>
         <button class="btn-ghost sm" type="button" id="feeCancel">Abbrechen</button>
       </form>
-    </section>
-
-    <section class="panel">
-      <div class="panel-header">
-        <h3>EÜR <span id="eurYear"></span></h3>
-        <div class="bz-actions">
-          <button class="btn-ghost sm" id="eurCsv">CSV mit Belegliste</button>
-          <button class="btn-ghost sm" id="eurPrint">Drucken / PDF</button>
-        </div>
-      </div>
-      <div id="eurChecks"></div>
-      <div class="bz-scroll"><table class="bz-table eur" id="eurTable"></table></div>
-      <p class="bz-hint">Gruppiert nach den Bereichen der Anlage EÜR. Die genaue Zeile im ELSTER-Formular kann je Jahr wechseln — die Zuordnung bitte einmal mit dem Steuerberater abstimmen. Einzelposten erfasst du unter <a href="accounting.html">Buchhaltung & Steuer</a>.</p>
     </section>
   </main>
 </div>

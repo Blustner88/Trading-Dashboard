@@ -364,7 +364,7 @@ function buildManagerModal() {
   document.getElementById('accDeleteBtn').onclick = handleAccDelete;
 }
 
-function openManager() {
+export function openManager() {
   fetchClientsCache().then(populateClientSelect);
   renderManagerList();
   document.getElementById('accForm').style.display = 'none';

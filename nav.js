@@ -1,7 +1,7 @@
 // Navigation und App-Rahmen für alle Seiten: vier Bereiche oben (Handy: Leiste
-// unten mit "+" in der Mitte), Unter-Tabs, Hell/Dunkel-Umschalter, Glocke für
-// Push-Benachrichtigungen und der Service Worker (App-Installation, immer
-// aktuelle Dateien). Neue Seite eintragen = eine Zeile in AREAS.
+// unten mit "+" in der Mitte), Unter-Tabs, Glocke (Push), Hell/Dunkel, Einstellungen,
+// Umschalter "Meine Ansicht / Produkt-Ansicht" mit Paketen und der Service Worker.
+// Neue Seite eintragen = eine Zeile in AREAS (tier = ab welchem Paket, owner = nie im Produkt).
 
 const ICON = {
   cockpit: '<path d="M4 15a8 8 0 1 1 16 0"/><path d="M12 15l4-5"/><circle cx="12" cy="15" r="1.3"/><path d="M4 19h16"/>',
@@ -13,32 +13,49 @@ const ICON = {
   moon: '<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>',
   bell: '<path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
   logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
 };
 export const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[name] || ''}</svg>`;
 
 const AREAS = [
-  { key: 'cockpit', label: 'Cockpit', pages: [
+  { key: 'cockpit', label: 'Cockpit', tier: 'bias', pages: [
     { href: 'cockpit.html', label: 'Überblick' },
   ] },
-  { key: 'desk', label: 'Desk', pages: [
+  { key: 'desk', label: 'Desk', owner: true, pages: [
     { href: 'desk.html', label: 'Live' },
   ] },
-  { key: 'auswertung', label: 'Auswertung', pages: [
+  { key: 'auswertung', label: 'Auswertung', tier: 'pro', pages: [
     { href: 'dashboard.html', label: 'Übersicht' },
     { href: 'index.html', label: 'Journal' },
     { href: 'backtest.html', label: 'Backtest' },
     { href: 'level.html', label: 'Level' },
   ] },
-  { key: 'business', label: 'Business', pages: [
-    { href: 'business.html', label: 'Überblick & EÜR' },
-    { href: 'accounting.html', label: 'Buchhaltung & Steuer' },
-    { href: 'invoices.html', label: 'Rechnungen' },
+  { key: 'business', label: 'Business', tier: 'prop', pages: [
+    { href: 'business.html', label: 'Überblick' },
+    { href: 'accounting.html', label: 'Buchungen' },
+    { href: 'tax.html', label: 'Steuer & EÜR' },
+    { href: 'invoices.html', label: 'Rechnungen', hidden: true, owner: true },
+  ] },
+  { key: 'settings', label: 'Einstellungen', hidden: true, pages: [
+    { href: 'settings.html', label: 'Einstellungen' },
   ] },
 ];
 
+// Pakete der Produkt-Ansicht (Preise nur als Platzhalter für die Vorschau)
+export const PLANS = [
+  { key: 'bias', label: 'Bias', price: '19 €', text: 'Cockpit: Tagesstatus, Währungsstärke, Pair-Bias, Termine, News, Push' },
+  { key: 'pro', label: 'Pro', price: '29 €', text: 'dazu Trade-Ideen, Journal, Auswertung, Backtest, Level' },
+  { key: 'prop', label: 'Prop-Trader', price: '39 €', text: 'dazu Konten-Limits, Business, Buchungen, Steuer & EÜR' },
+];
+const RANK = { bias: 1, pro: 2, prop: 3 };
+const planOf = (k) => PLANS.find(p => p.key === k) || PLANS[2];
+
 const START_PAGE = 'cockpit.html';
 const VAPID_PUBLIC = 'BKpnibHWFcbXYYxh_emK2NTxBXRpiv8lVGqqLw_qrDtcTHohFlRFmiSY27vhPO1FwlWhrHYEF_XDqEJ75nHQS6Y';
-const THEME_KEY = 'td_theme';
+const THEME_KEY = 'td_theme', VIEW_KEY = 'td_view', PLAN_KEY = 'td_plan';
+const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { /* privat */ } } };
 
 function currentPage() {
   return location.pathname.split('/').pop() || 'index.html';
@@ -65,42 +82,66 @@ export function toast(msg) {
 // ---------------------------------------------------------------------------
 // Hell / Dunkel: ohne Wahl gilt die Systemeinstellung
 // ---------------------------------------------------------------------------
-function effectiveTheme() {
+export function themeChoice() { return ls.get(THEME_KEY) || 'system'; }
+export function effectiveTheme() {
   const t = document.documentElement.dataset.theme;
   if (t) return t;
   return matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
 }
-
-function applyTheme(t) {
-  document.documentElement.dataset.theme = t;
-  try { localStorage.setItem(THEME_KEY, t); } catch { /* privater Modus */ }
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', t === 'light' ? '#f5f6fa' : '#0b0d12'));
+export function applyTheme(choice) {
+  if (choice === 'system') { delete document.documentElement.dataset.theme; ls.set(THEME_KEY, null); }
+  else { document.documentElement.dataset.theme = choice; ls.set(THEME_KEY, choice); }
+  const light = effectiveTheme() === 'light';
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', light ? '#f5f6fa' : '#0b0d12'));
+  document.querySelectorAll('.theme-btn').forEach(paintThemeBtn);
 }
-
+function paintThemeBtn(b) {
+  const light = effectiveTheme() === 'light';
+  b.innerHTML = icon(light ? 'moon' : 'sun');
+  b.title = light ? 'Dunkles Design' : 'Helles Design';
+  b.setAttribute('aria-label', b.title);
+}
 function themeButton() {
   const b = document.createElement('button');
-  b.className = 'icon-btn';
-  const paint = () => {
-    const light = effectiveTheme() === 'light';
-    b.innerHTML = icon(light ? 'moon' : 'sun');
-    b.title = light ? 'Dunkles Design' : 'Helles Design';
-    b.setAttribute('aria-label', b.title);
-  };
-  b.onclick = () => { applyTheme(effectiveTheme() === 'light' ? 'dark' : 'light'); paint(); };
-  paint();
+  b.className = 'icon-btn theme-btn';
+  b.onclick = () => applyTheme(effectiveTheme() === 'light' ? 'dark' : 'light');
+  paintThemeBtn(b);
   return b;
 }
 
 // ---------------------------------------------------------------------------
 // Push-Benachrichtigungen (Bias kippt, Termin in 30 min, Systemfehler)
 // ---------------------------------------------------------------------------
-const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+export const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+export const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+export const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
 const b64ToBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
 
-async function pushRegistration() {
-  if (!('serviceWorker' in navigator)) return null;
-  return navigator.serviceWorker.ready;
+export async function pushSubscription() {
+  if (!pushSupported()) return null;
+  const reg = await navigator.serviceWorker.ready;
+  return reg.pushManager.getSubscription();
+}
+export async function pushEnable() {
+  const { supabase } = await import('./accounts.js');
+  const reg = await navigator.serviceWorker.ready;
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') throw new Error('Benachrichtigungen wurden nicht erlaubt (Browser-Einstellungen).');
+  const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUBLIC) });
+  const j = sub.toJSON();
+  const { error } = await supabase.from('push_subscriptions').upsert(
+    { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, user_agent: navigator.userAgent.slice(0, 200) },
+    { onConflict: 'endpoint' });
+  if (error) throw error;
+  await supabase.functions.invoke('push-notify', { body: { test: true, endpoint: j.endpoint } });
+  return sub;
+}
+export async function pushDisable() {
+  const { supabase } = await import('./accounts.js');
+  const sub = await pushSubscription();
+  if (!sub) return;
+  await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+  await sub.unsubscribe();
 }
 
 function bellButton() {
@@ -114,12 +155,10 @@ function bellButton() {
     b.setAttribute('aria-pressed', String(on));
   };
   set(false);
-
-  const supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-  if (supported) pushRegistration().then(r => r?.pushManager.getSubscription()).then(s => set(!!s)).catch(() => {});
+  if (pushSupported()) pushSubscription().then(s => set(!!s)).catch(() => {});
 
   b.onclick = async () => {
-    if (!supported) {
+    if (!pushSupported()) {
       toast(isIOS() && !standalone()
         ? 'Auf dem iPhone: erst „Teilen → Zum Home-Bildschirm“, dann in der App die Glocke antippen.'
         : 'Dieser Browser unterstützt keine Benachrichtigungen.');
@@ -127,34 +166,106 @@ function bellButton() {
     }
     b.disabled = true;
     try {
-      const { supabase } = await import('./accounts.js');
-      const reg = await pushRegistration();
-      const existing = await reg.pushManager.getSubscription();
-      if (existing) {
-        await supabase.from('push_subscriptions').delete().eq('endpoint', existing.endpoint);
-        await existing.unsubscribe();
-        set(false);
-        toast('Benachrichtigungen aus.');
-        return;
-      }
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') { toast('Benachrichtigungen wurden nicht erlaubt (Browser-Einstellungen).'); return; }
-      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID_PUBLIC) });
-      const j = sub.toJSON();
-      const { error } = await supabase.from('push_subscriptions').upsert(
-        { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, user_agent: navigator.userAgent.slice(0, 200) },
-        { onConflict: 'endpoint' });
-      if (error) throw error;
-      set(true);
-      await supabase.functions.invoke('push-notify', { body: { test: true } });
-      toast('Benachrichtigungen an — eine Testnachricht ist unterwegs.');
+      if (await pushSubscription()) { await pushDisable(); set(false); toast('Benachrichtigungen aus.'); }
+      else { await pushEnable(); set(true); toast('Benachrichtigungen an – eine Testnachricht ist unterwegs.'); }
     } catch (err) {
       console.error(err);
-      toast('Konnte Benachrichtigungen nicht einschalten: ' + (err.message || err));
+      toast('Konnte Benachrichtigungen nicht umschalten: ' + (err.message || err));
     } finally {
       b.disabled = false;
     }
   };
+  return b;
+}
+
+// ---------------------------------------------------------------------------
+// Meine Ansicht / Produkt-Ansicht mit Paketen
+// ---------------------------------------------------------------------------
+export function viewState() {
+  return { product: ls.get(VIEW_KEY) === 'product', plan: planOf(ls.get(PLAN_KEY)).key };
+}
+export function setView(product, plan) {
+  ls.set(VIEW_KEY, product ? 'product' : null);
+  if (plan) ls.set(PLAN_KEY, plan);
+  applyView();
+  window.dispatchEvent(new CustomEvent('view-changed', { detail: viewState() }));
+}
+
+// Seite und Elemente nach Ansicht/Paket ein- oder ausblenden
+export function applyView() {
+  const { product, plan } = viewState();
+  const html = document.documentElement;
+  html.classList.toggle('view-product', product);
+  html.dataset.plan = plan;
+  document.querySelectorAll('[data-tier]').forEach(el => {
+    const locked = product && RANK[el.dataset.tier] > RANK[plan];
+    el.classList.toggle('tier-locked', locked);
+    if (locked) el.dataset.lockLabel = `Im Paket ${planOf(el.dataset.tier).label}`;
+  });
+  renderBanner();
+  renderPageLock();
+  document.querySelectorAll('.area-nav .tab-link').forEach(a => {
+    const area = AREAS.find(x => x.key === a.dataset.area);
+    a.hidden = product && !!area?.owner;
+    a.classList.toggle('locked', product && !!area?.tier && RANK[area.tier] > RANK[plan]);
+  });
+  document.querySelectorAll('.subnav .sub-link').forEach(a => {
+    const page = AREAS.flatMap(x => x.pages).find(p => p.href === a.getAttribute('href'));
+    a.hidden = product && !!page?.owner;
+  });
+  document.querySelectorAll('.view-btn').forEach(b => {
+    b.classList.toggle('on', product);
+    b.title = product ? 'Produkt-Ansicht aktiv – zurück zu meiner Ansicht' : 'Produkt-Ansicht: so sähe ein zahlender Nutzer die App';
+    b.setAttribute('aria-label', b.title);
+    b.setAttribute('aria-pressed', String(product));
+  });
+}
+
+function renderBanner() {
+  const { product, plan } = viewState();
+  let bar = document.querySelector('.view-banner');
+  if (!product) { bar?.remove(); return; }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.className = 'view-banner';
+    (document.querySelector('.subnav') || document.querySelector('.topbar'))?.insertAdjacentElement('afterend', bar);
+  }
+  bar.innerHTML = `<span class="vb-title">${icon('eye')} Produkt-Vorschau</span>
+    <div class="vb-plans" role="group" aria-label="Paket">${PLANS.map(p => `<button class="chip${p.key === plan ? ' active' : ''}" data-plan="${p.key}" title="${p.text}">${p.label} <span class="n">${p.price}</span></button>`).join('')}</div>
+    <button class="btn-ghost sm vb-exit">Meine Ansicht</button>`;
+  bar.querySelectorAll('[data-plan]').forEach(c => { c.onclick = () => setView(true, c.dataset.plan); });
+  bar.querySelector('.vb-exit').onclick = () => setView(false);
+}
+
+function renderPageLock() {
+  document.querySelector('.page-lock')?.remove();
+  const { product, plan } = viewState();
+  if (!product) return;
+  const page = currentPage();
+  const area = AREAS.find(a => a.pages.some(p => p.href === page));
+  const pg = area?.pages.find(p => p.href === page);
+  const owner = area?.owner || pg?.owner;
+  const need = !owner && area?.tier && RANK[area.tier] > RANK[plan] ? planOf(area.tier) : null;
+  if (!owner && !need) return;
+  const box = document.createElement('div');
+  box.className = 'page-lock';
+  box.innerHTML = `<div class="pl-card">
+    <span class="pl-ico">${icon(owner ? 'eye' : 'lock')}</span>
+    <h2>${owner ? 'Nicht Teil des Produkts' : `Im Paket ${need.label}`}</h2>
+    <p>${owner ? 'Dieser Bereich gehört zu deinem eigenen Setup (Bot, Abgleich, eigene Rechnungen) und wäre für Kunden nicht sichtbar.'
+      : `${need.text}. Ab ${need.price} im Monat.`}</p>
+    <div class="pl-actions">${owner ? '' : `<button class="btn-primary" data-plan="${need.key}">Vorschau mit ${need.label}</button>`}
+      <a class="btn-ghost" href="${START_PAGE}">Zum Cockpit</a><button class="btn-ghost" data-exit>Meine Ansicht</button></div></div>`;
+  box.querySelector('[data-plan]')?.addEventListener('click', (e) => setView(true, e.target.dataset.plan));
+  box.querySelector('[data-exit]').onclick = () => setView(false);
+  document.querySelector('main')?.prepend(box);
+}
+
+function viewButton() {
+  const b = document.createElement('button');
+  b.className = 'icon-btn view-btn';
+  b.innerHTML = icon('eye');
+  b.onclick = () => setView(!viewState().product);
   return b;
 }
 
@@ -169,12 +280,13 @@ function plusMenu(e) {
   sheet.className = 'sheet sheet-small';
   sheet.setAttribute('role', 'dialog');
   sheet.setAttribute('aria-label', 'Neu anlegen');
-  const ideaHref = 'cockpit.html#idee';
+  const { product, plan } = viewState();
+  const lockedPro = product && RANK[plan] < RANK.pro;
   sheet.innerHTML = `<button class="sheet-handle" aria-label="Schließen"></button>
     <div class="modal-header"><h2>Neu</h2><button class="modal-close" aria-label="Schließen">✕</button></div>
     <div class="plus-menu">
-      <a href="${ideaHref}"><span class="ico">${icon('cockpit')}</span><span>Trade-Idee planen<small>Entry, SL, TP, Begründung und Screenshot</small></span></a>
-      <a href="index.html#neu"><span class="ico">${icon('plus')}</span><span>Trade erfassen<small>direkt ins Journal</small></span></a>
+      <a href="cockpit.html#idee"${lockedPro ? ' class="locked"' : ''}><span class="ico">${icon('cockpit')}</span><span>Trade-Idee planen<small>${lockedPro ? 'im Paket Pro' : 'Entry, SL, TP, Begründung und Screenshot'}</small></span></a>
+      <a href="index.html#neu"${lockedPro ? ' class="locked"' : ''}><span class="ico">${icon('plus')}</span><span>Trade erfassen<small>${lockedPro ? 'im Paket Pro' : 'direkt ins Journal'}</small></span></a>
     </div>`;
   const close = () => { backdrop.remove(); sheet.remove(); document.removeEventListener('keydown', esc); };
   const esc = (ev) => { if (ev.key === 'Escape') close(); };
@@ -212,20 +324,22 @@ export function renderNav() {
     nav.classList.add('area-nav');
     nav.setAttribute('aria-label', 'Bereiche');
     const link = (a) => `
-      <a href="${a.pages[0].href}" class="tab-link${a === area ? ' active' : ''}"${a === area ? ' aria-current="page"' : ''}>
-        <span class="tab-icon">${icon(a.key)}</span><span class="tab-label">${a.label}</span>
+      <a href="${a.pages[0].href}" data-area="${a.key}" class="tab-link${a === area ? ' active' : ''}"${a === area ? ' aria-current="page"' : ''}>
+        <span class="tab-icon">${icon(a.key)}</span><span class="tab-label">${a.label}</span><span class="tab-lock" aria-hidden="true">${icon('lock')}</span>
       </a>`;
-    nav.innerHTML = link(AREAS[0]) + link(AREAS[1])
+    const [c, d, au, bu] = AREAS;
+    nav.innerHTML = link(c) + link(d)
       + `<a href="index.html#neu" class="nav-add-mid" aria-label="Neu: Trade-Idee oder Trade" title="Neu">${icon('plus')}</a>`
-      + link(AREAS[2]) + link(AREAS[3]);
+      + link(au) + link(bu);
     nav.querySelector('.nav-add-mid').addEventListener('click', plusMenu);
   }
 
-  if (header && area.pages.length > 1 && !document.querySelector('.subnav')) {
+  const visiblePages = area.pages.filter(p => !p.hidden || p.href === page);
+  if (header && visiblePages.length > 1 && !document.querySelector('.subnav')) {
     const sub = document.createElement('nav');
     sub.className = 'subnav';
     sub.setAttribute('aria-label', area.label);
-    sub.innerHTML = area.pages.map(p =>
+    sub.innerHTML = visiblePages.map(p =>
       `<a href="${p.href}" class="sub-link${p.href === page ? ' active' : ''}"${p.href === page ? ' aria-current="page"' : ''}>${p.label}</a>`).join('');
     header.insertAdjacentElement('afterend', sub);
   }
@@ -233,8 +347,14 @@ export function renderNav() {
   if (header && !header.querySelector('.topbar-tools')) {
     const tools = document.createElement('div');
     tools.className = 'topbar-tools';
-    tools.append(bellButton(), themeButton());
-    // "+ Trade" am Desktop; im Journal gibt es den Knopf schon
+    const gear = document.createElement('a');
+    gear.className = `icon-btn${page === 'settings.html' ? ' on' : ''}`;
+    gear.href = 'settings.html';
+    gear.title = 'Einstellungen';
+    gear.setAttribute('aria-label', 'Einstellungen');
+    gear.innerHTML = icon('gear');
+    tools.append(viewButton(), bellButton(), themeButton(), gear);
+    // "+ Neu" am Desktop; im Journal gibt es den eigenen Knopf
     if (!document.getElementById('openAddTrade')) {
       const add = document.createElement('a');
       add.href = 'index.html#neu';
@@ -249,6 +369,9 @@ export function renderNav() {
 
   const pageLabel = area.pages.find(p => p.href === page)?.label;
   document.title = `${area.label}${pageLabel && area.pages.length > 1 ? ' · ' + pageLabel : ''} — Trading Journal`;
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyView);
+  else applyView();
 }
 
 export const LOGOUT_ICON = icon('logout');

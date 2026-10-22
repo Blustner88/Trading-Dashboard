@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<!-- app-head -->
+<meta name="theme-color" content="#0b0d12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trading">
+<script>try{var t=localStorage.getItem('td_theme');if(t){document.documentElement.dataset.theme=t;}var l=t?t==='light':matchMedia('(prefers-color-scheme: light)').matches;document.querySelector('meta[name=theme-color]').content=l?'#f5f6fa':'#0b0d12';}catch(e){}</script>
+<!-- /app-head -->
+<title>Einstellungen — Trading Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <nav class="tabnav"></nav>
+  </header>
+
+  <main class="dash-main settings">
+    <h1 class="st-title">Einstellungen</h1>
+
+    <section class="panel" id="sec-darstellung">
+      <div class="panel-header"><h3>Darstellung</h3></div>
+      <div class="st-row"><div><b>Design</b><small>Ohne Wahl folgt die App der Einstellung deines Geräts.</small></div>
+        <div class="segmented st-seg" id="themeSeg"><button type="button" class="seg-btn" data-value="system">System</button><button type="button" class="seg-btn" data-value="light">Hell</button><button type="button" class="seg-btn" data-value="dark">Dunkel</button></div></div>
+    </section>
+
+    <section class="panel" id="sec-push">
+      <div class="panel-header"><h3>Benachrichtigungen</h3><span class="st-badge" id="pushState">–</span></div>
+      <p class="st-hint" id="pushHint"></p>
+      <div class="st-row"><div><b>Auf diesem Gerät</b><small id="pushDevice">Push-Nachrichten auch bei geschlossener App.</small></div>
+        <div class="st-actions"><button class="btn-ghost sm" id="pushTest" hidden>Test senden</button><button class="btn-primary sm" id="pushToggle">Einschalten</button></div></div>
+      <fieldset class="st-fs" id="pushPrefs" disabled>
+        <legend>Was soll gemeldet werden?</legend>
+        <label class="st-check"><input type="checkbox" data-pref="bias"> <span><b>Bias gekippt</b><small>wenn ein Pair von Long, Short oder Neutral wechselt (nach der täglichen Berechnung)</small></span></label>
+        <label class="st-check"><input type="checkbox" data-pref="event"> <span><b>Wichtige Termine</b><small>etwa 30 Minuten vor High-Impact-News deiner Währungen</small></span></label>
+        <label class="st-check" data-owner><input type="checkbox" data-pref="error"> <span><b>Systemmeldungen</b><small>Fehler des Trading-Bots, z. B. leeres API-Guthaben oder Abweichungen beim FundedNext-Abgleich</small></span></label>
+        <div class="st-row st-quiet"><div><b>Ruhezeit</b><small>Keine Meldungen in diesem Zeitraum. Bias und Systemmeldungen kommen danach, Termine entfallen.</small></div>
+          <div class="st-times"><input type="time" id="quietStart" aria-label="Ruhezeit von"> <span>bis</span> <input type="time" id="quietEnd" aria-label="Ruhezeit bis"></div></div>
+      </fieldset>
+    </section>
+
+    <section class="panel" id="sec-trading" data-tier="pro">
+      <div class="panel-header"><h3>Trading</h3></div>
+      <div class="st-row"><div><b>Standard-Risiko pro Trade</b><small>Vorbelegung beim Erfassen eines neuen Trades im Journal.</small></div>
+        <div class="st-unit"><input type="number" id="defaultRisk" min="0.05" max="10" step="0.05" inputmode="decimal"> <span>%</span></div></div>
+    </section>
+
+    <section class="panel" id="sec-konten" data-tier="pro">
+      <div class="panel-header"><h3>Konten</h3><button class="btn-ghost sm" id="manageAccounts">Konten verwalten</button></div>
+      <div class="st-accounts" id="accountList"></div>
+      <p class="st-hint">Drawdown-Art, Tageslimit, Max-Drawdown und Gewinnziel stellst du je Konto unter „Konten verwalten“ ein. Davon hängen Tagesstatus und Konten-Puffer im Cockpit ab.</p>
+    </section>
+
+    <section class="panel" id="sec-ansicht">
+      <div class="panel-header"><h3>Ansicht & Pakete</h3></div>
+      <div class="st-row"><div><b>Produkt-Vorschau</b><small>Zeigt die App so, wie ein zahlender Nutzer sie im gewählten Paket sähe. Deine Daten bleiben unverändert.</small></div>
+        <div class="segmented st-seg" id="viewSeg"><button type="button" class="seg-btn" data-value="owner">Meine Ansicht</button><button type="button" class="seg-btn" data-value="product">Produkt</button></div></div>
+      <div class="st-plans" id="planCards"></div>
+    </section>
+
+    <section class="panel" id="sec-app">
+      <div class="panel-header"><h3>App</h3></div>
+      <div class="st-row"><div><b>Als App installieren</b><small id="installHint"></small></div></div>
+      <div class="st-row"><div><b>Neu laden</b><small>Holt alle Dateien frisch vom Server, falls eine Änderung nicht ankommt.</small></div>
+        <button class="btn-ghost sm" id="hardReload">Zwischenspeicher leeren</button></div>
+      <div class="st-row"><div><b>Angemeldet</b><small id="userMail">–</small></div><button class="btn-ghost sm" id="logoutBtn">Abmelden</button></div>
+    </section>
+  </main>
+</div>
+
+<script type="module" src="settings.js"></script>
+</body>
+</html>

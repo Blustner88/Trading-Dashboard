@@ -54,16 +54,16 @@
       <div class="ck-stats">
         <div class="ck-stat"><span class="l">Risikostimmung</span><span class="v" id="stRisk"><span class="skel line"></span></span><span class="s" id="stRiskSub"></span></div>
         <div class="ck-stat"><span class="l">Nächster Termin</span><span class="v" id="stEvent"><span class="skel line"></span></span><span class="s" id="stEventSub"></span></div>
-        <div class="ck-stat"><span class="l">Konten-Puffer</span><span class="v" id="stAcc"><span class="skel line"></span></span><span class="s" id="stAccSub"></span></div>
-        <a class="ck-stat ck-link" href="desk.html" id="stProp"><span class="l">Vorschläge</span><span class="v" id="stPropV"><span class="skel line"></span></span><span class="s" id="stPropSub">Entscheidung per Telegram</span></a>
+        <div class="ck-stat tier-hide" data-tier="prop"><span class="l">Konten-Puffer</span><span class="v" id="stAcc"><span class="skel line"></span></span><span class="s" id="stAccSub"></span></div>
+        <a class="ck-stat ck-link" href="desk.html" id="stProp" data-owner><span class="l">Vorschläge</span><span class="v" id="stPropV"><span class="skel line"></span></span><span class="s" id="stPropSub">Entscheidung per Telegram</span></a>
       </div>
-      <details class="ck-acc-details" id="accDetails">
+      <details class="ck-acc-details tier-hide" id="accDetails" data-tier="prop">
         <summary>Konten-Limits im Detail</summary>
         <div id="accountsBars"></div>
       </details>
     </section>
 
-    <section class="panel">
+    <section class="panel" data-tier="pro">
       <div class="panel-header">
         <h3>Trade-Ideen</h3>
         <span class="desk-hint" id="ideasHint" style="margin-right:auto;margin-left:10px">offen und von heute</span>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<!-- app-head -->
+<meta name="theme-color" content="#0b0d12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trading">
+<script>try{var t=localStorage.getItem('td_theme');if(t){document.documentElement.dataset.theme=t;}var l=t?t==='light':matchMedia('(prefers-color-scheme: light)').matches;document.querySelector('meta[name=theme-color]').content=l?'#f5f6fa':'#0b0d12';}catch(e){}</script>
+<!-- /app-head -->
+<title>Steuer & EÜR — Trading Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="business.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <nav class="tabnav"></nav>
+    <div class="account-switcher" id="accountSwitcher"></div>
+    <label class="bz-year">Jahr <select id="yearSelect"></select></label>
+  </header>
+
+  <main class="dash-main business tax">
+
+    <p class="bz-note">Kein Ersatz für steuerliche Beratung. Kleinunternehmer (§ 19 UStG): Beträge ohne Umsatzsteuer. Einnahmen zählen beim Zufluss (Auszahlung erhalten), nicht beim Buchgewinn im Propfirm-Konto.</p>
+
+    <section class="panel">
+      <div class="panel-header"><h3>Vor dem Export prüfen</h3><span class="bz-hint" id="todoYear"></span></div>
+      <div id="todoList"><span class="skel line"></span></div>
+    </section>
+
+    <section class="panel eur-panel">
+      <div class="panel-header">
+        <h3>EÜR <span id="eurYear"></span></h3>
+        <div class="bz-actions">
+          <button class="btn-ghost sm" id="eurCsv">CSV mit Belegliste</button>
+          <button class="btn-primary sm" id="eurPrint">Drucken / PDF</button>
+        </div>
+      </div>
+      <div class="bz-scroll"><table class="bz-table eur" id="eurTable"></table></div>
+      <p class="bz-hint">Gruppiert nach den Bereichen der Anlage EÜR. Die genaue Zeile im ELSTER-Formular kann je Jahr wechseln – die Zuordnung bitte einmal mit dem Steuerberater abstimmen.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header"><h3>Belegliste</h3><span class="bz-hint" id="receiptSum"></span><a class="btn-ghost sm" id="toBookings" href="accounting.html">Belege anhängen</a></div>
+      <div class="tx-receipts" id="receiptList"></div>
+    </section>
+
+    <section class="panel" data-owner>
+      <div class="panel-header"><h3>Weitere Unterlagen</h3></div>
+      <div class="tx-grid">
+        <a class="tx-card" id="yearEndLink" href="accounting.html#jahresabschluss"><b>Jahresabschluss-Bericht</b><span>Auszahlungen, Ausgaben und ausgestellte Rechnungen des Jahres in einem Dokument für den Steuerberater</span></a>
+        <a class="tx-card" href="invoices.html"><b>Rechnungen an Propfirms</b><span>Firmendaten, Kunden und Rechnungen zu deinen Auszahlungen</span></a>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script type="module" src="tax.js"></script>
+</body>
+</html>

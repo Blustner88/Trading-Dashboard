@@ -21,7 +21,12 @@ let pendingExitFile = null;
 const $ = (id) => document.getElementById(id);
 
 // ---------- Init ----------
+// Standard-Risiko für neue Trades (Einstellungen → Trading)
+let defaultRisk = 0.8;
+
 async function init() {
+  const { data: rs } = await supabase.from('user_settings').select('value').eq('key', 'default_risk_pct').maybeSingle();
+  if (rs && Number(rs.value) > 0) defaultRisk = Number(rs.value);
   await initAccountSwitcher();
   populateAccountSelect();
   $('pairList').innerHTML = ALL_PAIRS.map(p => `<option value="${p}"></option>`).join('');
@@ -252,7 +257,7 @@ function openModal(trade = null, startStep = 1) {
   } else {
     const current = getSelectedAccountId();
     if (current !== 'all') $('f_account').value = current;
-    $('f_risk_percent').value = 0.8;
+    $('f_risk_percent').value = defaultRisk;
     const now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     $('f_entry_date').value = now.toISOString().slice(0, 16);
@@ -321,7 +326,7 @@ async function handleSave(e) {
       trailed_stop_loss: $('f_trailed_sl').value ? parseFloat($('f_trailed_sl').value) : null,
       tp1: $('f_tp1').value ? parseFloat($('f_tp1').value) : null,
       tp2: $('f_tp2').value ? parseFloat($('f_tp2').value) : null,
-      risk_percent: $('f_risk_percent').value ? parseFloat($('f_risk_percent').value) : (isImported() ? null : 0.8),
+      risk_percent: $('f_risk_percent').value ? parseFloat($('f_risk_percent').value) : (isImported() ? null : defaultRisk),
       notes: $('f_notes').value || (isImported() ? editingTrade.notes : null),
       exit_price: exitPrice,
       exit_date: $('f_exit_date').value ? new Date($('f_exit_date').value).toISOString() : null,

@@ -21,11 +21,17 @@ let currentPeriod = 'year'; // year | q1..q4 | month
 let currentMonth = new Date().getMonth() + 1;
 
 async function init() {
+  // ?jahr=2025 (z. B. aus „Steuer & EÜR“) wählt das Jahr vor
+  const y = Number(new URLSearchParams(location.search).get('jahr'));
+  if (y > 2000) currentYear = y;
+  if (location.hash === '#ohne-beleg') bookingFilter = 'noreceipt';
   await initAccountSwitcher();
   buildYearSelect();
   buildMonthSelect();
   bindEvents();
   await loadData();
+  // Jahresabschluss-Bericht direkt öffnen (Link von „Steuer & EÜR“)
+  if (location.hash === '#jahresabschluss') generateYearEndReport();
 }
 
 function buildYearSelect() {
@@ -72,7 +78,6 @@ function bindEvents() {
   $('exp_receipt').onchange = (e) => previewFile(e.target.files[0]);
 
   $('exportCsvBtn').onclick = exportCsv;
-  $('generateYearEndBtn').onclick = generateYearEndReport;
   $('closeYearEndBtn').onclick = closeYearEndReport;
   $('doYearEndPrintBtn').onclick = () => window.print();
 
@@ -204,6 +209,8 @@ async function generateDueRecurringExpenses() {
 function renderRecurringTable() {
   const tbody = document.querySelector('#recurringTable tbody');
   tbody.innerHTML = '';
+  const active = allRecurring.filter(r => r.active).length;
+  $('recurringCount').textContent = allRecurring.length ? `${active} aktiv` : '';
   if (allRecurring.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="font-family:var(--font-body); color:var(--text-faint); text-align:center; padding:16px 0;">Noch keine Vorlagen</td></tr>`;
     return;
@@ -316,10 +323,6 @@ function getPeriodRange() {
 function render() {
   const { start, end } = getPeriodRange();
 
-  const periodTrades = allTrades.filter(t => {
-    const d = new Date(t.entry_date);
-    return d >= start && d < end;
-  });
   const periodExpenses = allExpenses.filter(e => {
     const d = new Date(e.expense_date + 'T00:00:00');
     return d >= start && d < end;
@@ -329,143 +332,68 @@ function render() {
     return d >= start && d < end;
   });
 
-  renderPayouts(periodPayouts);
-  renderBookProfit(periodTrades);
-  renderExpenseCategories(periodExpenses);
-  renderExpenseList(periodExpenses);
+  renderBookings(periodPayouts, periodExpenses);
   renderResult(periodPayouts, periodExpenses);
-}
-
-function renderPayouts(periodPayouts) {
-  const tbody = document.querySelector('#payoutTable tbody');
-  tbody.innerHTML = '';
-
-  if (periodPayouts.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="font-family:var(--font-body); color:var(--text-faint); text-align:center; padding:16px 0;">Keine Payouts im Zeitraum</td></tr>`;
-    return;
-  }
-
-  const accounts = getLiveAccounts();
-  periodPayouts.forEach(p => {
-    const acc = accounts.find(a => a.id === p.account_id);
-    const dateStr = new Date(p.payout_date + 'T00:00:00').toLocaleDateString('de-DE');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${dateStr}</td>
-      <td>${acc ? escapeHtml(acc.name) : '—'}</td>
-      <td>${Number(p.crypto_amount)} ${escapeHtml(p.crypto_currency)}</td>
-      <td>${Number(p.eur_rate).toFixed(4)}</td>
-      <td class="pos">${Number(p.amount_eur).toFixed(2)} €</td>
-      <td>${payoutStatusLabel(p.status)}</td>
-      <td class="expense-row-actions">
-        <button class="icon-btn" data-action="edit-payout" data-id="${p.id}">✎</button>
-        ${p.receipt_url ? `<a class="icon-btn" href="${p.receipt_url}" target="_blank" rel="noopener">📎</a>` : ''}
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  tbody.querySelectorAll('[data-action="edit-payout"]').forEach(btn => {
-    btn.onclick = () => openPayoutModal(allPayouts.find(p => p.id === btn.dataset.id));
-  });
 }
 
 function payoutStatusLabel(s) {
   return { received: 'Erhalten', converted_to_eur: 'In EUR', pending: 'Ausstehend' }[s] || s;
 }
 
-function renderBookProfit(periodTrades) {
-  const accounts = getLiveAccounts();
-  const tbody = document.querySelector('#incomeTable tbody');
-  tbody.innerHTML = '';
-
-  const rows = accounts.map(acc => {
-    const accTrades = periodTrades.filter(t => t.account_id === acc.id);
-    const sum = accTrades.reduce((s, t) => s + (Number(t.profit_amount) || 0), 0);
-    return { acc, sum };
-  });
-
-  if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" style="font-family:var(--font-body); color:var(--text-faint); text-align:center; padding:16px 0;">Keine Konten</td></tr>`;
-  }
-
-  rows.forEach(r => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><span class="acc-dot-inline" style="background:${r.acc.color}"></span>${escapeHtml(r.acc.name)}</td>
-      <td>${accountTypeLabel(r.acc.account_type)}</td>
-      <td class="${r.sum >= 0 ? 'pos' : 'neg'}">${r.sum >= 0 ? '+' : ''}${r.sum.toFixed(2)} €</td>
-    `;
-    tbody.appendChild(tr);
-  });
-}
-
-function accountTypeLabel(type) {
-  return { personal: 'Personal', challenge: 'Challenge', verification: 'Verification', funded: 'Funded' }[type] || type;
-}
-
-function renderExpenseCategories(periodExpenses) {
-  const tbody = document.querySelector('#expenseCategoryTable tbody');
-  tbody.innerHTML = '';
-
-  const groups = {};
-  periodExpenses.forEach(e => {
-    groups[e.category] = (groups[e.category] || 0) + Number(e.amount);
-  });
-
-  const rows = Object.entries(groups).sort((a, b) => b[1] - a[1]);
-  if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="2" style="font-family:var(--font-body); color:var(--text-faint); text-align:center; padding:16px 0;">Keine Ausgaben im Zeitraum</td></tr>`;
-    return;
-  }
-
-  rows.forEach(([cat, sum]) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${CATEGORY_LABELS[cat] || cat}</td><td class="neg">${sum.toFixed(2)} €</td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-function renderExpenseList(periodExpenses) {
-  const tbody = document.querySelector('#expenseListTable tbody');
-  tbody.innerHTML = '';
-
-  if (periodExpenses.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="font-family:var(--font-body); color:var(--text-faint); text-align:center; padding:16px 0;">Keine Ausgaben im Zeitraum</td></tr>`;
-    return;
-  }
-
-  periodExpenses.forEach(e => {
-    const tr = document.createElement('tr');
-    const dateStr = new Date(e.expense_date + 'T00:00:00').toLocaleDateString('de-DE');
-    tr.innerHTML = `
-      <td>${dateStr}</td>
-      <td>${CATEGORY_LABELS[e.category] || e.category}</td>
-      <td>${escapeHtml(e.description)}${e.recurring_expense_id ? ' <span title="Automatisch generiert" style="color:var(--text-faint);">🔁</span>' : ''}</td>
-      <td class="neg">${Number(e.amount).toFixed(2)} €</td>
-      <td class="expense-row-actions">
-        <button class="icon-btn" data-action="edit" data-id="${e.id}">✎</button>
-        ${e.receipt_url ? `<a class="icon-btn" href="${e.receipt_url}" target="_blank" rel="noopener">📎</a>` : ''}
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  tbody.querySelectorAll('[data-action="edit"]').forEach(btn => {
-    btn.onclick = () => openExpenseModal(allExpenses.find(e => e.id === btn.dataset.id));
-  });
-}
+const COUNTED = ['received', 'converted_to_eur'];   // Einnahme zählt beim Zufluss
+const eur = (v) => `${Number(v).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 
 function renderResult(periodPayouts, periodExpenses) {
-  const income = periodPayouts.reduce((s, p) => s + Number(p.amount_eur), 0);
+  const income = periodPayouts.filter(p => COUNTED.includes(p.status)).reduce((s, p) => s + Number(p.amount_eur), 0);
   const expenses = periodExpenses.reduce((s, e) => s + Number(e.amount), 0);
   const result = income - expenses;
 
-  $('sumIncome').textContent = `+${income.toFixed(2)} €`;
-  $('sumExpenses').textContent = `-${expenses.toFixed(2)} €`;
-  $('sumResult').textContent = `${result >= 0 ? '+' : ''}${result.toFixed(2)} €`;
+  $('sumIncome').textContent = eur(income);
+  $('sumExpenses').textContent = eur(expenses);
+  $('sumResult').textContent = `${result > 0 ? '+' : result < 0 ? '−' : ''}${eur(Math.abs(result))}`;
   $('sumResult').className = `kpi-value ${result >= 0 ? 'pos' : 'neg'}`;
 }
+
+// ---------- Eine Liste für Einnahmen (Payouts) und Ausgaben ----------
+let bookingFilter = 'all';
+function renderBookings(periodPayouts, periodExpenses) {
+  const accounts = getAccounts();
+  const rows = [
+    ...periodPayouts.map(p => ({ kind: 'in', id: p.id, date: p.payout_date, amount: Number(p.amount_eur), receipt: p.receipt_url,
+      title: `Auszahlung ${accounts.find(a => a.id === p.account_id)?.name || ''}`.trim(),
+      sub: `${Number(p.crypto_amount).toLocaleString('de-DE')} ${p.crypto_currency} · ${payoutStatusLabel(p.status)}`, cat: 'income', pending: !COUNTED.includes(p.status) })),
+    ...periodExpenses.map(e => ({ kind: 'out', id: e.id, date: e.expense_date, amount: Number(e.amount), receipt: e.receipt_url,
+      title: e.description, sub: `${CATEGORY_LABELS[e.category] || e.category}${e.recurring_expense_id ? ' · wiederkehrend' : ''}`, cat: e.category })),
+  ].sort((a, b) => b.date.localeCompare(a.date));
+
+  const missing = rows.filter(r => !r.receipt).length;
+  const cats = [...new Set(periodExpenses.map(e => e.category))];
+  const chips = [['all', 'Alle', rows.length], ['in', 'Einnahmen', rows.filter(r => r.kind === 'in').length], ['out', 'Ausgaben', rows.filter(r => r.kind === 'out').length],
+    ['noreceipt', 'Ohne Beleg', missing], ...cats.map(c => [`cat:${c}`, CATEGORY_LABELS[c] || c, rows.filter(r => r.cat === c).length])];
+  if (!chips.some(c => c[0] === bookingFilter)) bookingFilter = 'all';
+  $('bookingFilter').innerHTML = chips.map(([k, l, n]) =>
+    `<button class="chip${bookingFilter === k ? ' active' : ''}" data-f="${k}" aria-pressed="${bookingFilter === k}">${l}<span class="n">${n}</span></button>`).join('');
+
+  const shown = rows.filter(r => bookingFilter === 'all' || (bookingFilter === 'noreceipt' ? !r.receipt
+    : bookingFilter.startsWith('cat:') ? r.cat === bookingFilter.slice(4) : r.kind === bookingFilter));
+  $('bookingList').innerHTML = shown.length ? shown.map(r => `
+    <button class="bk-row ${r.kind}" data-kind="${r.kind}" data-id="${r.id}">
+      <span class="d mono">${new Date(r.date + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+      <span class="t"><b>${escapeHtml(r.title)}</b><small>${escapeHtml(r.sub)}</small></span>
+      <span class="r">${r.receipt ? '<span class="badge pos" title="Beleg vorhanden">Beleg ✓</span>' : '<span class="badge warn" title="Beleg fehlt – zum Anhängen antippen">Beleg fehlt</span>'}</span>
+      <span class="a mono ${r.kind === 'in' ? (r.pending ? '' : 'pos') : 'neg'}">${r.kind === 'in' ? '+' : '−'}${eur(r.amount)}</span>
+    </button>`).join('')
+    : '<p class="empty">Keine Buchungen für diesen Filter im Zeitraum.</p>';
+}
+
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('#bookingFilter .chip');
+  if (chip) { bookingFilter = chip.dataset.f; render(); return; }
+  const row = e.target.closest('.bk-row');
+  if (!row) return;
+  if (row.dataset.kind === 'in') openPayoutModal(allPayouts.find(p => p.id === row.dataset.id));
+  else openExpenseModal(allExpenses.find(x => x.id === row.dataset.id));
+});
 
 // ---------- Expense modal ----------
 function openExpenseModal(expense = null) {
