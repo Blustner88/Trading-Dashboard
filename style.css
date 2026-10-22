@@ -338,12 +338,14 @@ a { color: var(--indigo-bright); }
   overflow-y: auto; overscroll-behavior: contain; padding: 18px 20px 24px; animation: slide-in .26s var(--ease) both;
 }
 .sheet-handle { display: none; }
+.sheet.sheet-small { bottom: auto; width: min(400px, calc(100vw - 32px)); }
 @keyframes slide-in { from { transform: translateX(24px); opacity: 0; } }
 @media (max-width: 700px) {
   .sheet {
     top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 86vh; border-radius: 20px 20px 0 0; border-bottom: 0;
     padding: 8px 18px calc(24px + env(safe-area-inset-bottom)); animation: sheet-up .28s var(--ease) both;
   }
+  .sheet.sheet-small { bottom: 0; width: auto; }
   .sheet-handle { display: block; width: 40px; height: 5px; border-radius: 3px; background: var(--border); margin: 4px auto 12px; border: 0; padding: 0; cursor: pointer; }
 }
 
@@ -422,6 +424,42 @@ a { color: var(--indigo-bright); }
 .summary-line strong.pos { color: var(--profit); }
 .summary-line.warn { border: 1px solid color-mix(in srgb, var(--amber) 35%, transparent); }
 .summary-line.warn strong { color: var(--amber); }
+
+/* ---------- Trade-Ideen ---------- */
+.idea-list { display: flex; flex-direction: column; gap: 8px; }
+.idea-card {
+  display: grid; grid-template-columns: 56px minmax(0, 1fr) 52px; gap: 12px; align-items: center; width: 100%;
+  padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border-soft); background: var(--surface-2);
+  color: inherit; font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, transform .15s var(--ease);
+}
+.idea-card:hover { border-color: var(--border); }
+.idea-card:active { transform: scale(.99); }
+.idea-card.done { opacity: .6; }
+.idea-thumb { width: 56px; height: 42px; border-radius: 8px; object-fit: cover; background: var(--surface); border: 1px solid var(--border-soft); display: grid; place-items: center; color: var(--text-faint); font-size: 18px; }
+.idea-main { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.idea-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.idea-top b { font-family: var(--font-mono); font-size: 13.5px; }
+.idea-lv { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.idea-why { font-size: 12px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.idea-crv { text-align: right; font-weight: 700; font-size: 15px; display: flex; flex-direction: column; line-height: 1.1; }
+.idea-crv small { font-size: 9.5px; font-weight: 500; color: var(--text-faint); font-family: var(--font-body); }
+.idea-crv-big { font-size: 18px; font-weight: 700; padding: 8px 0; }
+.idea-shot img { max-width: 100%; max-height: 260px; border-radius: 10px; border: 1px solid var(--border); margin-top: 6px; display: block; }
+.idea-status { flex-wrap: wrap; }
+.idea-status .seg-btn { flex: 1 1 40%; padding: 8px; font-size: 12.5px; }
+.idea-status .seg-btn[data-value="taken"].active { background: var(--profit-soft); border-color: var(--profit); color: var(--profit); }
+.idea-status .seg-btn[data-value="order"].active { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); }
+.idea-status .seg-btn[data-value="discarded"].active { background: var(--surface); border-color: var(--text-faint); color: var(--text-muted); }
+.hint.warn { color: var(--amber); font-size: 12px; margin: -4px 0 0; }
+.field .hint .pos { color: var(--profit); } .field .hint .neg { color: var(--loss); }
+.idea-sheet .modal-header { margin-bottom: 12px; }
+
+/* Auswahl hinter dem "+" der unteren Leiste */
+.plus-menu { display: grid; gap: 8px; padding-top: 4px; }
+.plus-menu a { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--radius); background: var(--surface-2); color: var(--text); text-decoration: none; font-weight: 600; }
+.plus-menu a small { display: block; font-weight: 400; color: var(--text-muted); font-size: 12px; }
+.plus-menu .ico { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--accent-soft); color: var(--indigo-bright); flex-shrink: 0; }
+.plus-menu .ico svg { width: 20px; height: 20px; }
 
 /* Gespeichert-Bestätigung */
 .flash-ok { animation: flash-ok .9s ease; }

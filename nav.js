@@ -160,6 +160,33 @@ function bellButton() {
 }
 
 // ---------------------------------------------------------------------------
+// "+": Auswahl zwischen Trade-Idee und Trade erfassen
+// ---------------------------------------------------------------------------
+function plusMenu(e) {
+  e?.preventDefault();
+  const backdrop = document.createElement('div');
+  backdrop.className = 'sheet-backdrop';
+  const sheet = document.createElement('div');
+  sheet.className = 'sheet sheet-small';
+  sheet.setAttribute('role', 'dialog');
+  sheet.setAttribute('aria-label', 'Neu anlegen');
+  const ideaHref = /planning\.html$/.test(location.pathname) ? 'planning.html#idee' : 'cockpit.html#idee';
+  sheet.innerHTML = `<button class="sheet-handle" aria-label="Schließen"></button>
+    <div class="modal-header"><h2>Neu</h2><button class="modal-close" aria-label="Schließen">✕</button></div>
+    <div class="plus-menu">
+      <a href="${ideaHref}"><span class="ico">${icon('cockpit')}</span><span>Trade-Idee planen<small>Entry, SL, TP, Begründung und Screenshot</small></span></a>
+      <a href="index.html#neu"><span class="ico">${icon('plus')}</span><span>Trade erfassen<small>direkt ins Journal</small></span></a>
+    </div>`;
+  const close = () => { backdrop.remove(); sheet.remove(); document.removeEventListener('keydown', esc); };
+  const esc = (ev) => { if (ev.key === 'Escape') close(); };
+  backdrop.onclick = close;
+  sheet.querySelectorAll('.sheet-handle, .modal-close, .plus-menu a').forEach(x => x.addEventListener('click', close));
+  document.addEventListener('keydown', esc);
+  document.body.append(backdrop, sheet);
+  sheet.querySelector('.plus-menu a').focus();
+}
+
+// ---------------------------------------------------------------------------
 // Navigation
 // ---------------------------------------------------------------------------
 export function renderNav() {
@@ -190,8 +217,9 @@ export function renderNav() {
         <span class="tab-icon">${icon(a.key)}</span><span class="tab-label">${a.label}</span>
       </a>`;
     nav.innerHTML = link(AREAS[0]) + link(AREAS[1])
-      + `<a href="index.html#neu" class="nav-add-mid" aria-label="Trade erfassen" title="Trade erfassen">${icon('plus')}</a>`
+      + `<a href="index.html#neu" class="nav-add-mid" aria-label="Neu: Trade-Idee oder Trade" title="Neu">${icon('plus')}</a>`
       + link(AREAS[2]) + link(AREAS[3]);
+    nav.querySelector('.nav-add-mid').addEventListener('click', plusMenu);
   }
 
   if (header && area.pages.length > 1 && !document.querySelector('.subnav')) {
@@ -212,8 +240,9 @@ export function renderNav() {
       const add = document.createElement('a');
       add.href = 'index.html#neu';
       add.className = 'btn-primary sm nav-add';
-      add.innerHTML = `<span style="display:inline-flex;width:16px">${icon('plus')}</span> Trade`;
-      add.title = 'Trade erfassen';
+      add.innerHTML = `<span style="display:inline-flex;width:16px">${icon('plus')}</span> Neu`;
+      add.title = 'Trade-Idee oder Trade anlegen';
+      add.addEventListener('click', plusMenu);
       tools.appendChild(add);
     }
     header.appendChild(tools);

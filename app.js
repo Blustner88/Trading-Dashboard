@@ -30,10 +30,12 @@ async function init() {
   window.addEventListener('account-changed', () => { populateAccountSelect(); loadTrades(); });
   await loadTrades();
   // "+ Trade" aus der Navigation (nav.js) öffnet direkt den Dialog — auch wenn das Journal schon offen ist
-  const openFromHash = () => {
-    if (location.hash !== '#neu') return;
+  const openFromHash = async () => {
+    const m = location.hash.match(/^#idee=([0-9a-f-]{36})$/);
+    if (location.hash !== '#neu' && !m) return;
     history.replaceState(null, '', location.pathname);
     $('openAddTrade').click();
+    if (m) await prefillFromIdea(m[1]);
   };
   window.addEventListener('hashchange', openFromHash);
   openFromHash();
@@ -186,8 +188,29 @@ function renderImportSuggest() {
   });
 }
 
+// Trade aus einer Trade-Idee (Cockpit/Tagesplan): Werte + Screenshot übernehmen
+let fromIdea = null;
+async function prefillFromIdea(id) {
+  const { data: idea } = await supabase.from('trade_ideas').select('*').eq('id', id).maybeSingle();
+  if (!idea) { showToast('Trade-Idee nicht gefunden.'); return; }
+  fromIdea = idea;
+  $('modalTitle').textContent = 'Trade aus Idee erfassen';
+  $('f_pair').value = idea.pair;
+  currentDirection = idea.direction;
+  document.querySelectorAll('#f_direction .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === idea.direction));
+  $('f_setup_type').value = idea.setup_type || '';
+  $('f_entry_price').value = idea.entry_price ?? '';
+  $('f_stop_loss').value = idea.stop_loss ?? '';
+  $('f_tp1').value = idea.tp1 ?? '';
+  $('f_tp2').value = idea.tp2 ?? '';
+  $('f_notes').value = idea.reasoning || '';
+  if (idea.screenshot_url) previewFromUrl(idea.screenshot_url, 'entryPreview');
+  $('importSuggest').hidden = true;
+}
+
 // ---------- Modal ----------
 function openModal(trade = null, startStep = 1) {
+  fromIdea = null;
   editingId = trade ? trade.id : null;
   editingTrade = trade;
   $('modalTitle').textContent = trade ? (trade.source === 'mt5_import' && !trade.setup_type ? 'Import ergänzen' : 'Trade bearbeiten') : 'Trade erfassen';
@@ -309,6 +332,7 @@ async function handleSave(e) {
 
     payload.r_multiple = exitPrice && stopLoss != null ? calcRMultiple(currentDirection, entryPrice, stopLoss, exitPrice) : null;
 
+    if (!chartEntryUrl && fromIdea?.screenshot_url && !editingId) chartEntryUrl = fromIdea.screenshot_url;
     if (chartEntryUrl) payload.chart_entry_url = chartEntryUrl;
     if (chartExitUrl) payload.chart_exit_url = chartExitUrl;
 
@@ -317,8 +341,12 @@ async function handleSave(e) {
       if (error) throw error;
       showToast('Trade aktualisiert.');
     } else {
-      const { error } = await supabase.from('trades').insert(payload);
+      const { data: created, error } = await supabase.from('trades').insert(payload).select('id').single();
       if (error) throw error;
+      if (fromIdea) {
+        await supabase.from('trade_ideas').update({ status: 'taken', trade_id: created.id }).eq('id', fromIdea.id);
+        fromIdea = null;
+      }
       showToast('Trade gespeichert.');
     }
 

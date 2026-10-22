@@ -1,4 +1,5 @@
 import { supabase } from './accounts.js';
+import { loadIdeas, renderIdeas, openIdeaEditor } from './ideas.js';
 
 const $ = (id) => document.getElementById(id);
 const DEFAULT_PAIRS = [
@@ -44,7 +45,14 @@ function bindEvents() {
   });
 
   $('addPairRowBtn').onclick = () => { addPairRow({ pair: '', bias: 'neutral', watchlist_status: 'watching', notes: '' }); updateGroupCounts(); };
-  $('addTradeRowBtn').onclick = () => addTradeRow({ pair: '', direction: 'long', setup_type: '', entry_zone: '', notes: '' });
+  $('addIdeaBtn').onclick = () => openIdeaEditor(null, { idea_date: currentDate }, () => loadPlanIdeas(currentDate));
+  const ideaFromHash = () => {
+    if (location.hash !== '#idee') return;
+    history.replaceState(null, '', location.pathname);
+    $('addIdeaBtn').click();
+  };
+  window.addEventListener('hashchange', ideaFromHash);
+  ideaFromHash();
   $('addCalendarRowBtn').onclick = () => addCalendarRow({ event_time: '', currency: '', event_name: '', impact: 'medium', notes: '' });
   $('savePlanBtn').onclick = savePlan;
 
@@ -106,7 +114,7 @@ async function loadPlan(dateStr) {
 
   clearAllGroups();
   $('calendarRows').innerHTML = '';
-  $('tradePlanRows').innerHTML = '';
+  loadPlanIdeas(dateStr);
 
   // Vorbelegung aus dem Fundamental-Tool und dem Kalender (nur für heute und künftige Tage)
   const tool = dateStr >= todayStr() ? await toolDefaults(dateStr) : { pairs: {}, events: [] };
@@ -129,9 +137,6 @@ async function loadPlan(dateStr) {
     const order = [...new Set([...sortedToolPairs(tool), ...Object.keys(saved)])];
     order.forEach(p => addPairRow(saved[p] || toolRow(p)));
 
-    const tradeRows = (plan.daily_plan_trades || []).sort((a, b) => a.sort_order - b.sort_order);
-    tradeRows.forEach(t => addTradeRow(t));
-
     setSaveStatus(`Gespeichert am ${new Date(plan.updated_at).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`);
   } else {
     currentPlanId = null;
@@ -146,7 +151,14 @@ async function loadPlan(dateStr) {
   }
 
   updateGroupCounts();
-  refreshBiasChecks();
+}
+
+async function loadPlanIdeas(dateStr) {
+  const ideas = await loadIdeas({ date: dateStr });
+  await renderIdeas($('ideaList'), ideas, {
+    empty: 'Für diesen Tag ist noch keine Idee geplant.',
+    onChange: () => loadPlanIdeas(currentDate),
+  });
 }
 
 // Pairs nach Stärke des Scores, unbekannte Pairs alphabetisch dahinter
@@ -240,10 +252,9 @@ function addPairRow(data) {
     <div class="pf-box"><label>Konfluenz-Faktoren</label><input type="text" class="confluence-input" value="${escapeAttr(data.confluence || '')}" placeholder="z.B. Carry, Seasonality, BoP, COT" /></div>
     <div class="pf-box"><label>Beschreibung</label><textarea class="pair-description" rows="3" placeholder="Begründung, News-Sentiment, Event-Risiken…">${escapeAttr(data.notes || '')}</textarea></div>
   `;
-  row.querySelector('.pair-row-remove').onclick = () => { row.remove(); updateGroupCounts(); refreshBiasChecks(); };
-  row.querySelector('.pair-name').oninput = refreshBiasChecks;
+  row.querySelector('.pair-row-remove').onclick = () => { row.remove(); updateGroupCounts(); };
   const biasSelect = row.querySelector('.bias-select');
-  biasSelect.onchange = () => { updateBiasSelectColor(biasSelect); refreshBiasChecks(); };
+  biasSelect.onchange = () => { updateBiasSelectColor(biasSelect); };
   updateBiasSelectColor(biasSelect);
   const scoreInput = row.querySelector('.score-input');
   scoreInput.oninput = () => updateScoreColor(scoreInput);
@@ -272,91 +283,6 @@ function updateScoreColor(input) {
 function updateGroupCounts() {
   Object.entries(GROUP_IDS).forEach(([status, groupId]) => {
     $(COUNT_IDS[status]).textContent = $(groupId).children.length;
-  });
-}
-
-function addTradeRow(data) {
-  const row = document.createElement('div');
-  row.className = 'trade-plan-row';
-  row.innerHTML = `
-    <div class="trade-plan-row-top">
-      <input type="text" class="pair-name" value="${escapeAttr(data.pair || '')}" placeholder="Pair" />
-      <select class="direction-select">
-        <option value="long" ${data.direction === 'long' ? 'selected' : ''}>Long</option>
-        <option value="short" ${data.direction === 'short' ? 'selected' : ''}>Short</option>
-      </select>
-      <input type="text" class="setup-input" value="${escapeAttr(data.setup_type || '')}" placeholder="Setup-Typ" />
-      <input type="text" class="entry-input" value="${escapeAttr(data.entry_zone || '')}" placeholder="Entry-Zone/Preis" />
-      <div style="display:flex; align-items:center; gap:6px;">
-        <span class="bias-check-badge unknown">–</span>
-        <button type="button" class="pair-row-remove" title="Entfernen">✕</button>
-      </div>
-    </div>
-    <div class="trade-plan-row-bottom">
-      <input type="text" class="notes-input" value="${escapeAttr(data.notes || '')}" placeholder="Notizen" />
-      <div class="plan-screenshot-upload">
-        <input type="file" class="screenshot-input" accept="image/*" />
-        <div class="plan-screenshot-preview"></div>
-      </div>
-    </div>
-  `;
-  row.querySelector('.pair-row-remove').onclick = () => row.remove();
-  row.querySelector('.pair-name').oninput = refreshBiasChecks;
-  row.querySelector('.direction-select').onchange = refreshBiasChecks;
-
-  const preview = row.querySelector('.plan-screenshot-preview');
-  if (data.screenshot_url) {
-    preview.innerHTML = `<img src="${data.screenshot_url}" />`;
-    row.dataset.screenshotUrl = data.screenshot_url;
-  }
-  row.querySelector('.screenshot-input').onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    preview.innerHTML = '<span style="font-size:11px; color:var(--text-faint);">Lädt hoch…</span>';
-    try {
-      const ext = file.name.split('.').pop();
-      const path = `plan-${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from('trade-screenshots').upload(path, file);
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from('trade-screenshots').getPublicUrl(path);
-      row.dataset.screenshotUrl = urlData.publicUrl;
-      preview.innerHTML = `<img src="${urlData.publicUrl}" />`;
-    } catch (err) {
-      preview.innerHTML = '<span style="font-size:11px; color:var(--loss);">Fehler</span>';
-      console.error(err);
-    }
-  };
-
-  $('tradePlanRows').appendChild(row);
-  refreshBiasChecks();
-}
-
-function refreshBiasChecks() {
-  const biasMap = {};
-  document.querySelectorAll('.pair-row').forEach(r => {
-    const pair = r.querySelector('.pair-name').value.trim().toUpperCase();
-    if (pair) biasMap[pair] = r.querySelector('.bias-select').value;
-  });
-
-  document.querySelectorAll('#tradePlanRows .trade-plan-row').forEach(r => {
-    const pair = r.querySelector('.pair-name').value.trim().toUpperCase();
-    const direction = r.querySelector('.direction-select').value;
-    const badge = r.querySelector('.bias-check-badge');
-    const bias = biasMap[pair];
-
-    if (!pair || bias === undefined) {
-      badge.textContent = 'Kein Bias';
-      badge.className = 'bias-check-badge unknown';
-    } else if (bias === 'neutral') {
-      badge.textContent = 'Bias neutral';
-      badge.className = 'bias-check-badge unknown';
-    } else if (bias === direction) {
-      badge.textContent = '✓ Stimmt überein';
-      badge.className = 'bias-check-badge match';
-    } else {
-      badge.textContent = `⚠ Gegen Bias (${bias === 'long' ? 'Long' : 'Short'})`;
-      badge.className = 'bias-check-badge mismatch';
-    }
   });
 }
 
@@ -401,23 +327,6 @@ async function savePlan() {
     }).filter(r => r.pair);
     if (rows.length > 0) {
       const { error } = await supabase.from('daily_plan_pairs').insert(rows);
-      if (error) throw error;
-    }
-
-    // Planned trades
-    await supabase.from('daily_plan_trades').delete().eq('daily_plan_id', planId);
-    const tradeRows = Array.from(document.querySelectorAll('.trade-plan-row')).map((row, idx) => ({
-      daily_plan_id: planId,
-      pair: row.querySelector('.pair-name').value.trim().toUpperCase(),
-      direction: row.querySelector('.direction-select').value,
-      setup_type: row.querySelector('.setup-input').value.trim() || null,
-      entry_zone: row.querySelector('.entry-input').value.trim() || null,
-      notes: row.querySelector('.notes-input').value.trim() || null,
-      screenshot_url: row.dataset.screenshotUrl || null,
-      sort_order: idx,
-    })).filter(r => r.pair);
-    if (tradeRows.length > 0) {
-      const { error } = await supabase.from('daily_plan_trades').insert(tradeRows);
       if (error) throw error;
     }
 

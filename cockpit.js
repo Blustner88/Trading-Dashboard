@@ -1,5 +1,6 @@
 import { supabase, drawdownOf } from './accounts.js';
 import { toast } from './nav.js';
+import { loadIdeas, renderIdeas, openIdeaEditor } from './ideas.js';
 
 // Cockpit: Tagesstatus, Pairs mit Score (−100…+100), Währungsstärke, Termine, News.
 // Schreibt nur Watchlist-Status und Notiz je Pair in den Tagesplan von heute
@@ -338,7 +339,7 @@ async function openPair(pair) {
     </div>
     ${sbar(p.score)}
     <div class="pd-sec pd-watch">
-      <h4>Mein Plan heute</h4>
+      <h4 style="display:flex;justify-content:space-between;align-items:center">Mein Plan heute <button type="button" class="btn-ghost sm" id="pdIdea">+ Trade-Idee</button></h4>
       <div class="segmented" id="pdStatus">${STATUS.map(([v, l]) => `<button type="button" class="seg-btn${v === status ? ' active' : ''}" data-v="${v}">${l}</button>`).join('')}</div>
       <textarea id="pdNote" rows="2" placeholder="Notiz zum Pair (Zone, Trigger, Einwände)">${esc(row.notes || '')}</textarea>
       <div class="pd-saved" id="pdSaved" aria-live="polite"></div>
@@ -369,6 +370,10 @@ async function openPair(pair) {
     save();
   };
   sheet.querySelector('#pdNote').oninput = () => { clearTimeout(noteTimer); noteTimer = setTimeout(save, 800); };
+  sheet.querySelector('#pdIdea').onclick = () => {
+    closeSheet();
+    openIdeaEditor(null, { pair, direction: d === 'short' ? 'short' : 'long' }, loadIdeaList);
+  };
 
   const since = new Date(Date.now() - 48 * 3600000).toISOString();
   const { data: news } = await supabase.from('fb_news')
@@ -445,8 +450,28 @@ async function loadTopNews() {
 }
 
 // ---------------------------------------------------------------------------
+// Trade-Ideen: offene (letzte 14 Tage) + heute abgeschlossene
+// ---------------------------------------------------------------------------
+async function loadIdeaList() {
+  const today = localDate();
+  const all = await loadIdeas({ sinceDays: 14 });
+  const shown = all.filter(i => ['idea', 'order'].includes(i.status) || i.idea_date === today);
+  const open = shown.filter(i => ['idea', 'order'].includes(i.status)).length;
+  $('ideasHint').textContent = open ? `${open} offen` : 'offen und von heute';
+  await renderIdeas($('ideaList'), shown, { empty: 'Noch keine Idee geplant. Über „+ Idee“ oder im Pair-Detail anlegen.', onChange: loadIdeaList });
+}
+$('addIdeaBtn').onclick = () => openIdeaEditor(null, {}, loadIdeaList);
+const ideaFromHash = () => {
+  if (location.hash !== '#idee') return;
+  history.replaceState(null, '', location.pathname);
+  openIdeaEditor(null, {}, loadIdeaList);
+};
+window.addEventListener('hashchange', ideaFromHash);
+
+// ---------------------------------------------------------------------------
 renderHello();
-await Promise.all([loadRisk(), loadEvents(), loadProposals(), loadAccounts(), loadFundamentals(), loadPlan(), loadTopNews()]);
+await Promise.all([loadRisk(), loadEvents(), loadProposals(), loadAccounts(), loadFundamentals(), loadPlan(), loadTopNews(), loadIdeaList()]);
+ideaFromHash();
 renderPairs();
 renderStatus();
 setInterval(() => { renderHello(); renderStatus(); }, 30000);
