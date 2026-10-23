@@ -121,23 +121,29 @@ function groupTable(title, closed, key) {
   return `<tr class="grp"><td colspan="5">${title}</td></tr>${body}`;
 }
 
+// Hochrechnung nur für echte Setups und genommene Trades, je Gruppe ab deren erstem
+// Vorschlag und erst ab 30 Trades. Die alten "blinden" Vorschläge ohne Setup (bis
+// 07.10.2026, andere Logik) blähen das Ergebnis sonst auf.
+const PROJECTION_MIN = 30;
 function projectionTable(closed) {
-  const start = Math.min(...closed.map(r => new Date(r.shadow_start || r.created_at).getTime()));
-  const weeks = Math.max((Date.now() - start) / (7 * 86400000), 1);   // unter 1 Woche nicht aufblasen
   const groups = [
-    ['Alle Vorschläge', closed],
-    ['Mit BITR-Setup', closed.filter(r => r.entry_price != null)],
+    ['Setups (Entry/SL/TP)', closed.filter(r => r.entry_price != null)],
     ['Genommen', closed.filter(r => r.status === 'taken')],
   ].filter(([, rows]) => rows.length);
   const body = groups.map(([label, rows]) => {
+    if (rows.length < PROJECTION_MIN) {
+      return `<tr><td>${label}<span class="s">${rows.length} Trades</span></td><td colspan="${HORIZONS.length}" class="desk-hint">erst ${rows.length} von ${PROJECTION_MIN} Trades — noch keine Hochrechnung</td></tr>`;
+    }
+    const start = Math.min(...rows.map(r => new Date(r.shadow_start || r.created_at).getTime()));
+    const weeks = Math.max((Date.now() - start) / (7 * 86400000), 1);   // unter 1 Woche nicht aufblasen
     const perWeek = rows.reduce((a, r) => a + Number(r.shadow_r), 0) / weeks;
-    return `<tr><td>${label}<span class="s">${(rows.length / weeks).toFixed(1)}/Wo.</span></td>${HORIZONS.map(([, w]) => {
+    return `<tr><td>${label}<span class="s">${(rows.length / weeks).toFixed(1)}/Wo. · seit ${weeks.toFixed(1)} Wo.</span></td>${HORIZONS.map(([, w]) => {
       const r = perWeek * w;
       return `<td class="r ${rClass(r)}">${signed(r, 1)}R<span class="s">${signed(r * RISK_PERCENT, 1)} %</span></td>`;
     }).join('')}</tr>`;
   }).join('');
   return `
-    <h4 class="shadow-sub">Hochrechnung <span class="desk-hint">Tempo der letzten ${weeks.toFixed(1)} Wo. · ${RISK_PERCENT} % Risiko/Trade</span></h4>
+    <h4 class="shadow-sub">Hochrechnung <span class="desk-hint">${RISK_PERCENT} % Risiko/Trade</span></h4>
     <div class="shadow-scroll"><table class="shadow-table proj">
       <thead><tr><th></th>${HORIZONS.map(([n]) => `<th>${n}</th>`).join('')}</tr></thead>
       <tbody>${body}</tbody>
@@ -147,7 +153,7 @@ function projectionTable(closed) {
 
 async function loadShadow() {
   const { data } = await supabase.from('trade_proposals')
-    .select('pair, status, conviction, score, entry_price, created_at, shadow_start, shadow_result, shadow_r')
+    .select('pair, status, conviction, score, entry_price, setup_type, created_at, shadow_start, shadow_result, shadow_r')
     .in('shadow_result', [...CLOSED, 'open']);
   const rows = (data || []).filter(r => r.shadow_r != null);
   const closed = rows.filter(r => CLOSED.includes(r.shadow_result));
@@ -162,6 +168,7 @@ async function loadShadow() {
       <tbody>
         <tr class="total"><td>Gesamt</td>${statsCells(closed)}</tr>
         ${groupTable('Nach deiner Entscheidung', closed, r => SHADOW_STATUS_LABEL[r.status] || r.status)}
+        ${groupTable('Nach Setup-Typ', closed, r => r.setup_type || 'ohne Setup (alt, bis 07.10.)')}
         ${groupTable('Nach Conviction', closed, r => r.conviction || '?')}
         ${groupTable('Nach Score', closed, r => scoreBucket(r.score))}
       </tbody>
