@@ -376,11 +376,13 @@ async function openPair(pair) {
 
   const since = new Date(Date.now() - 48 * 3600000).toISOString();
   const { data: news } = await supabase.from('fb_news')
-    .select('title, url, source, published_at, fb_news_impacts!inner(currency, direction, importance)')
+    .select('title, url, source, published_at, bullets, fb_news_impacts!inner(currency, direction, importance)')
     .in('fb_news_impacts.currency', [b, q]).gte('published_at', since)
     .order('published_at', { ascending: false }).limit(6);
   const box = sheet.querySelector('#pdNews');
-  if (box) box.innerHTML = (news || []).length ? news.map(newsLine).join('') : '<p class="empty">Keine eingeordneten Schlagzeilen.</p>';
+  const lage = [b, q].map(c => briefs[c]).filter(Boolean).map(x => briefHtml(x)).join('');
+  if (box) box.innerHTML = (lage ? `<div class="ck-briefs">${lage}</div>` : '')
+    + ((news || []).length ? news.map(newsLine).join('') : '<p class="empty">Keine eingeordneten Schlagzeilen.</p>');
 }
 
 // ---------------------------------------------------------------------------
@@ -453,13 +455,45 @@ function newsLine(n) {
   const tags = n.fb_news_impacts.map(i => `<span class="${i.direction > 0 ? 'pos' : 'neg'}">${esc(i.currency)} ${i.direction > 0 ? '▲' : '▼'}</span>`).join(' ')
     + ` <span class="imp" title="Wichtigkeit ${imp} von 5">${'●'.repeat(imp)}${'○'.repeat(5 - imp)}</span>`;
   const href = /^https?:\/\//i.test(n.url || '') ? esc(n.url) : '#';
-  return `<div class="ck-n"><span class="meta">${esc(n.source)} · ${ago(n.published_at)} · ${tags}</span><a href="${href}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a></div>`;
+  const bullets = Array.isArray(n.bullets) && n.bullets.length
+    ? `<details class="ck-more"><summary>Kurz zusammengefasst</summary><ul>${n.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul></details>` : '';
+  return `<div class="ck-n"><span class="meta">${esc(n.source)} · ${ago(n.published_at)} · ${tags}</span><a href="${href}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a>${bullets}</div>`;
+}
+
+// Lage je Währung (fb_latest_news_briefs, vom Bot alle 2 h aus den Schlagzeilen zusammengefasst)
+const BRIEF_ORDER = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD', 'NZD', 'NOK', 'SEK'];
+const TONE = { 1: ['▲', 'pos', 'eher stützend'], 0: ['◆', '', 'gemischt'], [-1]: ['▼', 'neg', 'eher belastend'] };
+let briefs = {};
+let briefSources = {};
+
+function briefHtml(b, open = false) {
+  const [sym, c, word] = TONE[b.tone] || TONE[0];
+  const src = (b.news_ids || []).map(id => briefSources[id]).filter(Boolean);
+  return `<details class="ck-brief"${open ? ' open' : ''}>
+    <summary><span class="cc">${esc(b.currency)}</span><span class="tone ${c}" title="${word}" aria-label="${word}">${sym}</span><span class="sum">${esc(b.summary)}</span></summary>
+    <ul>${(b.bullets || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+    ${src.length ? `<div class="src">Quellen: ${src.map(s => `<a href="${/^https?:\/\//i.test(s.url || '') ? esc(s.url) : '#'}" target="_blank" rel="noopener noreferrer">${esc(s.source)}</a>`).join(' · ')}</div>` : ''}
+  </details>`;
+}
+
+async function loadBriefs() {
+  const { data } = await supabase.from('fb_latest_news_briefs').select('currency, as_of, summary, bullets, tone, news_ids');
+  briefs = Object.fromEntries((data || []).map(b => [b.currency, b]));
+  const ids = [...new Set((data || []).flatMap(b => b.news_ids || []))];
+  if (ids.length) {
+    const { data: src } = await supabase.from('fb_news').select('id, url, source').in('id', ids);
+    briefSources = Object.fromEntries((src || []).map(s => [s.id, s]));
+  }
+  const list = BRIEF_ORDER.map(c => briefs[c]).filter(Boolean);
+  const newest = list.map(b => b.as_of).sort().pop();
+  if (newest) $('briefStand').textContent = `Stand ${new Date(newest).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} · antippen für Details`;
+  $('briefs').innerHTML = list.length ? list.map(b => briefHtml(b)).join('') : '<p class="empty">Noch keine Zusammenfassung vorhanden.</p>';
 }
 
 async function loadTopNews() {
   const since = new Date(Date.now() - 24 * 3600000).toISOString();
   const { data } = await supabase.from('fb_news')
-    .select('title, url, source, published_at, fb_news_impacts!inner(currency, direction, importance)')
+    .select('title, url, source, published_at, bullets, fb_news_impacts!inner(currency, direction, importance)')
     .eq('relevant', true).gte('published_at', since).order('published_at', { ascending: false }).limit(80);
   const top = (data || [])
     .map(n => ({ ...n, s: Math.max(...n.fb_news_impacts.map(i => Number(i.importance))) }))
@@ -489,7 +523,7 @@ window.addEventListener('hashchange', ideaFromHash);
 
 // ---------------------------------------------------------------------------
 renderHello();
-await Promise.all([loadRisk(), loadEvents(), loadProposals(), loadAccounts(), loadFundamentals(), loadPlan(), loadTopNews(), loadIdeaList()]);
+await Promise.all([loadRisk(), loadEvents(), loadProposals(), loadAccounts(), loadFundamentals(), loadPlan(), loadTopNews(), loadBriefs(), loadIdeaList()]);
 ideaFromHash();
 renderPairs();
 renderStatus();

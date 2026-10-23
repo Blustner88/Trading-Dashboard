@@ -137,3 +137,29 @@
 .pd-explain { font-size: 12.5px; color: var(--text-muted); margin: 10px 0 0; line-height: 1.5; }
 .pd-explain a { color: var(--indigo-bright); }
 .pd-owner-note { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-faint); margin-left: 6px; font-size: 11px; }
+
+/* ---------- Nachrichtenlage je Währung (aufklappbar) ---------- */
+.ck-briefs { display: flex; flex-direction: column; }
+.ck-brief { border-top: 1px solid var(--border-soft); }
+.ck-brief:first-child { border-top: 0; }
+.ck-brief summary {
+  display: grid; grid-template-columns: 38px 16px minmax(0, 1fr) 14px; align-items: center; gap: 8px;
+  padding: 9px 0; cursor: pointer; list-style: none; font-size: 13px;
+}
+.ck-brief summary::-webkit-details-marker { display: none; }
+.ck-brief summary::after { content: '›'; color: var(--text-faint); font-size: 16px; transition: transform .15s; justify-self: end; }
+.ck-brief[open] summary::after { transform: rotate(90deg); }
+.ck-brief .cc { font-family: var(--font-mono); font-weight: 700; }
+.ck-brief .tone { font-size: 11px; color: var(--text-faint); text-align: center; }
+.ck-brief .tone.pos { color: var(--profit); }
+.ck-brief .tone.neg { color: var(--loss); }
+.ck-brief .sum { color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ck-brief[open] .sum { white-space: normal; color: var(--text); }
+.ck-brief ul, .ck-more ul { margin: 0 0 8px; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; line-height: 1.45; color: var(--text-muted); }
+.ck-brief .src { font-size: 11.5px; color: var(--text-faint); margin: 0 0 10px; }
+.ck-brief .src a { color: var(--text-muted); }
+.ck-sub { display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); margin: 18px 0 10px; }
+.ck-sub-link { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--indigo-bright); text-decoration: none; }
+.ck-more summary { cursor: pointer; font-size: 11.5px; color: var(--indigo-bright); margin-top: 2px; width: fit-content; }
+.ck-more ul { margin-top: 6px; }
+.pd-sec .ck-briefs { margin-bottom: 12px; }

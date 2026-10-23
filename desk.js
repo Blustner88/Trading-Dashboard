@@ -203,6 +203,7 @@ function renderNews() {
         <div class="news-meta"><span>${esc(n.source)} · ${ago(n.published_at)}</span><span class="news-tags">${tags}</span></div>
         <a href="${/^https?:\/\//i.test(n.url || '') ? esc(n.url) : '#'}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a>
         ${n.summary ? `<p>${esc(n.summary)}</p>` : ''}
+        ${Array.isArray(n.bullets) && n.bullets.length ? `<details class="news-more"><summary>Kurz zusammengefasst</summary><ul>${n.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul></details>` : ''}
       </div>`;
   }).join('') : '<p class="desk-empty">Keine eingeordneten Schlagzeilen in den letzten 48 h.</p>';
 }
@@ -210,7 +211,7 @@ function renderNews() {
 async function loadNews() {
   const since = new Date(Date.now() - 48 * 3600000).toISOString();
   const { data } = await supabase.from('fb_news')
-    .select('id, title, url, source, published_at, summary, fb_news_impacts!inner(currency, direction, importance)')
+    .select('id, title, url, source, published_at, summary, bullets, fb_news_impacts!inner(currency, direction, importance)')
     .eq('relevant', true).gte('published_at', since)
     .order('published_at', { ascending: false }).limit(150);
   newsRows = data || [];

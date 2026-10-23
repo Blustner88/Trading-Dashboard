@@ -290,3 +290,5 @@
   .desk-kpi .kpi-label { font-size: 9.5px; letter-spacing: .02em; line-height: 1.2; }
   .desk-kpi .kpi-value { font-size: 18px; }
 }
+.news-more summary { cursor: pointer; font-size: 11.5px; color: var(--indigo-bright); width: fit-content; margin-top: 4px; }
+.news-more ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.45; color: var(--text-muted); }
