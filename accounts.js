@@ -73,6 +73,14 @@ function showLogin(mode = 'login') {
     const msg = box.querySelector('.td-msg');
     const btn = form.querySelector('button[type=submit]');
     const say = (text, cls = 'err') => { msg.textContent = text; msg.className = `td-msg ${cls}`; };
+    // Rückkehr aus einem abgelaufenen/benutzten Mail-Link: Supabase hängt #error=… an
+    const linkError = new URLSearchParams(location.hash.slice(1)).get('error_code');
+    if (linkError) {
+      say(linkError === 'otp_expired'
+        ? 'Der Link aus der Mail ist abgelaufen oder wurde schon benutzt. Bitte über „Passwort vergessen?“ einen neuen anfordern.'
+        : 'Der Link aus der Mail hat nicht funktioniert. Bitte einen neuen anfordern.');
+      history.replaceState(null, '', location.pathname);
+    }
     (form.email && !form.email.value ? form.email : form.password).focus();
 
     form.addEventListener('submit', async (e) => {
