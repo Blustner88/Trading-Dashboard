@@ -133,3 +133,7 @@
   .ck-row { grid-template-columns: minmax(0, 1fr) minmax(0, .9fr) 56px; gap: 10px; }
   .ck-state { font-size: 20px; }
 }
+
+.pd-explain { font-size: 12.5px; color: var(--text-muted); margin: 10px 0 0; line-height: 1.5; }
+.pd-explain a { color: var(--indigo-bright); }
+.pd-owner-note { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-faint); margin-left: 6px; font-size: 11px; }

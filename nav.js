@@ -40,12 +40,13 @@ const AREAS = [
   ] },
   { key: 'settings', label: 'Einstellungen', hidden: true, pages: [
     { href: 'settings.html', label: 'Einstellungen' },
+    { href: 'methodik.html', label: 'Methodik & Hinweise' },
   ] },
 ];
 
 // Pakete der Produkt-Ansicht (Preise nur als Platzhalter für die Vorschau)
 export const PLANS = [
-  { key: 'bias', label: 'Bias', price: '19 €', text: 'Cockpit: Tagesstatus, Währungsstärke, Pair-Bias, Termine, News, Push' },
+  { key: 'bias', label: 'Cockpit', price: '19 €', text: 'Tagesstatus, Währungsstärke, fundamentale Tendenz je Pair, Termine, News, Push' },
   { key: 'pro', label: 'Pro', price: '29 €', text: 'dazu Trade-Ideen, Journal, Auswertung, Backtest, Level' },
   { key: 'prop', label: 'Prop-Trader', price: '39 €', text: 'dazu Konten-Limits, Business, Buchungen, Steuer & EÜR' },
 ];
@@ -591,5 +592,18 @@ export function linkLabels(root = document) {
   });
 }
 
-const a11yInit = () => { watchModals(); skipLink(); linkLabels(); };
+// Hinweis am Seitenende: Informationsangebot, keine Anlageberatung
+export const RISK_NOTE = 'Informationsangebot, keine Anlageberatung. Scores beschreiben die fundamentale Lage '
+  + 'und sind keine Kauf- oder Verkaufsempfehlung. Der Handel mit Devisen und CFDs ist sehr riskant und kann zum '
+  + 'Totalverlust des eingesetzten Kapitals führen.';
+function footer() {
+  const app = document.querySelector('.app');
+  if (!app || app.querySelector('.app-foot')) return;
+  const f = document.createElement('footer');
+  f.className = 'app-foot';
+  f.innerHTML = `${RISK_NOTE} <a href="methodik.html">Methodik &amp; Hinweise</a>`;
+  app.append(f);
+}
+
+const a11yInit = () => { watchModals(); skipLink(); linkLabels(); footer(); };
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', a11yInit); else a11yInit();

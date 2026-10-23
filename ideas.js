@@ -38,6 +38,7 @@ function levelProblem(i) {
   return null;
 }
 
+const TENDENZ = { strong_long: 'stark positiv', long: 'positiv', neutral: 'neutral', short: 'negativ', strong_short: 'stark negativ' };
 let biasCache = null;
 export async function biasMap() {
   if (biasCache) return biasCache;
@@ -49,8 +50,8 @@ function biasFit(i, bias) {
   const b = bias?.[i.pair];
   if (!b) return null;
   const d = b.bias.endsWith('long') ? 'long' : b.bias.endsWith('short') ? 'short' : 'neutral';
-  if (d === 'neutral') return ['Bias neutral', ''];
-  return d === i.direction ? ['mit Bias', 'pos'] : ['gegen Bias', 'neg'];
+  if (d === 'neutral') return ['Tendenz neutral', ''];
+  return d === i.direction ? ['passt zur Tendenz', 'pos'] : ['gegen die Tendenz', 'neg'];
 }
 
 export async function loadIdeas({ date = null, openOnly = false, sinceDays = 14 } = {}) {
@@ -191,7 +192,7 @@ export async function openIdeaEditor(idea = null, defaults = {}, onChange = () =
     $('iWarn').hidden = !p;
     $('iWarn').textContent = p ? '⚠ ' + p : '';
     const fit = biasFit(v, bias), b = bias[v.pair];
-    $('iBias').innerHTML = b ? `Bias: <span class="${fit?.[1] || ''}">${esc(b.bias.replace('_', ' '))} (${b.score > 0 ? '+' : ''}${b.score})${fit && fit[1] ? ' · ' + fit[0] : ''}</span>` : '';
+    $('iBias').innerHTML = b ? `Fundamentale Tendenz: <span class="${fit?.[1] || ''}">${TENDENZ[b.bias] || esc(b.bias)} (${b.score > 0 ? '+' : ''}${b.score})${fit && fit[1] ? ' · ' + fit[0] : ''}</span>` : '';
   };
   sheet.querySelector('#iDir').onclick = (e) => { const b = e.target.closest('.seg-btn'); if (b) { direction = b.dataset.value; refresh(); } };
   sheet.querySelector('#iStatus').onclick = (e) => { const b = e.target.closest('.seg-btn'); if (b) { status = b.dataset.value; refresh(); } };

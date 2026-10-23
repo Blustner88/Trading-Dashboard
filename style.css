@@ -569,3 +569,19 @@ button[aria-busy="true"] { cursor: wait; opacity: .7; }
 .skip-link:focus { top: 12px; }
 main:focus { outline: none; }
 [role="button"]:not(button) { cursor: pointer; }
+
+/* Kleiner Info-Link (?) neben Überschriften */
+.info-link {
+  display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; margin-left: 4px;
+  border: 1px solid var(--border); color: var(--text-faint); font-size: 11px; font-weight: 700; text-decoration: none;
+  vertical-align: 2px; font-family: var(--font-body);
+}
+.info-link:hover { color: var(--indigo-bright); border-color: var(--indigo-bright); }
+
+/* Hinweis am Seitenende (jede Seite, über nav.js) */
+.app-foot {
+  margin-top: 28px; padding-top: 14px; font-size: 11.5px; line-height: 1.5; color: var(--text-faint);
+  border-top: 1px solid var(--border-soft);
+}
+.app-foot a { color: var(--text-muted); }
+@media print { .app-foot { display: none; } }

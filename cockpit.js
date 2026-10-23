@@ -21,7 +21,8 @@ const sbar = (v, max = 100) => {
 const WATCH_N = 8;               // so viele Pairs mit dem stärksten Bias stehen automatisch auf der Watchlist
 const STATUS = [['watching', 'Beobachten'], ['forming', 'Formt sich'], ['ready', 'Bereit'], ['no_interest', 'Kein Interesse']];
 const STATUS_BADGE = { ready: ['Bereit', 'pos'], forming: ['Formt sich', 'warn'], no_interest: ['Kein Interesse', ''] };
-const BIAS_LABEL = { strong_long: 'Stark long', long: 'Long', neutral: 'Neutral', short: 'Short', strong_short: 'Stark short' };
+// Bewusst neutrale Wörter: der Score beschreibt die fundamentale Lage, er ist kein Kauf-/Verkaufssignal
+const BIAS_LABEL = { strong_long: 'Stark positiv', long: 'Positiv', neutral: 'Neutral', short: 'Negativ', strong_short: 'Stark negativ' };
 const SHORT = { rates: 'Zinsen', cot: 'COT', trend: 'Trend', seasonality: 'Saison', news: 'News', macro_labor: 'Arbeitsmarkt', macro_infl: 'Inflation', risk: 'Risiko', yield2y: '2J-Rendite', yield2y_mom: 'Renditetrend', macro: 'Makro' };
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD', 'NZD', 'NOK', 'SEK'];
 const FILTER_KEY = 'td_ck_filter';
@@ -56,7 +57,7 @@ function renderHello() {
 }
 
 // ---------------------------------------------------------------------------
-// Tagesstatus: Handelbar / Vorsicht / Finger weg
+// Tagesstatus: Ruhig / Achtung / Kritisch (Termine, Konto-Limits, Risikostimmung)
 // ---------------------------------------------------------------------------
 async function loadRisk() {
   const { data } = await supabase.from('fb_risk_indicators').select('date, value')
@@ -170,7 +171,7 @@ function renderStatus() {
   if (propCount && !product) reasons.push([`${propCount} Vorschlag${propCount > 1 ? 'e' : ''} wartet`, false]);
 
   $('statusCard').dataset.level = level;
-  $('ckState').textContent = { go: 'Handelbar', caution: 'Vorsicht', stop: 'Finger weg' }[level];
+  $('ckState').textContent = { go: 'Ruhig', caution: 'Achtung', stop: 'Kritisch' }[level];
   $('ckReasons').innerHTML = reasons.map(([t, hot]) => `<li class="${hot ? 'hot' : ''}">${esc(t)}</li>`).join('');
   renderEvents();
 }
@@ -333,13 +334,16 @@ async function openPair(pair) {
       <button class="modal-close" style="margin-left:auto" aria-label="Schließen">✕</button>
     </div>
     ${sbar(p.score)}
+    <p class="pd-explain">${d === 'neutral' ? `${b} und ${q} sind fundamental etwa gleich stark.`
+      : `${d === 'long' ? b : q} ist fundamental derzeit stärker als ${d === 'long' ? q : b}.`}
+      Beschreibung der Lage, kein Kauf- oder Verkaufssignal. <a href="methodik.html">So entsteht der Score</a></p>
     <div class="pd-sec pd-watch">
       <h4 style="display:flex;justify-content:space-between;align-items:center">Mein Plan heute <button type="button" class="btn-ghost sm" id="pdIdea">+ Trade-Idee</button></h4>
       <div class="segmented" id="pdStatus">${STATUS.map(([v, l]) => `<button type="button" class="seg-btn${v === status ? ' active' : ''}" data-v="${v}">${l}</button>`).join('')}</div>
       <textarea id="pdNote" rows="2" placeholder="Notiz zum Pair (Zone, Trigger, Einwände)">${esc(row.notes || '')}</textarea>
       <div class="pd-saved" id="pdSaved" aria-live="polite"></div>
     </div>
-    <div class="pd-sec"><h4>Warum ${d === 'neutral' ? 'neutral' : d}?</h4>${factors || '<p class="empty">Keine Faktordaten.</p>'}</div>
+    <div class="pd-sec" data-owner><h4>Aufschlüsselung nach Faktoren <small class="pd-owner-note">nur in deiner Ansicht</small></h4>${factors || '<p class="empty">Keine Faktordaten.</p>'}</div>
     ${evs.length ? `<div class="pd-sec"><h4>Termine</h4>${evs.map(e => `<div class="pd-ev"><span class="t">${hhmm(e.time)}</span><span><b>${esc(e.currency)}</b> ${esc(e.name)}</span></div>`).join('')}</div>` : ''}
     <div class="pd-sec"><h4>News (48 h)</h4><div class="ck-news" id="pdNews"><span class="skel line"></span><span class="skel line"></span></div></div>`;
   document.body.append(backdrop, sheet);

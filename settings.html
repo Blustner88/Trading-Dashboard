@@ -55,10 +55,10 @@
         <div class="st-actions"><button class="btn-ghost sm" id="pushTest" hidden>Test senden</button><button class="btn-primary sm" id="pushToggle">Einschalten</button></div></div>
       <fieldset class="st-fs" id="pushPrefs" disabled>
         <legend>Was soll gemeldet werden?</legend>
-        <label class="st-check"><input type="checkbox" data-pref="bias"> <span><b>Bias gekippt</b><small>wenn ein Pair von Long, Short oder Neutral wechselt (nach der täglichen Berechnung)</small></span></label>
+        <label class="st-check"><input type="checkbox" data-pref="bias"> <span><b>Tendenz gewechselt</b><small>wenn ein Pair zwischen positiv, neutral und negativ wechselt (nach der täglichen Berechnung)</small></span></label>
         <label class="st-check"><input type="checkbox" data-pref="event"> <span><b>Wichtige Termine</b><small>etwa 30 Minuten vor High-Impact-News deiner Währungen</small></span></label>
         <label class="st-check" data-owner><input type="checkbox" data-pref="error"> <span><b>Systemmeldungen</b><small>Fehler des Trading-Bots, z. B. leeres API-Guthaben oder Abweichungen beim FundedNext-Abgleich</small></span></label>
-        <div class="st-row st-quiet"><div><b>Ruhezeit</b><small>Keine Meldungen in diesem Zeitraum. Bias und Systemmeldungen kommen danach, Termine entfallen.</small></div>
+        <div class="st-row st-quiet"><div><b>Ruhezeit</b><small>Keine Meldungen in diesem Zeitraum. Tendenz-Wechsel und Systemmeldungen kommen danach, Termine entfallen.</small></div>
           <div class="st-times"><input type="time" id="quietStart" aria-label="Ruhezeit von"> <span>bis</span> <input type="time" id="quietEnd" aria-label="Ruhezeit bis"></div></div>
       </fieldset>
     </section>

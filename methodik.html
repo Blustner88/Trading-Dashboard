@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3lSuu7BhWmWHBsCg/ASPbvs2z48JfANPqTuP2HNud9s='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://rabbtdooayruveribarq.supabase.co; connect-src 'self' https://rabbtdooayruveribarq.supabase.co wss://rabbtdooayruveribarq.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- app-head -->
+<meta name="theme-color" content="#0b0d12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trading">
+<script>try{var t=localStorage.getItem('td_theme');if(t){document.documentElement.dataset.theme=t;}var l=t?t==='light':matchMedia('(prefers-color-scheme: light)').matches;document.querySelector('meta[name=theme-color]').content=l?'#f5f6fa':'#0b0d12';}catch(e){}</script>
+<link rel="modulepreload" href="nav.js">
+<!-- /app-head -->
+<title>Methodik &amp; Hinweise — Trading Journal</title>
+<meta name="description" content="Wie der fundamentale Score entsteht, wofür er gedacht ist und wo seine Grenzen liegen.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <nav class="tabnav"></nav>
+  </header>
+
+  <main class="dash-main settings doc">
+    <h1 class="st-title">Methodik &amp; Hinweise</h1>
+    <p class="doc-lead">Der Score fasst die fundamentale Lage einer Währung in einer Zahl zusammen. Er ersetzt die tägliche
+      Recherche über Zinsen, Wirtschaftsdaten, Positionierung und Nachrichten, aber nicht deine eigene Entscheidung.</p>
+
+    <section class="panel">
+      <div class="panel-header"><h3>Was in den Score einfließt</h3></div>
+      <ul class="doc-list">
+        <li><b>Geldpolitik:</b> Leitzinsen und die Zinserwartungen am Markt</li>
+        <li><b>Wirtschaftsdaten:</b> Entwicklung von Arbeitsmarkt, Inflation und Konjunktur</li>
+        <li><b>Positionierung:</b> wie große Marktteilnehmer laut den wöchentlichen COT-Daten aufgestellt sind</li>
+        <li><b>Marktlage:</b> mittelfristige Kursentwicklung, saisonale Muster und die allgemeine Risikostimmung</li>
+        <li><b>Nachrichten:</b> aktuelle Schlagzeilen, automatisiert danach eingeordnet, ob sie eine Währung stützen oder belasten</li>
+      </ul>
+      <p class="doc-p">Daten stammen aus öffentlich zugänglichen Quellen (u. a. Zentralbanken, Statistikämter, CFTC,
+        Wirtschaftskalender und Nachrichtenfeeds) und werden täglich aktualisiert. Welche Faktoren mit welchem Gewicht
+        einfließen, ist unser eigenes Verfahren. Es wird laufend überprüft und kann sich ändern.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header"><h3>So liest du die Zahlen</h3></div>
+      <ul class="doc-list">
+        <li><b>Währungsstärke (−100 bis +100):</b> jede Währung im Vergleich zu den anderen Hauptwährungen. Positiv heißt
+          fundamental eher gestützt, negativ eher belastet.</li>
+        <li><b>Pair-Score (−100 bis +100):</b> ergibt sich aus der Stärke der ersten gegenüber der zweiten Währung.
+          <i>Positiv</i> bei EUR/USD heißt: EUR ist fundamental derzeit stärker als USD.</li>
+        <li><b>Stark positiv / negativ:</b> deutlicher Unterschied zwischen beiden Währungen; <b>Neutral:</b> kein klares Bild.</li>
+        <li><b>▲▼ zur Vorwoche:</b> wie sich die Einschätzung in den letzten sieben Tagen verändert hat.</li>
+        <li><b>Tagesstatus (Ruhig / Achtung / Kritisch):</b> beruht auf anstehenden Terminen, deinen Konto-Limits und der
+          Risikostimmung, nicht auf dem Score.</li>
+      </ul>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header"><h3>Grenzen</h3></div>
+      <ul class="doc-list">
+        <li>Der Score <b>beschreibt die fundamentale Lage</b>. Er ist kein Prognosemodell und nicht dafür gedacht,
+          kurzfristige Kursbewegungen vorherzusagen. Kurse können sich lange gegen die Fundamentaldaten bewegen.</li>
+        <li>Charttechnik, Liquidität, Spreads und dein persönliches Risiko berücksichtigt er nicht.</li>
+        <li>Daten können verspätet, unvollständig oder fehlerhaft sein. Vergangene Einschätzungen sagen nichts über
+          künftige Ergebnisse.</li>
+      </ul>
+    </section>
+
+    <section class="panel" id="hinweise">
+      <div class="panel-header"><h3>Rechtliche Hinweise</h3></div>
+      <ul class="doc-list">
+        <li><b>Keine Anlageberatung:</b> Alle Inhalte sind allgemeine Informationen und berücksichtigen nicht deine
+          persönlichen Verhältnisse. Sie sind keine Aufforderung zum Kauf oder Verkauf von Finanzinstrumenten.</li>
+        <li><b>Risiko:</b> Der Handel mit Devisen und CFDs ist wegen des Hebels sehr riskant und kann zum
+          Totalverlust des eingesetzten Kapitals führen. Handle nur mit Geld, dessen Verlust du verkraften kannst.</li>
+        <li><b>Interessenkonflikt:</b> Der Betreiber handelt selbst Devisen und CFDs, auch in den hier dargestellten Paaren.</li>
+        <li><b>Aktualität:</b> Der Stand jeder Einschätzung steht im Cockpit neben den Zahlen.</li>
+      </ul>
+    </section>
+  </main>
+</div>
+
+<script type="module" src="methodik.js"></script>
+</body>
+</html>
