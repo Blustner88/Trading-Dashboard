@@ -523,7 +523,16 @@ window.addEventListener('hashchange', ideaFromHash);
 
 // ---------------------------------------------------------------------------
 renderHello();
-await Promise.all([loadRisk(), loadEvents(), loadProposals(), loadAccounts(), loadFundamentals(), loadPlan(), loadTopNews(), loadBriefs(), loadIdeaList()]);
+// Hinweis auf offene To-dos (nur in deiner Ansicht)
+async function loadTodoCount() {
+  const { data } = await supabase.from('todos').select('section').eq('done', false);
+  const mine = (data || []).filter(t => t.section === 'du').length;
+  if (!mine) return;
+  $('ckTodo').textContent = `${mine} To-do${mine > 1 ? 's' : ''} bei dir`;
+  $('ckTodo').hidden = false;
+}
+
+await Promise.all([loadTodoCount(), loadRisk(), loadEvents(), loadProposals(), loadAccounts(), loadFundamentals(), loadPlan(), loadTopNews(), loadBriefs(), loadIdeaList()]);
 ideaFromHash();
 renderPairs();
 renderStatus();

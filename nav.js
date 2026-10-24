@@ -40,6 +40,7 @@ const AREAS = [
   ] },
   { key: 'settings', label: 'Einstellungen', hidden: true, pages: [
     { href: 'settings.html', label: 'Einstellungen' },
+    { href: 'todos.html', label: 'To-dos', owner: true },
     { href: 'methodik.html', label: 'Methodik & Hinweise' },
   ] },
 ];
