@@ -585,3 +585,8 @@ main:focus { outline: none; }
 }
 .app-foot a { color: var(--text-muted); }
 @media print { .app-foot { display: none; } }
+
+/* Ideen: Status "Nicht platziert" und Schatten-Auswertung */
+.idea-status .seg-btn[data-value="missed"].active { background: var(--surface); border-color: var(--amber); color: var(--amber); }
+.idea-shadow { font-size: 12.5px; color: var(--text-muted); margin: -4px 0 0; }
+.idea-shadow .pos { color: var(--profit); font-weight: 600; } .idea-shadow .neg { color: var(--loss); font-weight: 600; }

@@ -2,7 +2,8 @@ import { supabase } from './accounts.js';
 import { toast, confirmDialog, deleteWithUndo } from './nav.js';
 
 // Trade-Ideen: Planung vor dem Trade. Liste + Editor (Sheet) für Cockpit und Tagesplan.
-// Status: idea → order → taken (verknüpft mit dem Journal-Trade) oder discarded.
+// Status: idea → order → taken (verknüpft mit dem Journal-Trade); missed = geplant, aber keine Order gesetzt;
+// discarded = bewusst dagegen entschieden. Der Bot wertet jede Idee mit Entry/SL/TP1 nach (shadow_*).
 
 export const PAIRS = [
   'EURUSD', 'GBPUSD', 'AUDUSD', 'NZDUSD', 'USDJPY', 'USDCHF', 'USDCAD', 'USDNOK', 'USDSEK',
@@ -11,8 +12,24 @@ export const PAIRS = [
   'AUDJPY', 'AUDCAD', 'AUDCHF', 'AUDNZD', 'NZDJPY', 'NZDCAD', 'NZDCHF', 'CADJPY', 'CADCHF', 'CHFJPY',
   'XAUUSD', 'XAGUSD', 'NDX100', 'SPX500', 'GER30', 'EUSTX50', 'USOUSD',
 ];
-export const IDEA_STATUS = [['idea', 'Idee'], ['order', 'Order gesetzt'], ['taken', 'Genommen'], ['discarded', 'Verworfen']];
-const STATUS_CLS = { idea: 'accent', order: 'warn', taken: 'pos', discarded: '' };
+export const IDEA_STATUS = [['idea', 'Idee'], ['order', 'Order gesetzt'], ['taken', 'Genommen'], ['missed', 'Nicht platziert'], ['discarded', 'Verworfen']];
+const STATUS_CLS = { idea: 'accent', order: 'warn', taken: 'pos', missed: '', discarded: '' };
+const DECIDED = ['taken', 'missed', 'discarded'];
+
+// Was wäre passiert? (Schatten-Auswertung durch den Bot: Limit am Entry, dann SL oder TP1 zuerst)
+export function shadowLabel(i) {
+  const r = i.shadow_r == null ? null : Number(i.shadow_r);
+  const rTxt = r == null ? '' : `${r > 0 ? '+' : ''}${r.toFixed(2)}R`;
+  const pre = i.status === 'taken' ? 'Plan' : 'wäre';
+  switch (i.shadow_result) {
+    case 'tp': return [`${pre} TP ${rTxt}`, 'pos'];
+    case 'sl': return [`${pre} SL ${rTxt}`, 'neg'];
+    case 'timeout': return [`${pre} ${rTxt} (Zeit)`, r > 0 ? 'pos' : r < 0 ? 'neg' : ''];
+    case 'nofill': return ['Limit nicht erreicht', ''];
+    case 'open': return r == null ? ['Limit wartet', ''] : [`läuft ${rTxt}`, r > 0 ? 'pos' : r < 0 ? 'neg' : ''];
+    default: return null;
+  }
+}
 const BUCKET = 'trade-screenshots';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -72,10 +89,11 @@ export function ideaCard(i, bias) {
   const fit = biasFit(i, bias);
   const st = IDEA_STATUS.find(s => s[0] === i.status)?.[1] || i.status;
   const shot = i.screenshot_url ? `<img class="idea-thumb" src="${esc(i.screenshot_url)}" alt="" loading="lazy">` : '<span class="idea-thumb empty" aria-hidden="true">◳</span>';
-  return `<button class="idea-card ${i.direction}${['taken', 'discarded'].includes(i.status) ? ' done' : ''}" data-idea="${esc(i.id)}">
+  const sh = shadowLabel(i);
+  return `<button class="idea-card ${i.direction}${DECIDED.includes(i.status) ? ' done' : ''}" data-idea="${esc(i.id)}">
     ${shot}
     <span class="idea-main">
-      <span class="idea-top"><b>${esc(i.pair)}</b><span class="badge ${i.direction === 'long' ? 'pos' : 'neg'}">${i.direction === 'long' ? 'Long' : 'Short'}</span><span class="badge ${STATUS_CLS[i.status]}">${st}</span>${fit ? `<span class="badge ${fit[1]}">${fit[0]}</span>` : ''}</span>
+      <span class="idea-top"><b>${esc(i.pair)}</b><span class="badge ${i.direction === 'long' ? 'pos' : 'neg'}">${i.direction === 'long' ? 'Long' : 'Short'}</span><span class="badge ${STATUS_CLS[i.status]}">${st}</span>${fit ? `<span class="badge ${fit[1]}">${fit[0]}</span>` : ''}${sh ? `<span class="badge ${sh[1]}">${sh[0]}</span>` : ''}</span>
       <span class="idea-lv mono">E ${fmt(i.entry_price)} · SL ${fmt(i.stop_loss)} · TP ${fmt(i.tp1)}${i.tp2 != null ? ` / ${fmt(i.tp2)}` : ''}</span>
       ${i.reasoning || i.setup_type ? `<span class="idea-why">${esc([i.setup_type, i.reasoning].filter(Boolean).join(' – '))}</span>` : ''}
     </span>
@@ -149,6 +167,9 @@ export async function openIdeaEditor(idea = null, defaults = {}, onChange = () =
       <div class="field"><label>Status</label>
         <div class="segmented idea-status" id="iStatus">${IDEA_STATUS.map(([v, l]) => `<button type="button" class="seg-btn" data-value="${v}">${l}</button>`).join('')}</div>
       </div>
+      <div class="field" id="iNoteWrap"><label for="iNote">Warum nicht genommen?</label>
+        <input id="iNote" value="${esc(i.decision_note || '')}" maxlength="300" placeholder="z. B. kein Limit gesetzt, News, Bauchgefühl, Struktur gebrochen …"></div>
+      ${shadowLabel(i) ? `<p class="idea-shadow">Auswertung: <span class="${shadowLabel(i)[1]}">${shadowLabel(i)[0]}</span>${i.shadow_note ? ` · ${esc(i.shadow_note)}` : ''}</p>` : ''}
       <div class="field"><label for="iDate">Für den Tag</label><input id="iDate" type="date" value="${esc(i.idea_date || localDate())}"></div>
       </div>
       <div class="idea-col">
@@ -180,10 +201,14 @@ export async function openIdeaEditor(idea = null, defaults = {}, onChange = () =
     entry_price: num($('iEntry').value), stop_loss: num($('iSl').value), tp1: num($('iTp1').value), tp2: num($('iTp2').value),
     setup_type: $('iSetup').value.trim() || null, reasoning: $('iWhy').value.trim() || null,
     status, idea_date: $('iDate').value || localDate(),
+    decision_note: ['missed', 'discarded'].includes(status) ? ($('iNote').value.trim() || null) : null,
+    ...(status !== i.status && DECIDED.includes(status) ? { decided_at: new Date().toISOString() } : {}),
   });
   const refresh = () => {
     sheet.querySelectorAll('#iDir .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === direction));
     sheet.querySelectorAll('#iStatus .seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === status));
+    $('iNoteWrap').hidden = !['missed', 'discarded'].includes(status);
+    $('iNoteWrap').querySelector('label').textContent = status === 'missed' ? 'Warum nicht platziert?' : 'Warum verworfen?';
     const v = values();
     const r = crv(v);
     $('iCrv').textContent = r == null ? '–' : `1 : ${r.toFixed(2)}`;

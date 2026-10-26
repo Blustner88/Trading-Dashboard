@@ -47,7 +47,7 @@ async function loadTrades() {
     supabase.from('business_expenses').select('*'),
     supabase.from('daily_plans').select('plan_date'),
     supabase.from('user_settings').select('value').eq('key', 'default_risk_pct').maybeSingle(),
-    supabase.from('trade_ideas').select('id, trade_id'),
+    supabase.from('trade_ideas').select('id, trade_id, pair, direction, status, idea_date, decision_note, shadow_result, shadow_r'),
   ]);
   if (tr.error) {
     toastError('Trades nicht geladen', tr.error);
@@ -124,6 +124,7 @@ function render() {
   renderOverallBalance();
   renderTaxWidget();
   renderLevelPanel();
+  renderIdeaStats();
   renderDrawdownTracker();
   renderChallengeProgress();
 }
@@ -589,6 +590,37 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+// ---------- Trade-Ideen: Ergebnis nach deiner Entscheidung ----------
+const IDEA_GROUPS = [['taken', 'Genommen'], ['order', 'Order gesetzt'], ['missed', 'Nicht platziert'], ['discarded', 'Verworfen'], ['idea', 'Noch offen']];
+function renderIdeaStats() {
+  const el = $('ideaStats');
+  const done = allIdeas.filter(i => ['tp', 'sl', 'timeout'].includes(i.shadow_result));
+  if (!allIdeas.length) { el.innerHTML = '<div class="dash-empty">Noch keine Trade-Ideen.</div>'; return; }
+  const rows = IDEA_GROUPS.map(([k, label]) => {
+    const all = allIdeas.filter(i => i.status === k);
+    if (!all.length) return '';
+    const fin = done.filter(i => i.status === k);
+    const sum = fin.reduce((a, i) => a + Number(i.shadow_r), 0);
+    const tp = fin.filter(i => i.shadow_result === 'tp').length;
+    const running = all.filter(i => i.shadow_result === 'open' && i.shadow_r != null).length;
+    const nofill = all.filter(i => i.shadow_result === 'nofill').length;
+    return `<tr><td>${label}</td><td>${all.length}</td><td>${fin.length}${running ? ` <small>(+${running} läuft)</small>` : ''}</td>
+      <td>${fin.length ? Math.round(tp / fin.length * 100) + '%' : '–'}</td>
+      <td class="${sum > 0 ? 'pos' : sum < 0 ? 'neg' : ''}">${fin.length ? `${sum > 0 ? '+' : ''}${sum.toFixed(2)}R` : '–'}</td>
+      <td>${nofill || '–'}</td></tr>`;
+  }).join('');
+  const missed = done.filter(i => i.status === 'missed');
+  const missedR = missed.reduce((a, i) => a + Number(i.shadow_r), 0);
+  const notes = allIdeas.filter(i => i.decision_note && ['missed', 'discarded'].includes(i.status)).slice(-4).reverse();
+  el.innerHTML = `
+    <div class="table-scroll"><table class="breakdown-table">
+      <thead><tr><th>Entscheidung</th><th>Ideen</th><th>Abgeschl.</th><th>TP</th><th>Summe</th><th>Nicht gefüllt</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>
+    ${missed.length ? `<p class="idea-insight ${missedR > 0 ? 'pos' : 'neg'}">Nicht platzierte Ideen hätten zusammen <b>${missedR > 0 ? '+' : ''}${missedR.toFixed(2)}R</b> gebracht (${(missedR * riskTarget).toFixed(1).replace('.', ',')} % vom Konto).</p>` : ''}
+    ${notes.length ? `<p class="desk-hint">Zuletzt notierte Gründe: ${notes.map(i => `${escapeHtml(i.pair)}: „${escapeHtml(i.decision_note)}“`).join(' · ')}</p>` : ''}
+    ${done.length < 20 ? `<p class="desk-hint">Erst ${done.length} abgeschlossene Ideen — ab etwa 20 je Gruppe lassen sich Muster erkennen.</p>` : ''}`;
 }
 
 // ---------- Trader-Level — Kurzübersicht (Rechnung in level-core.js) ----------

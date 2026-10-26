@@ -182,3 +182,7 @@
 }
 
 .acc-state { font-family: var(--font-body); font-size: 10.5px; font-weight: 500; color: var(--text-faint); background: var(--surface-2); padding: 1px 7px; border-radius: 100px; margin-left: 6px; }
+
+.idea-insight { font-size: 13.5px; margin: 12px 0 4px; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
+.idea-insight.pos b { color: var(--profit); } .idea-insight.neg b { color: var(--loss); }
+#ideaStats small { color: var(--text-faint); font-family: var(--font-body); }
