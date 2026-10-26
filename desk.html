@@ -62,7 +62,8 @@
       <button class="chip" data-tab="vorschlaege">Vorschläge <span class="n" id="tabPending"></span></button>
       <button class="chip" data-tab="news">News</button>
       <button class="chip" data-tab="squawk">Squawk</button>
-      <button class="chip" data-tab="bilanz">Bilanz</button>
+      <button class="chip" data-tab="demo">Demo</button>
+      <button class="chip" data-tab="bilanz">Schatten</button>
       <button class="chip" data-tab="buero">Büro</button>
     </nav>
 
@@ -97,6 +98,14 @@
             <span class="desk-hint">R = Schatten-Auswertung</span>
           </div>
           <div id="historyList" class="row-list"></div>
+        </section>
+
+        <section class="panel" data-pane="demo">
+          <div class="panel-header">
+            <h3>Demo-Bilanz</h3>
+            <span class="desk-hint" id="demoAcc">Pepperstone-Demo · automatisch ausgeführt</span>
+          </div>
+          <div id="demoStats"><span class="skel line"></span><span class="skel line"></span></div>
         </section>
 
         <section class="panel" data-pane="bilanz">

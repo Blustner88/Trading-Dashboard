@@ -179,6 +179,86 @@ async function loadShadow() {
     ${closed.length < 30 ? `<p class="desk-hint">Erst ${closed.length} abgeschlossene Vorschläge — unter ~30 ist das statistisch noch nicht belastbar.</p>` : ''}`;
 }
 
+// ---------------------------------------------------------------------------
+// Demo-Bilanz: was der Demo-Ausführer (demo_trader.py) wirklich gehandelt hat.
+// Anders als die Schatten-Bilanz echte Fills, Spreads und Gebühren auf dem Demokonto.
+// ---------------------------------------------------------------------------
+const DEMO_LABEL = { sending: 'wird gesendet', placed: 'Limit wartet', filled: 'offen', closed: 'geschlossen',
+  expired: 'nicht gefüllt', cancelled: 'storniert', skipped: 'übersprungen', failed: 'Fehler' };
+const money = (v, cur = 'EUR') => `${v > 0 ? '+' : ''}${Number(v).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${cur === 'EUR' ? '€' : cur}`;
+const whole = (v) => Number(v).toLocaleString('de-DE', { maximumFractionDigits: 0 });
+
+function equityChart(points) {
+  if (points.length < 2) return '<p class="desk-empty">Der Verlauf erscheint nach den ersten Stunden Laufzeit.</p>';
+  const W = 600, H = 140, pad = 6;
+  const xs = points.map(p => new Date(p.at).getTime()), ys = points.map(p => Number(p.equity));
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const sx = (x) => pad + (x - x0) / ((x1 - x0) || 1) * (W - 2 * pad);
+  const sy = (y) => H - pad - (y - y0) / ((y1 - y0) || 1) * (H - 2 * pad);
+  const d = points.map((p, i) => `${i ? 'L' : 'M'}${sx(xs[i]).toFixed(1)},${sy(ys[i]).toFixed(1)}`).join(' ');
+  const up = ys[ys.length - 1] >= ys[0];
+  return `<svg class="demo-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Verlauf des Kontostands">
+    <path d="${d}" fill="none" style="stroke:var(${up ? '--profit' : '--loss'})" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
+    <div class="demo-axis"><span>${new Date(x0).toLocaleDateString('de-DE')}</span><span>${whole(y0)} bis ${whole(y1)}</span><span>${new Date(x1).toLocaleDateString('de-DE')}</span></div>`;
+}
+
+async function loadDemo() {
+  const [{ data: eq }, { data: rows }] = await Promise.all([
+    supabase.from('demo_equity').select('at, balance, equity, currency, positions, orders, login').order('at').limit(5000),
+    supabase.from('trade_proposals').select('id, pair, direction, setup_type, demo_status, demo_lots, demo_entry, demo_exit, demo_profit, demo_r, demo_note, demo_at, demo_closed_at')
+      .not('demo_status', 'is', null).order('demo_at', { ascending: false }).limit(500),
+  ]);
+  const el = $('demoStats');
+  if (!(eq || []).length && !(rows || []).length) {
+    el.innerHTML = '<p class="desk-empty">Der Demo-Ausführer hat noch nichts gemeldet. Läuft er (Windows-Aufgabe „Trading Desk Demo“)?</p>';
+    return;
+  }
+  const first = eq?.[0], last = eq?.[eq.length - 1];
+  const cur = last?.currency || 'EUR';
+  const startBal = Number(first?.balance || 0);
+  const result = last ? Number(last.equity) - startBal : 0;
+  // Größter Rückgang vom bisherigen Hoch (Kontostand inkl. offener Positionen)
+  let peak = -Infinity, dd = 0;
+  (eq || []).forEach(p => { const v = Number(p.equity); peak = Math.max(peak, v); dd = Math.max(dd, peak - v); });
+  const closed = (rows || []).filter(r => r.demo_status === 'closed' && r.demo_r != null);
+  const rs = closed.map(r => Number(r.demo_r));
+  const sumR = rs.reduce((a, b) => a + b, 0);
+  const wins = rs.filter(x => x > 0).length;
+  const counts = {};
+  (rows || []).forEach(r => { counts[r.demo_status] = (counts[r.demo_status] || 0) + 1; });
+  if (last) $('demoAcc').textContent = `Pepperstone-Demo ${last.login} · Stand ${dayTime(last.at)}`;
+
+  const bySetup = {};
+  closed.forEach(r => (bySetup[r.setup_type || '–'] ||= []).push(r));
+  const kpi = (l, v, cls = '') => `<div class="demo-kpi"><span class="kpi-label">${l}</span><span class="kpi-value ${cls}">${v}</span></div>`;
+  el.innerHTML = `
+    <div class="demo-kpis">
+      ${kpi('Kontostand', last ? `${whole(last.equity)} ${cur === 'EUR' ? '€' : cur}` : '–')}
+      ${kpi('Ergebnis seit Start', last ? `${money(result, cur)}<small>${startBal ? signed(result / startBal * 100, 2) + ' %' : ''}</small>` : '–', rClass(result))}
+      ${kpi('Summe R', closed.length ? `${signed(sumR, 2)}R` : '–', rClass(sumR))}
+      ${kpi('Trefferquote', closed.length ? `${Math.round(wins / closed.length * 100)} %<small>${wins} von ${closed.length}</small>` : '–')}
+      ${kpi('Ø je Trade', closed.length ? `${signed(sumR / closed.length, 2)}R` : '–', rClass(sumR))}
+      ${kpi('Größter Rückgang', dd ? `${money(-dd, cur)}<small>${startBal ? (dd / startBal * 100).toFixed(2) + ' %' : ''}</small>` : '–', dd ? 'neg' : '')}
+    </div>
+    ${equityChart(eq || [])}
+    <p class="desk-hint demo-counts">${Object.entries(counts).map(([k, n]) => `${DEMO_LABEL[k] || k} ${n}`).join(' · ') || 'noch keine Orders'}</p>
+    ${Object.keys(bySetup).length ? `<div class="shadow-scroll"><table class="shadow-table">
+      <thead><tr><th></th><th>Anzahl</th><th>Treffer</th><th>Ø</th><th>Σ</th></tr></thead>
+      <tbody>${Object.entries(bySetup).sort().map(([k, list]) => {
+        const s = list.reduce((a, r) => a + Number(r.demo_r), 0);
+        return `<tr><td>${esc(k)}</td><td>${list.length}</td><td>${Math.round(list.filter(r => Number(r.demo_r) > 0).length / list.length * 100)} %</td>
+          <td class="r ${rClass(s)}">${signed(s / list.length)}R</td><td class="r ${rClass(s)}">${signed(s, 1)}R</td></tr>`;
+      }).join('')}</tbody></table></div>` : ''}
+    <h4 class="shadow-sub">Letzte Orders</h4>
+    <div class="row-list">${(rows || []).slice(0, 12).map(r => `
+      <div class="row">
+        <span class="p">${esc(r.pair)} ${dirTag(r.direction)}</span>
+        <span class="t" title="${esc(r.demo_note || '')}"><span class="status ${esc(r.demo_status)}">${esc(DEMO_LABEL[r.demo_status] || r.demo_status)}</span> ${dayTime(r.demo_closed_at || r.demo_at)} ${esc(r.setup_type || '')}${r.demo_note ? ` · ${esc(r.demo_note)}` : ''}</span>
+        <span class="r ${rClass(Number(r.demo_r))}">${r.demo_r != null ? `${signed(Number(r.demo_r))}R` : r.demo_lots ? `${r.demo_lots} Lots` : '–'}</span>
+      </div>`).join('') || '<p class="desk-empty">Noch keine Orders.</p>'}</div>
+    ${closed.length && closed.length < 30 ? `<p class="desk-hint">Erst ${closed.length} geschlossene Trades — unter ~30 noch nicht aussagekräftig.</p>` : ''}`;
+}
+
 // News: relevante Schlagzeilen (fb_news) mit Einordnung je Währung (fb_news_impacts)
 const NEWS_CCYS = ['USD', 'EUR', 'GBP', 'JPY', 'CHF', 'CAD', 'AUD', 'NZD', 'NOK', 'SEK'];
 let newsRows = [];
@@ -289,7 +369,7 @@ function subscribe() {
 initAgents($('agentOffice'));
 
 // Bereichs-Reiter (nur schmale Bildschirme): gemerkt pro Sitzung, per #news usw. direkt ansteuerbar
-const TABS = ['vorschlaege', 'news', 'squawk', 'bilanz', 'buero'];
+const TABS = ['vorschlaege', 'news', 'squawk', 'demo', 'bilanz', 'buero'];
 function showTab(tab) {
   if (!TABS.includes(tab)) tab = 'vorschlaege';
   document.querySelectorAll('[data-pane]').forEach(el => el.classList.toggle('pane-on', el.dataset.pane === tab));
@@ -322,9 +402,10 @@ let officeOpen = false;
 try { officeOpen = localStorage.getItem(OFFICE_KEY) === '1'; } catch { /* privat-Modus */ }
 setOffice(officeOpen);
 $('officeToggle').onclick = () => setOffice($('agentOffice').classList.contains('office-collapsed'));
-await Promise.all([loadProposals(), loadSquawk(), loadNews()]);
+await Promise.all([loadProposals(), loadSquawk(), loadNews(), loadDemo()]);
 if (new URLSearchParams(location.search).has('demo')) runDemo();
 subscribe();
 // Fallback, falls Realtime hängt, und damit die Restlaufzeiten aktuell bleiben
 setInterval(loadProposals, 60000);
 setInterval(loadNews, 5 * 60000);   // schwächere Schlagzeilen kommen ohne Squawk
+setInterval(loadDemo, 5 * 60000);   // Kontostand kommt alle 15 min
