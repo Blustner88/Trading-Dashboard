@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3lSuu7BhWmWHBsCg/ASPbvs2z48JfANPqTuP2HNud9s='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://rabbtdooayruveribarq.supabase.co; connect-src 'self' https://rabbtdooayruveribarq.supabase.co wss://rabbtdooayruveribarq.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- app-head -->
+<meta name="theme-color" content="#0b0d12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trading">
+<script>try{var t=localStorage.getItem('td_theme');if(t){document.documentElement.dataset.theme=t;}var l=t?t==='light':matchMedia('(prefers-color-scheme: light)').matches;document.querySelector('meta[name=theme-color]').content=l?'#f5f6fa':'#0b0d12';}catch(e){}</script>
+<link rel="modulepreload" href="nav.js">
+<!-- /app-head -->
+<title>Wissen: Wirtschaftsdaten &amp; Währungen — Trading Journal</title>
+<meta name="description" content="Verständlich erklärt: wie Inflation, Zinsen, Arbeitsmarkt, Konjunkturdaten und Stimmung die Devisenkurse bewegen. Mit Wirkungsketten, Währungsprofilen und Übungsfragen.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="lernen.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">◈</span>
+      <span class="brand-text">Trading Journal</span>
+    </div>
+    <nav class="tabnav"></nav>
+  </header>
+
+  <main class="dash-main lernen">
+    <div class="ln-hero">
+      <h1>Wie Wirtschaftsdaten Währungen bewegen</h1>
+      <p>Von der Inflation über den Zinsentscheid bis zum Kurs: die wichtigsten Zusammenhänge, kurz erklärt.
+        Am besten der Reihe nach lesen oder gezielt suchen. Jede Karte lässt sich aufklappen.</p>
+    </div>
+
+    <div class="ln-tools">
+      <input type="search" id="lnSearch" placeholder="Suchen, z. B. PMI, Carry, Kerninflation …" aria-label="Wissen durchsuchen">
+      <div class="chip-row" id="lnCats" role="group" aria-label="Kategorien">
+        <button class="chip active" data-cat="alle">Alle</button>
+        <button class="chip" data-cat="grundlagen">Grundlagen</button>
+        <button class="chip" data-cat="zinsen">Zinsen &amp; Notenbanken</button>
+        <button class="chip" data-cat="inflation">Inflation</button>
+        <button class="chip" data-cat="arbeit">Arbeitsmarkt</button>
+        <button class="chip" data-cat="wachstum">Wachstum</button>
+        <button class="chip" data-cat="stimmung">Stimmung &amp; Positionierung</button>
+        <button class="chip" data-cat="termine">Termine lesen</button>
+        <button class="chip" data-cat="waehrungen">Währungsprofile</button>
+        <button class="chip" data-cat="quiz">Üben</button>
+      </div>
+    </div>
+
+    <!-- ===================== Das große Bild ===================== -->
+    <section class="panel ln-big" data-cat="grundlagen">
+      <div class="panel-header"><h3>Das große Bild in einer Kette</h3></div>
+      <div class="ln-flow" aria-label="Wirkungskette">
+        <div class="ln-node">Wirtschaftsdaten<small>Inflation, Arbeitsmarkt, Wachstum</small></div>
+        <div class="ln-arrow" aria-hidden="true">→</div>
+        <div class="ln-node">Zinserwartung<small>Was wird die Notenbank tun?</small></div>
+        <div class="ln-arrow" aria-hidden="true">→</div>
+        <div class="ln-node">Renditen<small>v. a. 2-jährige Staatsanleihen</small></div>
+        <div class="ln-arrow" aria-hidden="true">→</div>
+        <div class="ln-node">Zinsdifferenz<small>zum anderen Land</small></div>
+        <div class="ln-arrow" aria-hidden="true">→</div>
+        <div class="ln-node accent">Währung<small>Kapital fließt zum höheren Zins</small></div>
+      </div>
+      <p class="ln-note">Faustregel: Daten, die <b>höhere Zinsen wahrscheinlicher</b> machen, stützen eine Währung. Daten, die
+        <b>Zinssenkungen näher rücken</b>, belasten sie. Entscheidend ist dabei fast immer die <b>Überraschung</b> gegenüber der
+        Erwartung, nicht die Zahl selbst. Über allem liegt die <b>Risikostimmung</b>: In Krisen zählen sichere Häfen mehr als Zinsen.</p>
+    </section>
+
+    <div class="ln-grid" id="lnCards">
+
+      <!-- ===================== GRUNDLAGEN ===================== -->
+      <article class="lc" data-cat="grundlagen" id="was-bewegt-waehrungen">
+        <details>
+          <summary><span class="lc-cat">Grundlagen</span><h3>Was bewegt eine Währung überhaupt?</h3><p>Angebot und Nachfrage – getrieben von Zinsen, Kapitalflüssen und Vertrauen.</p></summary>
+          <div class="lc-body">
+            <p>Ein Wechselkurs ist der Preis einer Währung in einer anderen. Er steigt, wenn mehr Geld in eine Währung fließen will, als herausfließt. Die wichtigsten Gründe:</p>
+            <ul>
+              <li><b>Zinsen:</b> Anleger parken Geld dort, wo es sicher mehr Zinsen bringt. Das ist auf Sicht von Wochen bis Monaten meist der stärkste Treiber.</li>
+              <li><b>Wachstum:</b> Starke Wirtschaft zieht Investitionen an (Aktien, Firmenkäufe) und führt eher zu höheren Zinsen.</li>
+              <li><b>Handel:</b> Exporteure tauschen ihre Einnahmen in die Heimatwährung. Rohstoffpreise sind deshalb für CAD, AUD, NOK und NZD wichtig.</li>
+              <li><b>Risikostimmung:</b> In Panikphasen fließt Geld in „sichere Häfen“ (USD, JPY, CHF), egal wie die Zinsen stehen.</li>
+              <li><b>Politik und Vertrauen:</b> Haushaltskrisen, Wahlen oder Zweifel an der Unabhängigkeit der Notenbank schwächen eine Währung.</li>
+            </ul>
+            <p class="lc-tip">Merke: Ein Währungspaar vergleicht immer <b>zwei</b> Volkswirtschaften. EUR/USD steigt, wenn der Euro stärker wird <i>oder</i> der Dollar schwächer.</p>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="grundlagen" id="erwartung-vs-ist">
+        <details>
+          <summary><span class="lc-cat">Grundlagen</span><h3>Erwartung schlägt Ergebnis</h3><p>Märkte preisen Bekanntes vorher ein – bewegt wird der Kurs von der Überraschung.</p></summary>
+          <div class="lc-body">
+            <p>Vor jeder wichtigen Zahl gibt es eine Konsensprognose (im Kalender „Forecast“ oder „Erwartung“). Der Kurs enthält diese Erwartung schon.</p>
+            <ul>
+              <li>Inflation steigt auf 3,5 %, erwartet waren 3,8 % → für den Markt eine <b>negative</b> Überraschung, die Währung fällt eher – obwohl die Inflation gestiegen ist.</li>
+              <li>Je größer die Abweichung und je wichtiger der Wert für die Notenbank, desto stärker die Reaktion.</li>
+              <li>„Buy the rumor, sell the fact“: Ist eine Zinserhöhung sicher erwartet, kann die Währung beim Entscheid sogar fallen.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="grundlagen" id="realzins">
+        <details>
+          <summary><span class="lc-cat">Grundlagen</span><h3>Nominalzins und Realzins</h3><p>Was nach Abzug der Inflation übrig bleibt, zählt für Anleger.</p></summary>
+          <div class="lc-body">
+            <div class="ln-formula">Realzins ≈ Nominalzins − Inflation (bzw. Inflationserwartung)</div>
+            <p>5 % Zinsen bei 6 % Inflation sind real −1 %. 3 % Zinsen bei 1 % Inflation sind real +2 % – oft attraktiver.
+              Steigende Realzinsen stützen eine Währung meist stärker als steigende Nominalzinsen.</p>
+            <p class="lc-tip">Deshalb kann eine hohe Inflation eine Währung auch schwächen: wenn die Notenbank nicht nachzieht und die Kaufkraft schwindet.</p>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="grundlagen" id="zinsdifferenz">
+        <details>
+          <summary><span class="lc-cat">Grundlagen</span><h3>Zinsdifferenz und Carry Trade</h3><p>Geld leihen, wo es billig ist, anlegen, wo es mehr bringt.</p></summary>
+          <div class="lc-body">
+            <p>Beim <b>Carry Trade</b> leihen sich Anleger Geld in einer Niedrigzins-Währung (lange Zeit JPY oder CHF) und legen es in einer Hochzins-Währung an.
+              Solange die Märkte ruhig sind, verdienen sie die Zinsdifferenz – und die Hochzins-Währung wird gestützt.</p>
+            <ul>
+              <li>Am besten misst man die Differenz an den <b>2-jährigen Staatsanleihen</b>: Sie spiegeln die erwarteten Leitzinsen der nächsten Jahre.</li>
+              <li>Risiko: In Panikphasen werden Carry Trades schlagartig aufgelöst. Dann steigt die Finanzierungswährung (z. B. JPY) stark, die Hochzins-Währung fällt.</li>
+            </ul>
+            <div class="ln-chain"><span>Zinsdifferenz ↑</span><span>→</span><span>Carry attraktiver</span><span>→</span><span class="pos">Hochzins-Währung ↑</span></div>
+          </div>
+        </details>
+      </article>
+
+      <!-- ===================== ZINSEN & NOTENBANKEN ===================== -->
+      <article class="lc" data-cat="zinsen" id="leitzins">
+        <details>
+          <summary><span class="lc-cat">Zinsen &amp; Notenbanken</span><h3>Der Leitzins</h3><p>Der wichtigste Hebel der Notenbank – und der wichtigste Treiber für Währungen.</p></summary>
+          <div class="lc-body">
+            <p>Der Leitzins legt fest, zu welchem Zins sich Banken Geld bei der Notenbank leihen oder dort anlegen. Er wirkt auf alle anderen Zinsen: Kredite, Sparzinsen, Anleiherenditen.</p>
+            <ul>
+              <li><b>Erhöhung</b> („hawkish“): bremst Kredite und Nachfrage, soll Inflation senken. Für die Währung meist positiv.</li>
+              <li><b>Senkung</b> („dovish“): kurbelt die Wirtschaft an. Für die Währung meist negativ.</li>
+              <li>Die Wirkung auf Preise braucht oft 12–24 Monate. Notenbanken entscheiden deshalb nach ihrer <b>Prognose</b>, nicht nach den heutigen Zahlen.</li>
+            </ul>
+            <div class="ln-chain"><span>Leitzins ↑ (überraschend)</span><span>→</span><span>Renditen ↑</span><span>→</span><span class="pos">Währung ↑</span></div>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="zinsen" id="mandate">
+        <details>
+          <summary><span class="lc-cat">Zinsen &amp; Notenbanken</span><h3>Was Notenbanken wollen: ihre Mandate</h3><p>Wer das Ziel kennt, versteht, welche Daten zählen.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li><b>Fed (USA):</b> doppeltes Mandat – stabile Preise <i>und</i> maximale Beschäftigung. Deshalb sind Inflation und Arbeitsmarkt gleich wichtig.</li>
+              <li><b>EZB (Eurozone):</b> Preisstabilität, Ziel 2 % Inflation mittelfristig. Inflation steht klar an erster Stelle.</li>
+              <li><b>BoE (Großbritannien), BoC (Kanada), RBA (Australien), RBNZ (Neuseeland), Norges Bank, Riksbank:</b> Inflationsziel um 2 % (RBA: 2–3 %), Beschäftigung und Wachstum werden mitbeachtet.</li>
+              <li><b>SNB (Schweiz):</b> Preisstabilität (0–2 %), greift auch am Devisenmarkt ein, um einen zu starken Franken zu bremsen.</li>
+              <li><b>BoJ (Japan):</b> 2 % Inflation, hatte über Jahrzehnte Null- und Negativzinsen. Jeder Schritt weg davon bewegt den Yen stark.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="zinsen" id="forward-guidance">
+        <details>
+          <summary><span class="lc-cat">Zinsen &amp; Notenbanken</span><h3>Forward Guidance: die Worte zählen</h3><p>Oft bewegt der Ausblick mehr als der Entscheid selbst.</p></summary>
+          <div class="lc-body">
+            <p>Notenbanken deuten an, was sie als Nächstes vorhaben: in der Erklärung, der Pressekonferenz, den Protokollen und Reden der Ratsmitglieder.</p>
+            <ul>
+              <li>Ein Zinsentscheid kann wie erwartet ausfallen und die Währung trotzdem stark bewegen, wenn der <b>Ausblick</b> überrascht („weitere Schritte nicht ausgeschlossen“).</li>
+              <li>Bei der Fed zeigt der <b>Dot Plot</b> (4× im Jahr), wo die Mitglieder den Leitzins künftig sehen.</li>
+              <li><b>Protokolle</b> (Minutes) erscheinen einige Wochen später und zeigen, wie einig der Rat war.</li>
+            </ul>
+            <p class="lc-tip">Hawkish = Tendenz zu höheren Zinsen (Falke). Dovish = Tendenz zu niedrigeren Zinsen (Taube).</p>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="zinsen" id="renditen">
+        <details>
+          <summary><span class="lc-cat">Zinsen &amp; Notenbanken</span><h3>Anleiherenditen und Zinskurve</h3><p>Der Anleihemarkt sagt, was er von der Notenbank erwartet.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li><b>2-jährige Rendite:</b> reagiert am stärksten auf erwartete Leitzinsänderungen. Bester Gradmesser für Zinsdifferenzen zwischen Ländern.</li>
+              <li><b>10-jährige Rendite:</b> enthält zusätzlich Wachstums-, Inflations- und Schuldenerwartungen.</li>
+              <li><b>Inverse Zinskurve</b> (kurz höher als lang): Der Markt erwartet künftige Zinssenkungen – oft ein Rezessionssignal.</li>
+              <li>Steigen die Renditen eines Landes wegen <b>Schuldensorgen</b> (nicht wegen Zinserwartungen), kann die Währung trotzdem fallen.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="zinsen" id="qe-qt">
+        <details>
+          <summary><span class="lc-cat">Zinsen &amp; Notenbanken</span><h3>Anleihekäufe: QE und QT</h3><p>Geldmenge ausweiten oder zurückfahren – der zweite Hebel neben dem Zins.</p></summary>
+          <div class="lc-body">
+            <p><b>Quantitative Lockerung (QE):</b> Die Notenbank kauft Anleihen, drückt die langen Zinsen und bringt mehr Geld ins System – tendenziell negativ für die Währung.</p>
+            <p><b>Quantitative Straffung (QT):</b> Die Notenbank lässt Anleihen auslaufen oder verkauft sie – tendenziell positiv für die Währung.</p>
+          </div>
+        </details>
+      </article>
+
+      <!-- ===================== INFLATION ===================== -->
+      <article class="lc" data-cat="inflation" id="inflation-zins">
+        <details>
+          <summary><span class="lc-cat">Inflation</span><h3>Inflation und Zinsentscheid</h3><p>Der wichtigste Zusammenhang überhaupt.</p></summary>
+          <div class="lc-body">
+            <p>Liegt die Inflation über dem Ziel (meist 2 %), muss die Notenbank bremsen: Sie erhöht den Zins oder senkt ihn zumindest nicht. Liegt sie darunter, kann sie lockern.</p>
+            <div class="ln-chain"><span>Inflation über Erwartung</span><span>→</span><span>Zinserhöhung wahrscheinlicher</span><span>→</span><span class="pos">Währung ↑</span></div>
+            <div class="ln-chain"><span>Inflation unter Erwartung</span><span>→</span><span>Zinssenkung näher</span><span>→</span><span class="neg">Währung ↓</span></div>
+            <p class="lc-tip">Ausnahme <b>Stagflation</b>: hohe Inflation bei schrumpfender Wirtschaft. Die Notenbank steckt in der Klemme, die Währung kann trotz hoher Inflation fallen.</p>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="inflation" id="cpi">
+        <details>
+          <summary><span class="lc-cat">Inflation</span><h3>Verbraucherpreise (CPI / HVPI)</h3><p>Die meistbeachtete Inflationszahl – monatlich.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li>Misst die Preisänderung eines Warenkorbs für Verbraucher, meist gegenüber dem Vorjahresmonat (y/y) und dem Vormonat (m/m).</li>
+              <li>In der Eurozone heißt er <b>HVPI</b>. Die <b>Schnellschätzung</b> (Flash) zum Monatsende bewegt den Markt, die endgültige Zahl kaum noch.</li>
+              <li>US-CPI erscheint meist Mitte des Monats um 14:30 Uhr deutscher Zeit und gehört zu den stärksten Kursbewegern überhaupt.</li>
+              <li>Der Monatswert (m/m) zeigt das aktuelle Tempo besser als der Jahreswert, der stark von alten Monaten abhängt (Basiseffekte).</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="inflation" id="kerninflation">
+        <details>
+          <summary><span class="lc-cat">Inflation</span><h3>Kerninflation</h3><p>Inflation ohne Energie und Lebensmittel – oft wichtiger als die Gesamtzahl.</p></summary>
+          <div class="lc-body">
+            <p>Energie- und Lebensmittelpreise schwanken stark, und die Notenbank kann sie kaum beeinflussen. Die Kernrate zeigt den hartnäckigen, „eingebauten“ Preisdruck.</p>
+            <ul>
+              <li>Notenbanken schauen vor allem auf die Kernrate und die <b>Dienstleistungsinflation</b>, weil sie eng mit den Löhnen zusammenhängt.</li>
+              <li>Weichen Gesamt- und Kernrate voneinander ab, reagiert der Markt meist auf die Kernrate.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="inflation" id="pce-ppi">
+        <details>
+          <summary><span class="lc-cat">Inflation</span><h3>PCE, Erzeugerpreise und Inflationserwartungen</h3><p>Weitere Bausteine, die die Notenbanken beobachten.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li><b>PCE-Deflator (USA):</b> das bevorzugte Inflationsmaß der Fed. Meist gut vorhersehbar, weil CPI und PPI vorher erscheinen.</li>
+              <li><b>Erzeugerpreise (PPI):</b> Preise auf Herstellerebene. Steigen sie, kommt das oft verzögert bei den Verbrauchern an.</li>
+              <li><b>Inflationserwartungen</b> (Umfragen, Marktpreise): Erwarten Menschen dauerhaft hohe Inflation, fordern sie höhere Löhne – das fürchten Notenbanken besonders.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <!-- ===================== ARBEITSMARKT ===================== -->
+      <article class="lc" data-cat="arbeit" id="arbeitsmarkt-zins">
+        <details>
+          <summary><span class="lc-cat">Arbeitsmarkt</span><h3>Warum der Arbeitsmarkt die Zinsen bewegt</h3><p>Viele Jobs → mehr Einkommen → mehr Nachfrage → Preisdruck.</p></summary>
+          <div class="lc-body">
+            <p>Ist der Arbeitsmarkt eng (wenig Arbeitslose, viele offene Stellen), steigen die Löhne. Firmen geben höhere Lohnkosten weiter, Haushalte können mehr ausgeben – die Inflation bleibt hoch.</p>
+            <div class="ln-chain"><span>Starker Arbeitsmarkt</span><span>→</span><span>Lohndruck</span><span>→</span><span>Inflation bleibt hoch</span><span>→</span><span class="pos">Zinsen höher → Währung ↑</span></div>
+            <p class="lc-tip">Für die Fed zählt der Arbeitsmarkt doppelt: Er ist Teil ihres Mandats. Schwache Zahlen machen Zinssenkungen deutlich wahrscheinlicher.</p>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="arbeit" id="nfp">
+        <details>
+          <summary><span class="lc-cat">Arbeitsmarkt</span><h3>US-Arbeitsmarktbericht (Non-Farm Payrolls)</h3><p>Der „Jobs Report“ am ersten Freitag im Monat.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li><b>Neue Stellen außerhalb der Landwirtschaft (NFP):</b> die Schlagzeilenzahl. Wichtig ist der Vergleich mit der Erwartung und die <b>Revision</b> der Vormonate.</li>
+              <li><b>Arbeitslosenquote:</b> steigt sie deutlich, wächst die Sorge vor einer Rezession.</li>
+              <li><b>Stundenlöhne:</b> direkter Hinweis auf Lohninflation – oft genauso wichtig wie die Stellenzahl.</li>
+              <li>Erscheint in der Regel um 14:30 Uhr deutscher Zeit und sorgt für starke, manchmal sprunghafte Bewegungen.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="arbeit" id="weitere-arbeit">
+        <details>
+          <summary><span class="lc-cat">Arbeitsmarkt</span><h3>Erstanträge, offene Stellen und Löhne</h3><p>Frühindikatoren zwischen den großen Berichten.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li><b>Erstanträge auf Arbeitslosenhilfe (USA, wöchentlich donnerstags):</b> steigen sie über Wochen, kühlt der Arbeitsmarkt ab.</li>
+              <li><b>Offene Stellen (JOLTS):</b> viele offene Stellen pro Arbeitslosem = enger Markt.</li>
+              <li><b>Lohnwachstum</b> in Europa, UK und Japan: für EZB, BoE und BoJ ein Schlüssel, ob die Dienstleistungsinflation sinkt.</li>
+              <li>Großbritannien, Kanada, Australien veröffentlichen eigene Arbeitsmarktberichte – für ihre Währungen ähnlich wichtig wie NFP für den Dollar.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <!-- ===================== WACHSTUM ===================== -->
+      <article class="lc" data-cat="wachstum" id="bip">
+        <details>
+          <summary><span class="lc-cat">Wachstum</span><h3>Bruttoinlandsprodukt (BIP)</h3><p>Die umfassendste, aber auch trägste Zahl.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li>Misst die gesamte Wirtschaftsleistung, meist pro Quartal. Zwei Quartale mit Minus gelten als „technische Rezession“.</li>
+              <li>Weil das BIP spät kommt und vieles vorher bekannt ist, bewegt es den Markt meist weniger als Inflation oder Arbeitsmarkt – außer bei großen Überraschungen.</li>
+              <li>Starkes Wachstum macht Zinserhöhungen wahrscheinlicher, schwaches Wachstum Zinssenkungen.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="wachstum" id="pmi">
+        <details>
+          <summary><span class="lc-cat">Wachstum</span><h3>Einkaufsmanagerindizes (PMI)</h3><p>Schnell, monatlich, vorausschauend – die 50 ist die magische Grenze.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li>Umfrage unter Einkaufsmanagern: Werte <b>über 50</b> bedeuten Wachstum, <b>unter 50</b> Schrumpfung.</li>
+              <li>Getrennt nach Industrie (Manufacturing), Dienstleistungen (Services) und zusammengefasst (Composite).</li>
+              <li>Die Schnellschätzung (Flash) erscheint vor Monatsende und bewegt besonders EUR und GBP.</li>
+              <li>Die Unterpunkte <b>Preise</b> und <b>Beschäftigung</b> geben Hinweise auf künftige Inflation und Jobs.</li>
+              <li>In den USA ist zusätzlich der <b>ISM-Index</b> wichtig (gleiche Logik, eigene Umfrage).</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="wachstum" id="konsum">
+        <details>
+          <summary><span class="lc-cat">Wachstum</span><h3>Einzelhandel, Vertrauen, Industrie</h3><p>Wie es Verbrauchern und Unternehmen geht.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li><b>Einzelhandelsumsätze:</b> Konsum ist in vielen Ländern der größte Teil der Wirtschaft. Starke Zahlen stützen die Währung.</li>
+              <li><b>Verbraucher- und Unternehmensvertrauen</b> (z. B. ifo, ZEW, Michigan): Stimmungsumfragen, die Wendepunkte oft früh zeigen.</li>
+              <li><b>Industrieproduktion, Auftragseingänge:</b> wichtig für exportstarke Länder wie Deutschland oder Japan.</li>
+              <li><b>Handelsbilanz:</b> Überschüsse bedeuten Nachfrage nach der Währung, bewegen den Kurs aber selten kurzfristig.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <!-- ===================== STIMMUNG ===================== -->
+      <article class="lc" data-cat="stimmung" id="risk-on-off">
+        <details>
+          <summary><span class="lc-cat">Stimmung &amp; Positionierung</span><h3>Risk-on und Risk-off</h3><p>Wenn Angst regiert, verlieren Zinsen ihre Wirkung.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li><b>Risk-on</b> (Zuversicht): Aktien steigen, Geld fließt in Hochzins- und Rohstoffwährungen wie AUD, NZD, CAD, NOK.</li>
+              <li><b>Risk-off</b> (Angst): Geld flieht in <b>sichere Häfen</b> – US-Dollar, Yen, Franken. Carry Trades werden aufgelöst.</li>
+              <li>Ein Maß für die Angst ist der <b>VIX</b> (Volatilität des S&amp;P 500): über etwa 25–30 herrscht Nervosität.</li>
+            </ul>
+            <p class="lc-tip">In starken Risk-off-Phasen können selbst gute Daten eine Rohstoffwährung nicht stützen.</p>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="stimmung" id="cot">
+        <details>
+          <summary><span class="lc-cat">Stimmung &amp; Positionierung</span><h3>COT-Bericht: wie große Spieler positioniert sind</h3><p>Wöchentlicher Blick in die Bücher der Terminmärkte.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li>Die US-Aufsicht CFTC veröffentlicht freitags (Stand Dienstag) die Positionen an den Währungs-Terminmärkten.</li>
+              <li>Interessant sind die spekulativen Anleger (Fonds): Sind sie stark long, stützt das den Trend.</li>
+              <li><b>Extreme</b> Positionierung ist ein Warnsignal: Wenn alle schon long sind, fehlen neue Käufer – Gegenbewegungen werden heftiger.</li>
+              <li>Die Daten sind einige Tage alt. Sie eignen sich für den mittelfristigen Überblick, nicht für das Timing.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="stimmung" id="rohstoffe">
+        <details>
+          <summary><span class="lc-cat">Stimmung &amp; Positionierung</span><h3>Rohstoffe und Rohstoffwährungen</h3><p>Öl, Metalle und Milch bewegen manche Währungen direkt.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li><b>Öl:</b> CAD (Kanada) und NOK (Norwegen) profitieren von steigenden Ölpreisen.</li>
+              <li><b>Eisenerz und Metalle:</b> AUD (Australien), stark abhängig von der Nachfrage aus China.</li>
+              <li><b>Milchprodukte:</b> NZD (Neuseeland) – die Auktionen der Global Dairy Trade werden beachtet.</li>
+              <li>Für Importländer (z. B. Japan, Eurozone) sind hohe Energiepreise eher eine Belastung.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="stimmung" id="saisonalitaet">
+        <details>
+          <summary><span class="lc-cat">Stimmung &amp; Positionierung</span><h3>Saisonalität und Trend</h3><p>Wiederkehrende Muster – nützlich als Zusatzinfo, nie als alleiniger Grund.</p></summary>
+          <div class="lc-body">
+            <p>Manche Währungen zeigen in bestimmten Monaten wiederkehrende Tendenzen, etwa durch Dividendenzahlungen, Steuertermine oder Jahresend-Bilanzen.
+              Auch mittelfristige Trends halten oft länger an, als man denkt. Beides sind statistische Neigungen, keine Regeln.</p>
+          </div>
+        </details>
+      </article>
+
+      <!-- ===================== TERMINE ===================== -->
+      <article class="lc" data-cat="termine" id="kalender">
+        <details>
+          <summary><span class="lc-cat">Termine lesen</span><h3>So liest du den Wirtschaftskalender</h3><p>Prognose, Vorwert, Ist – und was davon zählt.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li><b>Prognose (Forecast):</b> der Konsens der Analysten. Daran misst der Markt die Überraschung.</li>
+              <li><b>Vorwert (Previous):</b> der letzte Wert, oft mit <b>Revision</b>. Eine starke Revision kann die neue Zahl relativieren.</li>
+              <li><b>Wichtigkeit:</b> „High Impact“ sind Zinsentscheide, Inflation, Arbeitsmarkt, BIP, PMI-Schnellschätzungen und Reden der Notenbankchefs.</li>
+              <li>Mehrere Teilwerte widersprechen sich? Der Markt gewichtet, was für die Notenbank gerade am wichtigsten ist.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="termine" id="news-risiko">
+        <details>
+          <summary><span class="lc-cat">Termine lesen</span><h3>Trading rund um wichtige Termine</h3><p>Warum viele Trader vorher pausieren.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li>Kurz vor und nach wichtigen Zahlen werden die <b>Spreads</b> breiter und Kurse springen. Stop-Loss-Orders können deutlich schlechter ausgeführt werden (Slippage).</li>
+              <li>Die erste Bewegung nach einer Zahl wird oft wieder korrigiert, wenn Details (Kernrate, Revisionen) gelesen sind.</li>
+              <li>Viele Prop-Firmen verbieten oder beschränken das Handeln kurz vor und nach High-Impact-News. Regeln deines Kontos prüfen.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <article class="lc" data-cat="termine" id="zinsentscheid-ablauf">
+        <details>
+          <summary><span class="lc-cat">Termine lesen</span><h3>Ablauf eines Zinsentscheids</h3><p>Entscheid, Erklärung, Pressekonferenz – drei Momente, drei Bewegungen.</p></summary>
+          <div class="lc-body">
+            <ul>
+              <li><b>Entscheid und Erklärung:</b> Zins und kurzer Text. Erste Reaktion auf die Zahl und auf geänderte Formulierungen.</li>
+              <li><b>Projektionen:</b> neue Prognosen für Inflation und Wachstum (bei vielen Notenbanken quartalsweise).</li>
+              <li><b>Pressekonferenz:</b> Antworten auf Fragen – hier entstehen oft die größten Bewegungen.</li>
+              <li>Beispiel EZB: Entscheid 14:15 Uhr, Pressekonferenz 14:45 Uhr. Fed: Entscheid am Abend deutscher Zeit, Pressekonferenz 30 Minuten später.</li>
+            </ul>
+          </div>
+        </details>
+      </article>
+
+      <!-- ===================== WÄHRUNGSPROFILE ===================== -->
+      <article class="lc" data-cat="waehrungen" id="usd">
+        <details>
+          <summary><span class="lc-cat">Währungsprofil</span><h3>USD – US-Dollar</h3><p>Weltreservewährung und sicherer Hafen.</p></summary>
+          <div class="lc-body"><ul>
+            <li><b>Notenbank:</b> Federal Reserve (Fed), doppeltes Mandat Preise + Beschäftigung.</li>
+            <li><b>Wichtigste Daten:</b> Arbeitsmarktbericht, CPI, PCE, ISM, Einzelhandel, Erstanträge.</li>
+            <li><b>Besonderheit:</b> Steigt in Krisen oft trotz schlechter US-Daten, weil weltweit Dollar gebraucht werden.</li>
+          </ul></div>
+        </details>
+      </article>
+      <article class="lc" data-cat="waehrungen" id="eur">
+        <details>
+          <summary><span class="lc-cat">Währungsprofil</span><h3>EUR – Euro</h3><p>Eine Notenbank für über zwanzig Länder.</p></summary>
+          <div class="lc-body"><ul>
+            <li><b>Notenbank:</b> Europäische Zentralbank (EZB), Ziel 2 % Inflation.</li>
+            <li><b>Wichtigste Daten:</b> HVPI-Schnellschätzung, PMI, ifo und ZEW (Deutschland), Lohnentwicklung.</li>
+            <li><b>Besonderheit:</b> Haushalts- und Schuldensorgen einzelner Länder (Renditeaufschläge gegenüber Deutschland) belasten den Euro.</li>
+          </ul></div>
+        </details>
+      </article>
+      <article class="lc" data-cat="waehrungen" id="gbp">
+        <details>
+          <summary><span class="lc-cat">Währungsprofil</span><h3>GBP – Britisches Pfund</h3><p>Inflation und Löhne im Fokus, politisch sensibel.</p></summary>
+          <div class="lc-body"><ul>
+            <li><b>Notenbank:</b> Bank of England (BoE), 9-köpfiger Zinsausschuss – das Abstimmungsergebnis ist oft selbst ein Signal.</li>
+            <li><b>Wichtigste Daten:</b> CPI, Löhne und Arbeitsmarkt, PMI, Einzelhandel.</li>
+            <li><b>Besonderheit:</b> Haushaltspolitik und politische Unsicherheit wirken stark auf das Pfund.</li>
+          </ul></div>
+        </details>
+      </article>
+      <article class="lc" data-cat="waehrungen" id="jpy">
+        <details>
+          <summary><span class="lc-cat">Währungsprofil</span><h3>JPY – Japanischer Yen</h3><p>Sicherer Hafen und klassische Finanzierungswährung.</p></summary>
+          <div class="lc-body"><ul>
+            <li><b>Notenbank:</b> Bank of Japan (BoJ), lange Null- und Negativzinsen.</li>
+            <li><b>Wichtigste Daten:</b> Tokio-CPI (früher Hinweis auf die landesweite Inflation), Lohnverhandlungen (Shunto), BoJ-Signale.</li>
+            <li><b>Besonderheit:</b> Steigt in Risk-off-Phasen. Bei sehr schwachem Yen greift das Finanzministerium mitunter am Markt ein.</li>
+          </ul></div>
+        </details>
+      </article>
+      <article class="lc" data-cat="waehrungen" id="chf">
+        <details>
+          <summary><span class="lc-cat">Währungsprofil</span><h3>CHF – Schweizer Franken</h3><p>Sicherer Hafen mit wachsamer Notenbank.</p></summary>
+          <div class="lc-body"><ul>
+            <li><b>Notenbank:</b> Schweizerische Nationalbank (SNB), Preisstabilität 0–2 %.</li>
+            <li><b>Wichtigste Daten:</b> Inflation, SNB-Entscheide (vierteljährlich).</li>
+            <li><b>Besonderheit:</b> Gefragt bei Krisen in Europa. Die SNB kauft oder verkauft Devisen, um den Franken zu steuern.</li>
+          </ul></div>
+        </details>
+      </article>
+      <article class="lc" data-cat="waehrungen" id="cad">
+        <details>
+          <summary><span class="lc-cat">Währungsprofil</span><h3>CAD – Kanadischer Dollar</h3><p>Öl und die USA als wichtigster Handelspartner.</p></summary>
+          <div class="lc-body"><ul>
+            <li><b>Notenbank:</b> Bank of Canada (BoC).</li>
+            <li><b>Wichtigste Daten:</b> Arbeitsmarktbericht (oft am selben Tag wie NFP), CPI, BIP.</li>
+            <li><b>Besonderheit:</b> Ölpreis und US-Handelspolitik (Zölle) wirken direkt.</li>
+          </ul></div>
+        </details>
+      </article>
+      <article class="lc" data-cat="waehrungen" id="aud">
+        <details>
+          <summary><span class="lc-cat">Währungsprofil</span><h3>AUD – Australischer Dollar</h3><p>Risiko- und China-Barometer.</p></summary>
+          <div class="lc-body"><ul>
+            <li><b>Notenbank:</b> Reserve Bank of Australia (RBA), Inflationsziel 2–3 %.</li>
+            <li><b>Wichtigste Daten:</b> Arbeitsmarkt, CPI (monatlich und vierteljährlich), chinesische Konjunkturdaten.</li>
+            <li><b>Besonderheit:</b> Läuft oft mit Aktienmärkten und Metallpreisen.</li>
+          </ul></div>
+        </details>
+      </article>
+      <article class="lc" data-cat="waehrungen" id="nzd">
+        <details>
+          <summary><span class="lc-cat">Währungsprofil</span><h3>NZD – Neuseeland-Dollar</h3><p>Klein, risikofreudig, milchabhängig.</p></summary>
+          <div class="lc-body"><ul>
+            <li><b>Notenbank:</b> Reserve Bank of New Zealand (RBNZ).</li>
+            <li><b>Wichtigste Daten:</b> CPI (vierteljährlich), Arbeitsmarkt, Milchpreis-Auktionen.</li>
+            <li><b>Besonderheit:</b> Bewegt sich häufig ähnlich wie der AUD.</li>
+          </ul></div>
+        </details>
+      </article>
+      <article class="lc" data-cat="waehrungen" id="nok-sek">
+        <details>
+          <summary><span class="lc-cat">Währungsprofil</span><h3>NOK und SEK – Skandinavier</h3><p>Kleine Märkte, große Schwankungen.</p></summary>
+          <div class="lc-body"><ul>
+            <li><b>NOK:</b> Norges Bank; eng mit dem Ölpreis verbunden.</li>
+            <li><b>SEK:</b> Riksbank; hängt stark an der Konjunktur der Eurozone und an der Risikostimmung.</li>
+            <li><b>Besonderheit:</b> Wenig gehandelt – breitere Spreads und schnellere Bewegungen, besonders bei Risk-off.</li>
+          </ul></div>
+        </details>
+      </article>
+
+      <!-- ===================== QUIZ ===================== -->
+      <article class="lc quiz" data-cat="quiz" id="quiz">
+        <div class="lc-static">
+          <span class="lc-cat">Üben</span><h3>Was passiert, wenn …?</h3>
+          <p>Wähle die wahrscheinlichste Reaktion. Gemeint ist immer: alles andere bleibt gleich.</p>
+          <div id="quizBox"></div>
+        </div>
+      </article>
+    </div>
+
+    <p class="ln-empty" id="lnEmpty" hidden>Nichts gefunden. Anderen Begriff versuchen oder „Alle“ wählen.</p>
+  </main>
+</div>
+
+<script type="module" src="lernen.js"></script>
+</body>
+</html>
