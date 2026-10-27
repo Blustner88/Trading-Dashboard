@@ -91,7 +91,16 @@ $('pushPrefs').addEventListener('change', (e) => savePush(e.target.closest('.st-
 async function loadTrading() {
   const { data } = await supabase.from('user_settings').select('value').eq('key', 'default_risk_pct').maybeSingle();
   $('defaultRisk').value = data ? Number(data.value) : 0.8;
+  const { data: w } = await supabase.from('user_settings').select('value').eq('key', 'watch_min_score').maybeSingle();
+  $('watchMin').value = w ? Number(w.value) : 20;
 }
+$('watchMin').addEventListener('change', async (e) => {
+  const v = Math.round(Number(e.target.value));
+  if (!(v >= 1 && v <= 100)) { toast('Bitte einen Wert zwischen 1 und 100 eingeben.'); return; }
+  const { error } = await supabase.from('user_settings').upsert({ key: 'watch_min_score', value: v, updated_at: new Date().toISOString() });
+  if (error) { toast('Speichern fehlgeschlagen: ' + error.message); return; }
+  flash(e.target.closest('.st-row'));
+});
 $('defaultRisk').addEventListener('change', async (e) => {
   const v = Number(e.target.value);
   if (!(v > 0 && v <= 10)) { toast('Bitte einen Wert zwischen 0,05 und 10 % eingeben.'); return; }

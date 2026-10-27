@@ -18,7 +18,8 @@ const sbar = (v, max = 100) => {
   return `<span class="sbar"><i class="${v > 0 ? 'pos' : v < 0 ? 'neg' : 'flat'}" style="--w:${w.toFixed(1)}%"></i></span>`;
 };
 
-const WATCH_N = 8;               // so viele Pairs mit dem stärksten Bias stehen automatisch auf der Watchlist
+// Automatisch auf der Watchlist: alle Pairs ab diesem Betrag des Scores (Einstellungen → Trading)
+let watchMinScore = 20;
 const STATUS = [['watching', 'Beobachten'], ['forming', 'Formt sich'], ['ready', 'Bereit'], ['no_interest', 'Kein Interesse']];
 const STATUS_BADGE = { ready: ['Bereit', 'pos'], forming: ['Formt sich', 'warn'], no_interest: ['Kein Interesse', ''] };
 // Bewusst neutrale Wörter: der Score beschreibt die fundamentale Lage, er ist kein Kauf-/Verkaufssignal
@@ -190,6 +191,11 @@ function reasonFor(p) {
   return parts.length ? parts.slice(0, 2).map(x => SHORT[x.f] || x.f).join(' + ') : 'gemischt';
 }
 
+async function loadWatchSetting() {
+  const { data } = await supabase.from('user_settings').select('value').eq('key', 'watch_min_score').maybeSingle();
+  if (Number(data?.value) > 0) watchMinScore = Number(data.value);
+}
+
 async function loadFundamentals() {
   // Alles in einer Runde: aktuelle Scores, Faktor-Werte und der Stand vor einer Woche
   const [{ data: scores }, { data: bias }, { data: w }, { data: fz }, { data: prevRows }] = await Promise.all([
@@ -222,7 +228,7 @@ async function loadFundamentals() {
 }
 
 function watchSet() {
-  const auto = pairBias.filter(p => p.bias !== 'neutral').slice(0, WATCH_N).map(p => p.pair);
+  const auto = pairBias.filter(p => Math.abs(p.score) >= watchMinScore).map(p => p.pair);
   const set = new Set(auto.filter(p => planPairs[p]?.watchlist_status !== 'no_interest'));
   Object.values(planPairs).forEach(r => { if (r.watchlist_status === 'forming' || r.watchlist_status === 'ready') set.add(r.pair); });
   return set;
@@ -532,7 +538,7 @@ async function loadTodoCount() {
   $('ckTodo').hidden = false;
 }
 
-await Promise.all([loadTodoCount(), loadRisk(), loadEvents(), loadProposals(), loadAccounts(), loadFundamentals(), loadPlan(), loadTopNews(), loadBriefs(), loadIdeaList()]);
+await Promise.all([loadTodoCount(), loadWatchSetting(), loadRisk(), loadEvents(), loadProposals(), loadAccounts(), loadFundamentals(), loadPlan(), loadTopNews(), loadBriefs(), loadIdeaList()]);
 ideaFromHash();
 renderPairs();
 renderStatus();
