@@ -45,14 +45,14 @@ function loginForm(mode) {
   if (mode === 'recovery') {
     return `<form autocomplete="on">
       <h1><span>◈</span> Neues Passwort</h1>
-      <p>Lege ein neues Passwort für dein Trading Journal fest.</p>
+      <p>Lege ein neues Passwort für Pairvane fest.</p>
       <label>Neues Passwort<input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
       <button type="submit">Passwort speichern</button>
       <div class="td-msg" role="status"></div>
     </form>`;
   }
   return `<form autocomplete="on">
-    <h1><span>◈</span> Trading Journal</h1>
+    <h1><span>◈</span> Pairvane</h1>
     <p>Bitte anmelden. Ohne Login sind keine Daten sichtbar.</p>
     <label>E-Mail<input name="email" type="email" autocomplete="username" value="${email}" required></label>
     <label>Passwort<input name="password" type="password" autocomplete="current-password" required></label>

@@ -429,7 +429,7 @@ export function renderNav() {
     const a = document.createElement('a');
     a.className = 'brand';
     a.href = START_PAGE;
-    a.innerHTML = '<span class="brand-mark" aria-hidden="true">◈</span><span class="brand-text">Trading Journal</span>';
+    a.innerHTML = '<span class="brand-mark" aria-hidden="true">◈</span><span class="brand-text">Pairvane</span>';
     brand.replaceWith(a);
   }
 
@@ -482,7 +482,7 @@ export function renderNav() {
   }
 
   const pageLabel = area.pages.find(p => p.href === page)?.label;
-  document.title = `${area.label}${pageLabel && area.pages.length > 1 ? ' · ' + pageLabel : ''} — Trading Journal`;
+  document.title = `${area.label}${pageLabel && area.pages.length > 1 ? ' · ' + pageLabel : ''} — Pairvane`;
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyView);
   else applyView();

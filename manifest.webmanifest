@@ -1,6 +1,6 @@
 {
-  "name": "Trading Journal",
-  "short_name": "Trading",
+  "name": "Pairvane",
+  "short_name": "Pairvane",
   "description": "Cockpit, Desk, Journal und Business in einer App",
   "lang": "de",
   "start_url": "cockpit.html",
