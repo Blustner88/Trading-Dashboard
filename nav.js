@@ -206,7 +206,7 @@ export function applyTheme(choice) {
   if (choice === 'system') { delete document.documentElement.dataset.theme; ls.set(THEME_KEY, null); }
   else { document.documentElement.dataset.theme = choice; ls.set(THEME_KEY, choice); }
   const light = effectiveTheme() === 'light';
-  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', light ? '#f5f6fa' : '#0b0d12'));
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.setAttribute('content', light ? '#eceff5' : '#0b0d12'));
   document.querySelectorAll('.theme-btn').forEach(paintThemeBtn);
 }
 function paintThemeBtn(b) {
