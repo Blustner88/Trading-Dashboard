@@ -429,7 +429,7 @@ export function renderNav() {
     const a = document.createElement('a');
     a.className = 'brand';
     a.href = START_PAGE;
-    a.innerHTML = '<span class="brand-mark" aria-hidden="true">◈</span><span class="brand-text">Pairvane</span>';
+    a.innerHTML = '<span class="brand-mark" aria-hidden="true"><img src="icons/logo-mark.png" alt="" width="28" height="28"></span><span class="brand-text">Pair<span class="brand-accent">vane</span></span>';
     brand.replaceWith(a);
   }
 

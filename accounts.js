@@ -24,7 +24,10 @@ function injectLoginStyles() {
       background: radial-gradient(1200px 600px at 20% 0%, rgba(99,102,241,.18), transparent 60%), var(--bg, #0b0d14); }
     .td-login form { width: min(380px, 100%); background: var(--surface, #12151f); border: 1px solid var(--border-soft, #232838);
       border-radius: 14px; padding: 26px 24px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 30px 80px -30px rgba(0,0,0,.8); }
-    .td-login h1 { margin: 0 0 4px; font: 600 20px var(--font-display, system-ui); color: var(--text, #e7e9ee); display: flex; gap: 8px; align-items: center; }
+    .td-login h1 { margin: 0 0 4px; font: 600 20px var(--font-display, system-ui); color: var(--text, #e7e9ee); display: flex; gap: 10px; align-items: center; }
+    .td-login h1 .td-mark { display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #fff; border: 1px solid var(--border, #272c39); }
+    .td-login h1 .td-mark img { width: 30px; height: 30px; }
+    .td-login h1 .brand-accent { color: var(--brand-teal, #05a8b9); }
     .td-login p { margin: 0; font-size: 13px; color: var(--text-muted, #9aa3b5); line-height: 1.45; }
     .td-login label { font-size: 12px; color: var(--text-muted, #9aa3b5); display: flex; flex-direction: column; gap: 5px; }
     .td-login input { font: 14px var(--font-body, system-ui); padding: 10px 12px; border-radius: 8px; color: var(--text, #e7e9ee);
@@ -44,7 +47,7 @@ function loginForm(mode) {
   const email = loginEsc(localStorage.getItem(LOGIN_EMAIL_KEY) || '');
   if (mode === 'recovery') {
     return `<form autocomplete="on">
-      <h1><span>◈</span> Neues Passwort</h1>
+      <h1><span class="td-mark"><img src="icons/logo-mark.png" alt="" width="30" height="30"></span> Neues Passwort</h1>
       <p>Lege ein neues Passwort für Pairvane fest.</p>
       <label>Neues Passwort<input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
       <button type="submit">Passwort speichern</button>
@@ -52,7 +55,7 @@ function loginForm(mode) {
     </form>`;
   }
   return `<form autocomplete="on">
-    <h1><span>◈</span> Pairvane</h1>
+    <h1><span class="td-mark"><img src="icons/logo-mark.png" alt="" width="30" height="30"></span> <span>Pair<span class="brand-accent">vane</span></span></h1>
     <p>Bitte anmelden. Ohne Login sind keine Daten sichtbar.</p>
     <label>E-Mail<input name="email" type="email" autocomplete="username" value="${email}" required></label>
     <label>Passwort<input name="password" type="password" autocomplete="current-password" required></label>
@@ -121,7 +124,7 @@ function showMfa() {
     const box = document.createElement('div');
     box.className = 'td-login';
     box.innerHTML = `<form autocomplete="off">
-      <h1><span>◈</span> Bestätigungscode</h1>
+      <h1><span class="td-mark"><img src="icons/logo-mark.png" alt="" width="30" height="30"></span> Bestätigungscode</h1>
       <p>Gib den 6-stelligen Code aus deiner Authenticator-App ein.</p>
       <label>Code<input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>
       <button type="submit">Bestätigen</button>

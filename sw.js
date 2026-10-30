@@ -3,7 +3,7 @@
 // Zwischenspeicher. Bibliothek und Icons (versioniert) kommen direkt aus dem Speicher.
 // Daten (Supabase), Schriften und Bibliotheken laufen am Service Worker vorbei.
 // Außerdem: Push-Benachrichtigungen anzeigen und beim Antippen die Seite öffnen.
-const CACHE = 'td-shell-v3';
+const CACHE = 'td-shell-v4';
 // Dateien mit Version im Namen ändern sich nie -> sofort aus dem Speicher
 const IMMUTABLE = /\/(vendor|icons)\//;
 // Bei langsamem Netz nicht ewig warten: nach 3 s die gespeicherte Fassung zeigen

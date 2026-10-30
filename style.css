@@ -13,6 +13,7 @@
   --text-muted: #9097a8;
   --text-faint: #808799;
   --indigo: #5b5ef0;
+  --brand-teal: #22b8c8;
   --indigo-bright: #8b93fa;
   --accent-soft: rgba(99,102,241,0.14);
   --profit: #22c55e;
@@ -49,6 +50,7 @@
   --text-muted: #4a5468;
   --text-faint: #586074;
   --indigo: #4346d1;
+  --brand-teal: #0590a0;
   --indigo-bright: #3a3dc4;
   --accent-soft: rgba(67,70,209,0.11);
   --profit: #10702f;
@@ -76,6 +78,7 @@
     --text-muted: #4a5468;
     --text-faint: #586074;
     --indigo: #4346d1;
+  --brand-teal: #0590a0;
     --indigo-bright: #3a3dc4;
     --accent-soft: rgba(67,70,209,0.11);
     --profit: #10702f;
@@ -124,10 +127,13 @@ a { color: var(--indigo-bright); }
   border-bottom: 1px solid var(--border-soft);
 }
 .brand { display: flex; align-items: center; gap: 9px; font-family: var(--font-display); font-weight: 600; font-size: 17px; color: var(--text); text-decoration: none; }
+/* Logo: Wetterfahne auf weißer Kachel (in beiden Modi gleich, wie das App-Symbol) */
 .brand-mark {
-  display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 8px;
-  background: var(--indigo); color: #fff; font-size: 15px;
+  display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 9px;
+  background: #fff; border: 1px solid var(--border);
 }
+.brand-mark img { width: 26px; height: 26px; display: block; }
+.brand-accent { color: var(--brand-teal); }
 
 .tabnav { display: flex; gap: 2px; background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 10px; padding: 3px; overflow-x: auto; scrollbar-width: none; max-width: 100%; min-width: 0; }
 .tabnav::-webkit-scrollbar { display: none; }
