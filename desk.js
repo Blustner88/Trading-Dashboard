@@ -1,4 +1,5 @@
 import { supabase } from './accounts.js';
+import { confirmDialog, toast, busy } from './nav.js';
 import { initAgents, seedAgents, agentSquawk, agentProposal, seedProposals, runDemo } from './desk-agents.js';
 
 // Desk: nur lesend. Vorschläge und Squawk schreibt der lokale Bot;
@@ -14,6 +15,82 @@ const STATUS_LABEL = {
   pending: 'Offen', watching: 'Wartet', analysed: 'Neu',
 };
 const SOURCE_LABEL = { fundamental: 'Fundamental', news: 'News', technik: 'Technik', risk: 'Risk', boss: 'Boss', system: 'System' };
+// ---------- Bots an/aus ----------
+// Das Dashboard schreibt nur bot_control.desired. controller.py auf dem PC startet/stoppt
+// die Windows-Aufgaben und meldet state + state_at (Lebenszeichen alle 15 s) zurück.
+const BOTS = [
+  { name: 'bot', label: 'Haupt-Bot', sub: 'Vorschläge, News, Telegram' },
+  { name: 'demo', label: 'Demo-Bot', sub: 'setzt Vorschläge auf dem Pepperstone-Demokonto um' },
+];
+const PC_STALE_MS = 90 * 1000;
+let botRows = {};
+let demoOpen = { positions: 0, orders: 0 };
+
+function botStatus(r, pcOnline) {
+  const want = r.desired === 'on';
+  if (!pcOnline) return { cls: 'idle', text: want ? 'An – startet, sobald der PC läuft' : 'Aus' };
+  if (want && r.state === 'running') return { cls: 'on', text: 'Läuft' };
+  if (!want && r.state === 'stopped') return { cls: 'off', text: 'Aus' };
+  return { cls: 'wait', text: want ? 'Wird gestartet …' : 'Wird gestoppt …' };
+}
+
+function renderBots() {
+  const ctl = botRows.controller;
+  const seen = ctl?.state_at ? new Date(ctl.state_at).getTime() : 0;
+  const pcOnline = Date.now() - seen < PC_STALE_MS;
+  $('botCtlPc').textContent = !seen ? 'Steuerung auf dem PC noch nicht eingerichtet'
+    : pcOnline ? 'PC verbunden' : `PC nicht erreichbar (zuletzt ${dayTime(ctl.state_at)})`;
+  $('botCtl').classList.toggle('pc-offline', !pcOnline);
+  $('botCtlRows').innerHTML = BOTS.map(b => {
+    const r = botRows[b.name];
+    if (!r) return '';
+    const st = botStatus(r, pcOnline);
+    const on = r.desired === 'on';
+    return `<div class="bot-ctl-row">
+      <div class="bot-ctl-name"><b>${b.label}</b><small>${b.sub}</small></div>
+      <span class="bot-state ${st.cls}">${st.text}</span>
+      <button type="button" class="${on ? 'btn-ghost' : 'btn-primary'} sm" data-bot="${b.name}" data-to="${on ? 'off' : 'on'}"
+        aria-label="${b.label} ${on ? 'stoppen' : 'starten'}">${on ? 'Stoppen' : 'Starten'}</button>
+    </div>`;
+  }).join('');
+}
+
+async function loadBots() {
+  const [{ data, error }, { data: eq }] = await Promise.all([
+    supabase.from('bot_control').select('name, desired, state, state_at'),
+    supabase.from('demo_equity').select('positions, orders').order('at', { ascending: false }).limit(1),
+  ]);
+  if (error) { $('botCtlRows').innerHTML = '<p class="desk-empty">Schalter nicht verfügbar.</p>'; return; }
+  botRows = Object.fromEntries((data || []).map(r => [r.name, r]));
+  if (eq?.[0]) demoOpen = eq[0];
+  renderBots();
+}
+
+$('botCtlRows').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-bot]');
+  if (!btn) return;
+  const { bot: name, to } = btn.dataset;
+  if (name === 'demo' && to === 'off' && (demoOpen.positions || demoOpen.orders)) {
+    const ok = await confirmDialog({
+      title: 'Demo-Bot stoppen?',
+      text: `Auf dem Demokonto sind noch ${demoOpen.positions} Position(en) und ${demoOpen.orders} Order(s) offen. `
+        + 'Stop-Loss und Take-Profit bleiben beim Broker bestehen, aber der Bot führt nichts mehr nach '
+        + '(z. B. abgelaufene Limit-Orders löschen oder RSI2-Ausstiege).',
+      ok: 'Trotzdem stoppen', danger: true,
+    });
+    if (!ok) return;
+  }
+  await busy(btn, async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    const { error } = await supabase.from('bot_control')
+      .update({ desired: to, changed_at: new Date().toISOString(), changed_by: user?.id ?? null }).eq('name', name);
+    if (error) { toast('Umschalten fehlgeschlagen: ' + error.message, { error: true }); return; }
+    botRows[name] = { ...botRows[name], desired: to };
+    renderBots();
+    toast(to === 'on' ? 'Startet in den nächsten 15 Sekunden.' : 'Stoppt in den nächsten 15 Sekunden.');
+  });
+});
+
 const AMPEL_ICON = { 'grün': '🟢', gelb: '🟡', rot: '🔴' };
 
 function dirTag(d) {
@@ -363,6 +440,7 @@ function subscribe() {
       if (s.source === 'news') loadNews();   // neue starke Schlagzeile -> Liste aktualisieren
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'trade_proposals' }, (evt) => { agentProposal(evt); loadProposals(); })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'bot_control' }, ({ new: r }) => { botRows[r.name] = r; renderBots(); })
     .subscribe((status) => $('liveDot').classList.toggle('on', status === 'SUBSCRIBED'));
 }
 
@@ -402,10 +480,11 @@ let officeOpen = false;
 try { officeOpen = localStorage.getItem(OFFICE_KEY) === '1'; } catch { /* privat-Modus */ }
 setOffice(officeOpen);
 $('officeToggle').onclick = () => setOffice($('agentOffice').classList.contains('office-collapsed'));
-await Promise.all([loadProposals(), loadSquawk(), loadNews(), loadDemo()]);
+await Promise.all([loadBots(), loadProposals(), loadSquawk(), loadNews(), loadDemo()]);
 if (new URLSearchParams(location.search).has('demo')) runDemo();
 subscribe();
 // Fallback, falls Realtime hängt, und damit die Restlaufzeiten aktuell bleiben
 setInterval(loadProposals, 60000);
 setInterval(loadNews, 5 * 60000);   // schwächere Schlagzeilen kommen ohne Squawk
 setInterval(loadDemo, 5 * 60000);   // Kontostand kommt alle 15 min
+setInterval(loadBots, 30000);       // PC-Lebenszeichen prüfen (falls Realtime hängt)

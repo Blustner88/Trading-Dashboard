@@ -302,3 +302,23 @@
 .demo-axis { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-faint); font-family: var(--font-mono); margin: 4px 2px 10px; }
 .demo-counts { margin: 0 0 12px; }
 @media (max-width: 560px) { .demo-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Bots an/aus */
+.bot-ctl { margin-bottom: 16px; }
+.bot-ctl-rows { display: grid; gap: 8px; }
+.bot-ctl-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 10px; background: var(--surface-2); }
+.bot-ctl-name { display: flex; flex-direction: column; min-width: 0; }
+.bot-ctl-name small { color: var(--text-muted); font-size: 12px; }
+.bot-state { font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+.bot-state.on { color: var(--profit); background: var(--profit-soft); }
+.bot-state.off { color: var(--text-muted); background: var(--border-soft); }
+.bot-state.wait { color: var(--amber); background: var(--amber-soft); }
+.bot-state.idle { color: var(--text-muted); background: var(--border-soft); }
+.bot-ctl.pc-offline #botCtlPc { color: var(--amber); }
+.bot-ctl-row button { min-width: 84px; }
+@media (max-width: 560px) {
+  .bot-ctl-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .bot-state { grid-column: 1; justify-self: start; }
+  .bot-ctl-row button { grid-row: 1 / span 2; grid-column: 2; }
+}
