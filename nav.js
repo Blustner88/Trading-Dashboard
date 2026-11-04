@@ -102,6 +102,83 @@ export function toastError(prefix, error) {
 // ---------------------------------------------------------------------------
 // Rückfrage im App-Design statt confirm(); liefert true/false
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Screenshot aus der Zwischenablage: per Strg+V (onImagePaste) oder Knopf (addPasteButton).
+// Das Bild landet im normalen Datei-Feld und löst dort "change" aus, der Rest des
+// Formulars (Vorschau, Hochladen) läuft also wie bei einer ausgewählten Datei.
+// ---------------------------------------------------------------------------
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;   // Grenze des Speicher-Buckets trade-screenshots
+
+function clipboardFile(blob) {
+  const ext = (blob.type.split('/')[1] || 'png').replace('jpeg', 'jpg');
+  return new File([blob], `screenshot-${Date.now()}.${ext}`, { type: blob.type });
+}
+
+export function setInputImage(input, file) {
+  if (file.size > MAX_IMAGE_BYTES) {
+    toast('Das Bild ist größer als 10 MB. Bitte einen kleineren Ausschnitt kopieren.', { error: true });
+    return false;
+  }
+  const dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+  return true;
+}
+
+// handler(file) läuft bei jedem eingefügten Bild, solange isActive() gilt. Normales Einfügen
+// von Text bleibt unberührt. Gibt eine Funktion zum Abmelden zurück.
+export function onImagePaste(handler, isActive = () => true) {
+  const listener = (e) => {
+    if (!isActive()) return;
+    const items = [...(e.clipboardData?.items || [])];
+    const image = items.find(it => it.kind === 'file' && it.type.startsWith('image/'));
+    if (!image) return;
+    const inText = e.target.closest?.('input:not([type=file]), textarea, [contenteditable]');
+    if (inText && items.some(it => it.type === 'text/plain')) return;   // z. B. aus Excel: Text gewinnt
+    const blob = image.getAsFile();
+    if (!blob) return;
+    e.preventDefault();
+    handler(clipboardFile(blob));
+  };
+  document.addEventListener('paste', listener);
+  return () => document.removeEventListener('paste', listener);
+}
+
+// Knopf direkt beim Datei-Feld (vor allem fürs Handy, dort gibt es kein Strg+V)
+export function addPasteButton(input) {
+  const row = document.createElement('div');
+  row.className = 'paste-row';
+  if (navigator.clipboard?.read) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-ghost sm';
+    btn.textContent = 'Aus Zwischenablage einfügen';
+    btn.onclick = async () => {
+      try {
+        for (const item of await navigator.clipboard.read()) {
+          const type = item.types.find(t => t.startsWith('image/'));
+          if (type) {
+            if (setInputImage(input, clipboardFile(await item.getType(type)))) toast('Screenshot eingefügt.');
+            return;
+          }
+        }
+        toast('In der Zwischenablage ist kein Bild.');
+      } catch {
+        toast('Kein Zugriff auf die Zwischenablage. Bitte im Browser erlauben oder Strg+V drücken.');
+      }
+    };
+    row.append(btn);
+  }
+  if (matchMedia('(pointer: fine)').matches) {
+    const hint = document.createElement('span');
+    hint.className = 'paste-hint';
+    hint.textContent = 'oder einfach Strg+V';
+    row.append(hint);
+  }
+  input.after(row);
+}
+
 export function confirmDialog({ title, text = '', ok = 'Löschen', cancel = 'Abbrechen', danger = true } = {}) {
   return new Promise((resolve) => {
     const dlg = document.createElement('dialog');

@@ -1,5 +1,5 @@
 import { supabase } from './accounts.js';
-import { toast, confirmDialog, deleteWithUndo } from './nav.js';
+import { toast, confirmDialog, deleteWithUndo, onImagePaste, setInputImage, addPasteButton } from './nav.js';
 
 // Trade-Ideen: Planung vor dem Trade. Liste + Editor (Sheet) für Cockpit und Tagesplan.
 // Status: idea → order → taken (verknüpft mit dem Journal-Trade); missed = geplant, aber keine Order gesetzt;
@@ -113,12 +113,15 @@ export async function renderIdeas(container, ideas, { empty = 'Noch keine Ideen.
 // Editor
 // ---------------------------------------------------------------------------
 let open = null;
+let stopPaste = null;
 function close() {
   if (!open) return;
   open.forEach(el => el.remove());
   open = null;
   document.body.style.overflow = '';
   document.removeEventListener('keydown', onKey);
+  stopPaste?.();
+  stopPaste = null;
 }
 function onKey(e) { if (e.key === 'Escape') close(); }
 
@@ -227,6 +230,8 @@ export async function openIdeaEditor(idea = null, defaults = {}, onChange = () =
     file = e.target.files[0] || null;
     if (file) $('iShotPrev').innerHTML = `<img src="${URL.createObjectURL(file)}" alt="Chart-Screenshot">`;
   };
+  addPasteButton($('iShot'));
+  stopPaste = onImagePaste((f) => { if (setInputImage($('iShot'), f)) toast('Screenshot eingefügt.'); });
   refresh();
   (idea ? sheet.querySelector('.modal-close') : $('iPair')).focus();
 

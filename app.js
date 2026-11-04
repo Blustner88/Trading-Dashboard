@@ -1,5 +1,5 @@
 import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts } from './accounts.js';
-import { toast, confirmDialog, deleteWithUndo, busy } from './nav.js';
+import { toast, confirmDialog, deleteWithUndo, busy, onImagePaste, setInputImage, addPasteButton } from './nav.js';
 
 const BUCKET = 'trade-screenshots';
 const ALL_PAIRS = [
@@ -125,6 +125,13 @@ function bindEvents() {
 
   $('f_chart_entry').onchange = (e) => { pendingEntryFile = e.target.files[0]; previewFile(e.target.files[0], 'entryPreview'); };
   $('f_chart_exit').onchange = (e) => { pendingExitFile = e.target.files[0]; previewFile(e.target.files[0], 'exitPreview'); };
+  addPasteButton($('f_chart_entry'));
+  addPasteButton($('f_chart_exit'));
+  // Strg+V im offenen Formular: im Schritt "Ergebnis" der Exit-Chart, sonst der Entry-Chart
+  onImagePaste((file) => {
+    const isExit = currentStep === 3;
+    if (setInputImage($(isExit ? 'f_chart_exit' : 'f_chart_entry'), file)) showToast(`Screenshot als ${isExit ? 'Exit' : 'Entry'}-Chart eingefügt.`);
+  }, () => $('modalOverlay').classList.contains('visible'));
 
   $('tradeForm').onsubmit = handleSave;
   $('deleteTradeBtn').onclick = handleDelete;
