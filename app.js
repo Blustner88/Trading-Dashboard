@@ -1,5 +1,6 @@
 import { supabase, initAccountSwitcher, getSelectedAccountId, getAccounts } from './accounts.js';
 import { toast, confirmDialog, deleteWithUndo, busy, onImagePaste, setInputImage, addPasteButton } from './nav.js';
+import { openTradeDetail } from './trade-detail.js';
 
 const BUCKET = 'trade-screenshots';
 const ALL_PAIRS = [
@@ -477,8 +478,9 @@ function renderTradeCard(trade) {
   card.className = 'trade-card';
   card.setAttribute('role', 'button');
   card.tabIndex = 0;
-  card.setAttribute('aria-label', `${trade.pair} ${trade.direction === 'short' ? 'Short' : 'Long'}, ${new Date(trade.entry_date).toLocaleDateString('de-DE')} – bearbeiten`);
-  card.onclick = () => openModal(trade);
+  const closed = trade.status === 'closed';
+  card.setAttribute('aria-label', `${trade.pair} ${trade.direction === 'short' ? 'Short' : 'Long'}, ${new Date(trade.entry_date).toLocaleDateString('de-DE')} – ${closed ? 'Übersicht öffnen' : 'bearbeiten'}`);
+  card.onclick = () => (closed ? openTradeDetail(trade, { onEdit: (t) => openModal(t) }) : openModal(trade));
 
   const dir = document.createElement('div');
   dir.className = `tc-dir ${trade.direction}`;
