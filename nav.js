@@ -22,6 +22,7 @@ export const icon = (name) => `<svg viewBox="0 0 24 24" fill="none" stroke="curr
 const AREAS = [
   { key: 'cockpit', label: 'Cockpit', tier: 'bias', pages: [
     { href: 'cockpit.html', label: 'Überblick' },
+    { href: 'rechner.html', label: 'Lot-Rechner' },
     { href: 'lernen.html', label: 'Wissen' },
   ] },
   { key: 'desk', label: 'Desk', owner: true, pages: [

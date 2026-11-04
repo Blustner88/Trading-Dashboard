@@ -185,6 +185,7 @@ export async function openIdeaEditor(idea = null, defaults = {}, onChange = () =
       <div class="modal-actions">
         ${idea ? '<button type="button" class="btn-ghost" data-act="delete">Löschen</button>' : ''}
         <div class="modal-actions-right">
+          <button type="button" class="btn-ghost" data-act="lots">Speichern &amp; Lots berechnen</button>
           ${idea && !i.trade_id ? '<button type="button" class="btn-ghost" data-act="journal">Als Trade erfassen</button>' : ''}
           ${i.trade_id ? '<a class="btn-ghost" href="index.html">Im Journal</a>' : ''}
           <button type="submit" class="btn-primary">Speichern</button>
@@ -271,6 +272,13 @@ export async function openIdeaEditor(idea = null, defaults = {}, onChange = () =
     close();
     onChange(saved);
   };
+  sheet.querySelector('[data-act=lots]').addEventListener('click', async () => {
+    const saved = await save();
+    if (!saved) return;
+    const q = new URLSearchParams({ pair: saved.pair });
+    for (const [k, v] of [['entry', saved.entry_price], ['sl', saved.stop_loss], ['tp', saved.tp1]]) if (v != null) q.set(k, v);
+    location.href = `rechner.html?${q}`;
+  });
   sheet.querySelector('[data-act=journal]')?.addEventListener('click', async () => {
     const saved = await save();
     if (saved) location.href = `index.html#idee=${saved.id}`;

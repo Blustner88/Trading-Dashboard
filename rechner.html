@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3lSuu7BhWmWHBsCg/ASPbvs2z48JfANPqTuP2HNud9s='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://rabbtdooayruveribarq.supabase.co; connect-src 'self' https://rabbtdooayruveribarq.supabase.co wss://rabbtdooayruveribarq.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- app-head -->
+<meta name="theme-color" content="#0b0d12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trading">
+<script>try{var t=localStorage.getItem('td_theme');if(t){document.documentElement.dataset.theme=t;}var l=t?t==='light':matchMedia('(prefers-color-scheme: light)').matches;document.querySelector('meta[name=theme-color]').content=l?'#f5f6fa':'#0b0d12';}catch(e){}</script>
+<link rel="modulepreload" href="vendor/supabase-js-2.118.0.js">
+<link rel="modulepreload" href="nav.js">
+<link rel="modulepreload" href="accounts.js">
+<!-- /app-head -->
+<title>Lot-Rechner — Pairvane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="rechner.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><img src="icons/logo-mark.png" alt="" width="28" height="28"></span>
+      <span class="brand-text">Pair<span class="brand-accent">vane</span></span>
+    </div>
+    <nav class="tabnav"></nav>
+  </header>
+
+  <main class="dash-main lc-main">
+    <h1 class="lc-title">Lot-Rechner</h1>
+    <p class="lc-sub">Wie groß darf die Position sein, damit beim Stop Loss genau dein Risiko anfällt?</p>
+    <div class="lc-grid">
+      <section class="panel">
+        <form class="lc-form trade-form" id="lcForm" novalidate>
+          <div class="field"><label for="lcAccount">Konto</label><select id="lcAccount"></select></div>
+          <div class="form-row">
+            <div class="field"><label for="lcBalance">Kontostand</label><input id="lcBalance" type="number" inputmode="decimal" step="any" min="0"></div>
+            <div class="field"><label for="lcCurrency">Währung</label>
+              <select id="lcCurrency"><option>USD</option><option>EUR</option><option>GBP</option><option>CHF</option><option>CAD</option><option>AUD</option><option>JPY</option></select></div>
+          </div>
+          <span class="hint lc-note" id="lcBalanceHint" style="margin:-6px 0 0"></span>
+          <div class="form-row">
+            <div class="field"><label for="lcRisk">Risiko in %</label><input id="lcRisk" type="number" inputmode="decimal" step="0.05" min="0"></div>
+            <div class="field"><label for="lcPair">Pair / Symbol</label>
+              <input id="lcPair" list="lcDatalist" autocomplete="off" autocapitalize="characters" placeholder="EURUSD"><datalist id="lcDatalist"></datalist></div>
+          </div>
+          <div class="field" id="lcContractWrap" hidden><label for="lcContract">Kontraktgröße</label>
+            <input id="lcContract" type="number" inputmode="decimal" step="any" min="0">
+            <span class="hint">Je Broker verschieden, in MT5 unter Symbol → Spezifikation. FundedNext NDX100 = 10, bei Pepperstone NAS100 vermutlich 1. Wird je Symbol gemerkt.</span></div>
+          <div class="field"><label>Stop Loss angeben als</label>
+            <div class="segmented" id="lcMode"><button type="button" class="seg-btn" data-value="levels">Entry &amp; SL</button><button type="button" class="seg-btn" data-value="pips">Abstand</button></div></div>
+          <div class="form-row three" id="lcLevels">
+            <div class="field"><label for="lcEntry">Entry</label><input id="lcEntry" type="number" inputmode="decimal" step="any"></div>
+            <div class="field"><label for="lcSl">Stop Loss</label><input id="lcSl" type="number" inputmode="decimal" step="any"></div>
+            <div class="field"><label for="lcTp">TP (optional)</label><input id="lcTp" type="number" inputmode="decimal" step="any"></div>
+          </div>
+          <div class="field" id="lcPipsWrap" hidden><label for="lcPips" id="lcPipsLabel">Stop Loss in Pips</label><input id="lcPips" type="number" inputmode="decimal" step="any" min="0"></div>
+          <p class="hint warn" id="lcWarn" hidden></p>
+        </form>
+      </section>
+      <section class="panel lc-result" aria-live="polite">
+        <span class="lc-label">Lotgröße</span>
+        <div class="lc-big"><span class="lc-lots" id="lcLots">–</span><button type="button" class="btn-ghost sm" id="lcCopy" hidden>Kopieren</button></div>
+        <div id="lcDetails"></div>
+        <p class="lc-note">Abgerundet auf 0,01 Lots. <span id="lcRatesInfo"></span> Spread und Kommission sind nicht eingerechnet. Vor dem Platzieren bitte in MT5 gegenprüfen.</p>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script type="module" src="rechner.js"></script>
+</body>
+</html>
