@@ -34,6 +34,7 @@ const AREAS = [
     { href: 'backtest.html', label: 'Backtest' },
     { href: 'level.html', label: 'Level' },
     { href: 'mentoring.html', label: 'Mentoring', owner: true },
+    { href: 'lernplan.html', label: 'Lernplan', owner: true },
   ] },
   { key: 'business', label: 'Business', tier: 'prop', pages: [
     { href: 'business.html', label: 'Überblick' },

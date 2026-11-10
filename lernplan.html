@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3lSuu7BhWmWHBsCg/ASPbvs2z48JfANPqTuP2HNud9s='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://rabbtdooayruveribarq.supabase.co; connect-src 'self' https://rabbtdooayruveribarq.supabase.co wss://rabbtdooayruveribarq.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- app-head -->
+<meta name="theme-color" content="#0b0d12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trading">
+<script>try{var t=localStorage.getItem('td_theme');if(t){document.documentElement.dataset.theme=t;}var l=t?t==='light':matchMedia('(prefers-color-scheme: light)').matches;document.querySelector('meta[name=theme-color]').content=l?'#f5f6fa':'#0b0d12';}catch(e){}</script>
+<link rel="modulepreload" href="vendor/supabase-js-2.118.0.js">
+<link rel="modulepreload" href="nav.js">
+<link rel="modulepreload" href="accounts.js">
+<!-- /app-head -->
+<title>Lernplan — Pairvane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="level.css" />
+<link rel="stylesheet" href="lernen.css" />
+<link rel="stylesheet" href="lernplan.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><img src="icons/logo-mark.png" alt="" width="28" height="28"></span>
+      <span class="brand-text">Pair<span class="brand-accent">vane</span></span>
+    </div>
+    <nav class="tabnav"></nav>
+  </header>
+
+  <main class="dash-main lernplan">
+
+    <!-- Übersicht -->
+    <div id="lpOverview">
+      <section class="panel level-panel">
+        <div class="panel-header">
+          <h3>Lernplan: Weg zum Top-Trader</h3>
+          <span class="level-tier-badge" id="lpBadge">–</span>
+        </div>
+        <div class="level-progress-wrap">
+          <div class="level-progress-label"><span id="lpCount">0 von 0 Lektionen</span><span id="lpQuiz"></span></div>
+          <div class="level-bar" id="lpBar" role="progressbar" aria-label="Fortschritt im Lernplan" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="level-bar-fill" id="lpBarFill" style="width:0%"></div></div>
+        </div>
+        <p class="level-hint">Eine Lektion dauert etwa 25 Minuten: lesen, Aufgabe mit deinen eigenen Daten machen, Kontrollfragen beantworten. Am besten zwei Lektionen pro Woche, passend zur Phase im Mentoring-Plan.</p>
+        <div id="lpNext"></div>
+      </section>
+      <div id="lpModules"><span class="skel row"></span><span class="skel row"></span></div>
+    </div>
+
+    <!-- Lektion -->
+    <article class="panel lp-lesson" id="lpLesson" hidden></article>
+
+  </main>
+</div>
+
+<script type="module" src="lernplan.js"></script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+/* Lernplan: Übersicht der Module und Lektionsansicht (Quiz-Stile aus lernen.css) */
+.lernplan { max-width: 860px; }
+
+.lp-next { display: flex; flex-direction: column; gap: 4px; margin-top: 14px; padding: 14px 16px; border-radius: 12px;
+  background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--indigo-bright) 35%, transparent);
+  color: var(--text); text-decoration: none; }
+.lp-next b { font-size: 15.5px; color: var(--indigo-bright); }
+.lp-next span:last-child { font-size: 13px; color: var(--text-muted); }
+.lp-next.done { color: var(--profit); font-weight: 600; }
+
+.lp-intro { margin: 0 0 10px; font-size: 13.5px; line-height: 1.55; color: var(--text-muted); }
+.lp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lp-list a { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px;
+  background: var(--surface-2); color: var(--text); text-decoration: none; }
+.lp-list a:hover { background: color-mix(in srgb, var(--surface-2) 70%, var(--accent-soft)); }
+.lp-check { flex: 0 0 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--text-faint);
+  display: grid; place-items: center; font-size: 12px; font-weight: 700; }
+.lp-list li.done .lp-check { border-color: var(--profit); background: var(--profit-soft); color: var(--profit); }
+.lp-title { flex: 1; display: flex; flex-direction: column; gap: 2px; font-weight: 600; font-size: 14px; }
+.lp-title small { font-weight: 400; font-size: 12px; color: var(--text-muted); }
+.lp-meta { font-size: 11.5px; color: var(--text-faint); white-space: nowrap; font-family: var(--font-mono); }
+
+/* Lektion */
+.lp-lesson { padding: 20px 22px; }
+.lp-back { font-size: 13px; color: var(--indigo-bright); text-decoration: none; }
+.lp-lesson .lc-cat { display: block; margin-top: 14px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); }
+.lp-h1 { font-family: var(--font-display); font-size: 24px; font-weight: 600; margin: 4px 0 10px; }
+.lp-goal { margin: 0 0 14px; font-size: 14px; color: var(--text-muted); }
+.lp-body { font-size: 14.5px; line-height: 1.65; }
+.lp-body ul, .lp-body ol { padding-left: 20px; }
+.lp-body li { margin: 4px 0; }
+.lp-formula { font-family: var(--font-mono); font-size: 13px; background: var(--surface-2); padding: 10px 12px; border-radius: 8px; }
+.lp-table { border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+.lp-table th, .lp-table td { padding: 6px 10px; border-bottom: 1px solid var(--border-soft); text-align: right; }
+.lp-table th:first-child, .lp-table td:first-child { text-align: left; }
+.lp-rule { margin: 18px 0; padding: 12px 14px; border-left: 3px solid var(--indigo-bright); background: var(--accent-soft);
+  border-radius: 0 10px 10px 0; font-weight: 600; font-size: 14.5px; }
+.lp-task, .lp-quiz { margin-top: 20px; }
+.lp-task h3, .lp-quiz h3 { font-size: 15px; margin: 0 0 6px; }
+.lp-task p { margin: 0 0 10px; font-size: 14px; line-height: 1.55; }
+.lp-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.lp-actions { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 22px; }
+.lp-undo { text-align: center; margin: 10px 0 0; }
+
+#lpOverview, #lpModules { display: flex; flex-direction: column; gap: 16px; }
