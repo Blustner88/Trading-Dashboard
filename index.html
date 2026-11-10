@@ -206,6 +206,16 @@
           <datalist id="mistakeList"><option>zu früh raus</option><option>FOMO-Entry</option><option>SL zu eng</option><option>gegen Bias</option><option>News ignoriert</option></datalist>
         </div>
         <div class="field">
+          <label>Prozess-Score</label>
+          <div class="segmented" id="f_process">
+            <button type="button" class="seg-btn" data-value="0">0</button>
+            <button type="button" class="seg-btn" data-value="1">1</button>
+            <button type="button" class="seg-btn" data-value="2">2</button>
+            <button type="button" class="seg-btn" data-value="3">3</button>
+          </div>
+          <p class="hint" style="margin:4px 0 0;font-size:12px;color:var(--text-muted)">Je 1 Punkt: Setup nach Playbook · Risiko korrekt · Management nach Plan. Nochmal tippen = leer.</p>
+        </div>
+        <div class="field">
           <label for="f_chart_exit">Chart-Screenshot (Exit)</label>
           <input type="file" id="f_chart_exit" accept="image/*" />
           <div class="upload-preview" id="exitPreview"></div>

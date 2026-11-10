@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3lSuu7BhWmWHBsCg/ASPbvs2z48JfANPqTuP2HNud9s='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://rabbtdooayruveribarq.supabase.co; connect-src 'self' https://rabbtdooayruveribarq.supabase.co wss://rabbtdooayruveribarq.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- app-head -->
+<meta name="theme-color" content="#0b0d12">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Trading">
+<script>try{var t=localStorage.getItem('td_theme');if(t){document.documentElement.dataset.theme=t;}var l=t?t==='light':matchMedia('(prefers-color-scheme: light)').matches;document.querySelector('meta[name=theme-color]').content=l?'#f5f6fa':'#0b0d12';}catch(e){}</script>
+<link rel="modulepreload" href="vendor/supabase-js-2.118.0.js">
+<link rel="modulepreload" href="nav.js">
+<link rel="modulepreload" href="accounts.js">
+<!-- /app-head -->
+<title>Mentoring — Pairvane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="dashboard.css" />
+<link rel="stylesheet" href="level.css" />
+<link rel="stylesheet" href="mentoring.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><img src="icons/logo-mark.png" alt="" width="28" height="28"></span>
+      <span class="brand-text">Pair<span class="brand-accent">vane</span></span>
+    </div>
+    <nav class="tabnav"></nav>
+  </header>
+
+  <main class="dash-main mentoring">
+
+    <!-- Tilt-Ampel -->
+    <section class="panel" id="tiltPanel">
+      <div class="panel-header"><h3>Heute handeln?</h3><span class="mt-verdict" id="tiltVerdict">–</span></div>
+      <div class="xp-source-list" id="tiltList"></div>
+    </section>
+
+    <!-- 100-Trade-Block -->
+    <section class="panel">
+      <div class="panel-header">
+        <h3>Konsistenz-Block</h3>
+        <span class="level-tier-badge" id="blockBadge">–</span>
+      </div>
+      <div id="blockBody"><span class="skel row"></span></div>
+      <p class="level-hint">100 Trades exakt nach Playbook, ohne Regeländerung. Jeder Trade bekommt im Journal (Schritt 3) einen Prozess-Score von 0–3: Setup nach Playbook, Risiko korrekt, Management nach Plan.</p>
+    </section>
+
+    <!-- Ziele -->
+    <section class="panel">
+      <div class="panel-header"><h3>Ziel: Top-Trader</h3><span class="st-hint" id="goalCount">–</span></div>
+      <div class="mt-goals" id="goalList"></div>
+      <p class="level-hint" id="approxHint" hidden></p>
+    </section>
+
+    <!-- Monate -->
+    <section class="panel">
+      <div class="panel-header"><h3>Kennzahlen je Monat</h3></div>
+      <div class="mt-table-wrap"><table class="mt-table" id="monthTable"></table></div>
+    </section>
+
+    <p class="level-hint"><a href="https://claude.ai/artifact/R7Efr7yc28kJeTCHptNxDT" target="_blank" rel="noopener">Mentoring-Plan öffnen</a> · Phasen, Checklisten und Parkliste stehen im Dokument.</p>
+  </main>
+</div>
+
+<script type="module" src="mentoring.js"></script>
+</body>
+</html>

@@ -124,6 +124,11 @@ function bindEvents() {
     };
   });
 
+  // Prozess-Score 0–3 (Mentoring); erneutes Tippen auf den aktiven Wert leert ihn
+  document.querySelectorAll('#f_process .seg-btn').forEach(btn => {
+    btn.onclick = () => setProcessScore(btn.classList.contains('active') ? null : Number(btn.dataset.value));
+  });
+
   $('f_chart_entry').onchange = (e) => { pendingEntryFile = e.target.files[0]; previewFile(e.target.files[0], 'entryPreview'); };
   $('f_chart_exit').onchange = (e) => { pendingExitFile = e.target.files[0]; previewFile(e.target.files[0], 'exitPreview'); };
   addPasteButton($('f_chart_entry'));
@@ -223,6 +228,12 @@ async function prefillFromIdea(id) {
 }
 
 // ---------- Modal ----------
+let processScore = null;
+function setProcessScore(v) {
+  processScore = v === null || v === undefined ? null : Number(v);
+  document.querySelectorAll('#f_process .seg-btn').forEach(b => b.classList.toggle('active', processScore !== null && Number(b.dataset.value) === processScore));
+}
+
 function openModal(trade = null, startStep = 1) {
   fromIdea = null;
   editingId = trade ? trade.id : null;
@@ -236,6 +247,7 @@ function openModal(trade = null, startStep = 1) {
   pendingExitFile = null;
   currentDirection = null;
   document.querySelectorAll('#f_direction .seg-btn').forEach(b => b.classList.remove('active'));
+  setProcessScore(trade?.process_score ?? null);
   $('slHint').textContent = trade?.source === 'mt5_import'
     ? 'Importierter Trade: SL ist optional. Mit SL wird der R-Wert berechnet.'
     : 'Der initiale SL ist die Grundlage für den R-Wert.';
@@ -341,6 +353,7 @@ async function handleSave(e) {
       exit_price: exitPrice,
       exit_date: $('f_exit_date').value ? new Date($('f_exit_date').value).toISOString() : null,
       mistake_tag: $('f_mistake_tag').value || null,
+      process_score: processScore,
       profit_amount: $('f_profit_amount').value ? parseFloat($('f_profit_amount').value) : null,
       status: exitPrice ? 'closed' : 'open',
     };

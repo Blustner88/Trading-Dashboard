@@ -1,0 +1,22 @@
+/* Mentoring-Seite: nutzt Panels, Level-Balken und XP-Zeilen; hier nur die Extras */
+.mt-verdict { font-weight: 700; font-size: 13px; }
+#tiltPanel.mt-stop { border: 1px solid color-mix(in srgb, var(--loss) 35%, transparent); }
+
+.mt-start { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.mt-start label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--text-muted); }
+.mt-block-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+.mt-goals { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.mt-goal {
+  display: flex; flex-direction: column; gap: 4px; padding: 12px;
+  background: var(--surface-2); border-radius: 10px; border-left: 3px solid var(--text-faint);
+}
+.mt-goal.ok { border-left-color: var(--profit); }
+.mt-goal-sub { font-size: 11.5px; color: var(--text-faint); }
+
+.mt-table-wrap { overflow-x: auto; }
+.mt-table { width: 100%; border-collapse: collapse; font-size: 12.5px; white-space: nowrap; }
+.mt-table th { text-align: right; font-weight: 600; color: var(--text-muted); padding: 6px 8px; border-bottom: 1px solid var(--border, var(--surface-2)); }
+.mt-table td { text-align: right; padding: 6px 8px; font-family: var(--font-mono); border-bottom: 1px solid var(--surface-2); }
+.mt-table th:first-child, .mt-table td:first-child { text-align: left; font-family: inherit; }
+.mt-table tr.empty td { color: var(--text-faint); }

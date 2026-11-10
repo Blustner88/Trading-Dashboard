@@ -33,6 +33,7 @@ const AREAS = [
     { href: 'index.html', label: 'Journal' },
     { href: 'backtest.html', label: 'Backtest' },
     { href: 'level.html', label: 'Level' },
+    { href: 'mentoring.html', label: 'Mentoring', owner: true },
   ] },
   { key: 'business', label: 'Business', tier: 'prop', pages: [
     { href: 'business.html', label: 'Überblick' },
